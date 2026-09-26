@@ -1,88 +1,308 @@
 {
- "$schema": "../../Schemas/environment-decoration.schema.json",
- "schema": "moyva.environment-decoration",
- "version": 1,
- "id": "environment-decoration-config",
- "model": "environment-decoration",
- "enabled": true,
- "globalDensity": 1.0,
- "seedOffset": 0,
- "maxObjectsPerTile": 3,
- "clusterStrength": 0.7,
- "clusterRadius": 3,
- "typeDensities": {
-  "treeDensity": 0.15,
-  "bushDensity": 0.1,
-  "grassDensity": 0.2,
-  "flowerDensity": 0.0,
-  "rockDensity": 0.08,
-  "waterPlantDensity": 0.12
- },
- "biomeRules": {
-  "grassland": 1.2,
-  "forest": 2.0,
-  "rocky": 1.5,
-  "coast": 0.0,
-  "water": 0.0
- },
- "exclusions": {
-  "buildingExclusionRadius": 1,
-  "settlementExclusionRadius": 2,
-  "suppressWaterDecorations": true,
-  "shorelineExclusionCells": 1
- },
- "visualVariation": {
-  "enableRotation": true,
-  "enableScaleVariation": true,
-  "minScale": 0.85,
-  "maxScale": 1.15,
-  "maxPositionOffset": 0.2,
-  "alignToSurface": true
- },
- "footprint": {
-  "validateHeavyFootprints": true,
-  "maxShiftCells": 0.75,
-  "maxGroundDeltaMeters": 0.6,
-  "footprintShrink": 0.9
- },
- "assetPools": {
-  "tree": [
-   "kaykit-tree-single-a",
-   "kaykit-tree-single-b",
-   "kaykit-trees-a-small",
-   "kaykit-trees-a-medium",
-   "kaykit-trees-a-large",
-   "kaykit-trees-b-small",
-   "kaykit-trees-b-medium",
-   "kaykit-trees-b-large"
+  "$schema": "../../Schemas/environment-decoration.schema.json",
+  "schema": "moyva.environment-decoration",
+  "version": 1,
+  "id": "environment-decoration-config",
+  "model": "environment-decoration",
+  "enabled": true,
+  "globalDensity": 1.0,
+  "seedOffset": 0,
+  "maxObjectsPerTile": 3,
+  "clusterStrength": 0.7,
+  "clusterRadius": 3,
+  "typeDensities": {
+    "treeDensity": 0.15,
+    "bushDensity": 0.1,
+    "grassDensity": 0.2,
+    "flowerDensity": 0.0,
+    "rockDensity": 0.08,
+    "waterPlantDensity": 0.12
+  },
+  "biomeRules": {
+    "grassland": 1.2,
+    "forest": 2.0,
+    "rocky": 1.5,
+    "coast": 0.0,
+    "water": 0.0
+  },
+  "exclusions": {
+    "buildingExclusionRadius": 1,
+    "settlementExclusionRadius": 2,
+    "suppressWaterDecorations": true,
+    "shorelineExclusionCells": 1
+  },
+  "visualVariation": {
+    "enableRotation": true,
+    "enableScaleVariation": true,
+    "minScale": 0.85,
+    "maxScale": 1.15,
+    "maxPositionOffset": 0.2,
+    "alignToSurface": true
+  },
+  "footprint": {
+    "validateHeavyFootprints": true,
+    "maxShiftCells": 0.75,
+    "maxGroundDeltaMeters": 0.6,
+    "footprintShrink": 0.9
+  },
+  "layers": [
+    {
+      "type": "grass",
+      "weight": 0.6,
+      "maxPerTile": 3,
+      "biomeBoost": {
+        "forest": 0.75,
+        "rocky": 0.45,
+        "coast": 0.4
+      },
+      "skipObjectCells": false,
+      "minScale": 0.8,
+      "maxScale": 1.35
+    },
+    {
+      "type": "tallgrass",
+      "weight": 0.14,
+      "maxPerTile": 2,
+      "waterAffinity": "prefer",
+      "waterRadius": 2,
+      "waterBoost": 2.2,
+      "biomeBoost": {
+        "forest": 0.9,
+        "rocky": 0.3,
+        "coast": 0.5
+      },
+      "skipObjectCells": false,
+      "minScale": 0.9,
+      "maxScale": 1.45
+    },
+    {
+      "type": "tallgrass",
+      "weight": 0.22,
+      "maxPerTile": 2,
+      "forestAffinity": "edge",
+      "biomeBoost": {
+        "forest": 1.2
+      },
+      "skipObjectCells": false,
+      "minScale": 0.9,
+      "maxScale": 1.45
+    },
+    {
+      "type": "bush",
+      "weight": 0.16,
+      "maxPerTile": 2,
+      "biomeBoost": {
+        "grassland": 1.2,
+        "forest": 1.3,
+        "rocky": 0.6,
+        "coast": 0.4
+      },
+      "shorelineExclusion": true,
+      "validateFootprint": true,
+      "minScale": 0.85,
+      "maxScale": 1.3,
+      "skipObjectCells": true
+    },
+    {
+      "type": "fern",
+      "weight": 0.22,
+      "maxPerTile": 2,
+      "forestAffinity": "interior",
+      "waterAffinity": "prefer",
+      "waterRadius": 3,
+      "waterBoost": 1.6,
+      "minScale": 0.8,
+      "maxScale": 1.25
+    },
+    {
+      "type": "fern",
+      "weight": 0.12,
+      "maxPerTile": 2,
+      "forestAffinity": "edge",
+      "minScale": 0.8,
+      "maxScale": 1.2
+    },
+    {
+      "type": "litter",
+      "weight": 0.03,
+      "maxPerTile": 2,
+      "nearTreeBoost": 0.7,
+      "nearTreeRadius": 1,
+      "skipObjectCells": false,
+      "minScale": 0.8,
+      "maxScale": 1.2
+    },
+    {
+      "type": "flower",
+      "weight": 0.06,
+      "maxPerTile": 1,
+      "biomeBoost": {
+        "grassland": 1.6,
+        "forest": 0.4
+      },
+      "skipObjectCells": false,
+      "minScale": 0.9,
+      "maxScale": 1.3
+    },
+    {
+      "type": "pebble",
+      "weight": 0.1,
+      "maxPerTile": 2,
+      "biomeBoost": {
+        "rocky": 2.5,
+        "forest": 0.5,
+        "coast": 1.2
+      },
+      "skipObjectCells": false,
+      "maxSlopeMeters": 0.9,
+      "minScale": 0.3,
+      "maxScale": 0.55
+    },
+    {
+      "type": "log",
+      "weight": 0.05,
+      "maxPerTile": 1,
+      "biomeBoost": {
+        "forest": 2.0
+      },
+      "shorelineExclusion": true,
+      "validateFootprint": true,
+      "minScale": 0.9,
+      "maxScale": 1.3,
+      "skipObjectCells": true
+    },
+    {
+      "type": "stump",
+      "weight": 0.02,
+      "maxPerTile": 1,
+      "nearTreeBoost": 0.45,
+      "nearTreeRadius": 1,
+      "skipObjectCells": true,
+      "minScale": 0.85,
+      "maxScale": 1.2
+    },
+    {
+      "type": "sapling",
+      "weight": 0.14,
+      "maxPerTile": 1,
+      "forestAffinity": "edge",
+      "forestEdgeRadius": 2,
+      "shorelineExclusion": true,
+      "validateFootprint": true,
+      "feedsTreeAffinity": true,
+      "minScale": 0.9,
+      "maxScale": 1.4,
+      "skipObjectCells": true
+    },
+    {
+      "type": "sapling",
+      "weight": 0.03,
+      "maxPerTile": 1,
+      "biomeBoost": {
+        "grassland": 1.3,
+        "forest": 0.5
+      },
+      "minScale": 0.85,
+      "maxScale": 1.2,
+      "feedsTreeAffinity": true,
+      "skipObjectCells": true
+    },
+    {
+      "type": "reed",
+      "weight": 0.3,
+      "maxPerTile": 2,
+      "waterAffinity": "require",
+      "waterRadius": 1,
+      "skipObjectCells": false,
+      "minScale": 0.8,
+      "maxScale": 1.3
+    }
   ],
-  "rock": [
-   "kaykit-rock-single-a",
-   "kaykit-rock-single-b",
-   "kaykit-rock-single-c",
-   "kaykit-rock-single-d",
-   "kaykit-rock-single-e"
-  ],
-  "bush": [
-   "kaykit-trees-a-small",
-   "kaykit-trees-b-small"
-  ],
-  "grass": [
-   "grass-bilboard",
-   "grass-kreuz"
-  ],
-  "stump": [
-   "kaykit-trees-a-cut",
-   "kaykit-trees-b-cut",
-   "kaykit-tree-single-a-cut",
-   "kaykit-tree-single-b-cut"
-  ],
-  "waterplant": [
-   "kaykit-waterlily-a",
-   "kaykit-waterlily-b",
-   "kaykit-waterplant-a",
-   "kaykit-waterplant-b",
-   "kaykit-waterplant-c"
-  ]
- }
+  "assetPools": {
+    "tree": [
+      "kaykit-tree-single-a",
+      "kaykit-tree-single-b",
+      "kaykit-trees-a-small",
+      "kaykit-trees-a-medium",
+      "kaykit-trees-a-large",
+      "kaykit-trees-b-small",
+      "kaykit-trees-b-medium",
+      "kaykit-trees-b-large"
+    ],
+    "rock": [
+      "kaykit-rock-single-a",
+      "kaykit-rock-single-b",
+      "kaykit-rock-single-c",
+      "kaykit-rock-single-d",
+      "kaykit-rock-single-e"
+    ],
+    "bush": [
+      "veg-bush-a",
+      "veg-bush-b",
+      "veg-bush-c",
+      "veg-bush-d",
+      "veg-bush-hedge"
+    ],
+    "grass": [
+      "grass-bilboard",
+      "grass-kreuz",
+      "veg-grass-cross-a",
+      "veg-grass-tri-a",
+      "veg-grass-tall-a",
+      "veg-grass-clump-a",
+      "veg-grass-tall-b",
+      "veg-grass-clump-b"
+    ],
+    "tallgrass": [
+      "veg-grass-tall-a",
+      "veg-grass-tall-b",
+      "veg-sedge-a",
+      "veg-sedge-b"
+    ],
+    "fern": [
+      "veg-fern-a",
+      "veg-fern-b"
+    ],
+    "flower": [
+      "veg-flower-a",
+      "veg-flower-b"
+    ],
+    "litter": [
+      "veg-twig-a",
+      "veg-twig-b",
+      "veg-leafpatch-a",
+      "veg-leafpatch-b",
+      "veg-moss"
+    ],
+    "pebble": [
+      "veg-pebble",
+      "kaykit-rock-single-a",
+      "kaykit-rock-single-c"
+    ],
+    "log": [
+      "veg-log"
+    ],
+    "sapling": [
+      "veg-sapling-a",
+      "veg-sapling-b",
+      "veg-sapling-c"
+    ],
+    "reed": [
+      "veg-sedge-a",
+      "veg-sedge-b"
+    ],
+    "stump": [
+      "kaykit-trees-a-cut",
+      "kaykit-trees-b-cut",
+      "kaykit-tree-single-a-cut",
+      "kaykit-tree-single-b-cut"
+    ],
+    "waterplant": [
+      "kaykit-waterlily-a",
+      "kaykit-waterlily-b",
+      "kaykit-waterplant-a",
+      "kaykit-waterplant-b",
+      "kaykit-waterplant-c"
+    ]
+  }
 }

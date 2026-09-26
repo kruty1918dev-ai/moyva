@@ -16,10 +16,12 @@ namespace Kruty1918.Moyva.Generator.Runtime
         private readonly IMapChunkLayoutService _layout;
         private readonly IMapVisualChunkRootService _roots;
         private readonly IGeneratorTerrainLevelService _terrainLevels;
+        private readonly IMapVisualChunkRegistry _chunkRegistry;
         private readonly EnvironmentObjectPlacementResolver _placementResolver;
         private readonly bool _alignToSurface;
         private readonly float _footprintShrink;
         private readonly Dictionary<MapChunkCoord, Transform> _decorationRoots = new Dictionary<MapChunkCoord, Transform>();
+        private readonly List<MapChunkCoord> _singleChunkBuffer = new List<MapChunkCoord>(1);
 
         public EnvironmentDecorationSpawner(
             IMapObjectRegistryService objectRegistry,
@@ -27,13 +29,15 @@ namespace Kruty1918.Moyva.Generator.Runtime
             IMapVisualChunkRootService roots,
             [Zenject.InjectOptional] IGeneratorTerrainLevelService terrainLevels = null,
             [Zenject.InjectOptional] EnvironmentDecorationConfig config = null,
-            [Zenject.InjectOptional] EnvironmentObjectPlacementResolver placementResolver = null)
+            [Zenject.InjectOptional] EnvironmentObjectPlacementResolver placementResolver = null,
+            [Zenject.InjectOptional] IMapVisualChunkRegistry chunkRegistry = null)
         {
             _objectRegistry = objectRegistry ?? throw new ArgumentNullException(nameof(objectRegistry));
             _layout = layout ?? throw new ArgumentNullException(nameof(layout));
             _roots = roots ?? throw new ArgumentNullException(nameof(roots));
             _terrainLevels = terrainLevels;
             _placementResolver = placementResolver;
+            _chunkRegistry = chunkRegistry;
             _alignToSurface = config?.VisualVariation?.AlignToSurface ?? true;
             _footprintShrink = config?.Footprint?.FootprintShrink ?? 0.9f;
         }
@@ -138,6 +142,12 @@ namespace Kruty1918.Moyva.Generator.Runtime
             foreach (var renderer in renderers)
             {
                 renderer.receiveShadows = true;
+                if (_chunkRegistry != null)
+                {
+                    _singleChunkBuffer.Clear();
+                    _singleChunkBuffer.Add(coord);
+                    _chunkRegistry.Register(renderer, _singleChunkBuffer);
+                }
             }
 
             var colliders = instance.GetComponentsInChildren<Collider>(true);

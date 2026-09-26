@@ -1149,6 +1149,60 @@ MonoBehaviour:
     Asset: {fileID: 919132149155446097, guid: 1a19cb43ba63ceb448a301b1b37694f3, type: 3}
   - Key: asset.game-object.trees-b-small.d82cb8d5
     Asset: {fileID: 919132149155446097, guid: d82cb8d5548e1d74a91fd42751d24c41, type: 3}
+  - Key: asset.game-object.veg-bush-a.1684c5ee
+    Asset: {fileID: 6748257711010023351, guid: 1684c5ee5ba48084d65b0f3090716cb0, type: 3}
+  - Key: asset.game-object.veg-bush-b.8e1cb601
+    Asset: {fileID: 5358913874915656564, guid: 8e1cb60146b8c732b46429b9d26891eb, type: 3}
+  - Key: asset.game-object.veg-bush-c.5ee1fc66
+    Asset: {fileID: 8399647775053093391, guid: 5ee1fc66cba1d6d58eb1e37485e16f0f, type: 3}
+  - Key: asset.game-object.veg-bush-d.bcef89c5
+    Asset: {fileID: 4377261291844866713, guid: bcef89c5fff562ca25ecb48d3eaca96c, type: 3}
+  - Key: asset.game-object.veg-bush-hedge.561af57c
+    Asset: {fileID: 6970688924232317826, guid: 561af57cc2ad083330c276277ce67169, type: 3}
+  - Key: asset.game-object.veg-fern-a.49413823
+    Asset: {fileID: 2847815391305291989, guid: 49413823e538dfe22267c385899987f4, type: 3}
+  - Key: asset.game-object.veg-fern-b.f346e75e
+    Asset: {fileID: 3768205849636987700, guid: f346e75eb9ffe71020fd40847350f8f0, type: 3}
+  - Key: asset.game-object.veg-flower-a.c850d9d3
+    Asset: {fileID: 6546239957838648684, guid: c850d9d3c84b4ea7ba0a4e26579136b0, type: 3}
+  - Key: asset.game-object.veg-flower-b.d9bfec10
+    Asset: {fileID: 8473595765777059655, guid: d9bfec106633c7a4f432d70def63b707, type: 3}
+  - Key: asset.game-object.veg-grass-clump-a.14f747ec
+    Asset: {fileID: 8132436514239624365, guid: 14f747ec96aa839098229b824d3d11cf, type: 3}
+  - Key: asset.game-object.veg-grass-clump-b.3aaae0b6
+    Asset: {fileID: 4737423725034856356, guid: 3aaae0b6c8f7636847ae74833bc7990f, type: 3}
+  - Key: asset.game-object.veg-grass-cross-a.9d1fb266
+    Asset: {fileID: 6030521528285945734, guid: 9d1fb2662e23cb7fe5e79aa0bfd3ad1d, type: 3}
+  - Key: asset.game-object.veg-grass-tall-a.94d75157
+    Asset: {fileID: 8281872137256853565, guid: 94d75157dcdfb926a69c76820d4fcd0c, type: 3}
+  - Key: asset.game-object.veg-grass-tall-b.7c0d2efc
+    Asset: {fileID: 85353065572317350, guid: 7c0d2efc3d56aa80ea0a31a597ce2e54, type: 3}
+  - Key: asset.game-object.veg-grass-tri-a.85f10850
+    Asset: {fileID: 1951983173394185925, guid: 85f108508fb760c02264560ba0b9aab9, type: 3}
+  - Key: asset.game-object.veg-leafpatch-a.f9b40f18
+    Asset: {fileID: 883194333176181872, guid: f9b40f1837a57b11694491829fbfaa92, type: 3}
+  - Key: asset.game-object.veg-leafpatch-b.a9e0e257
+    Asset: {fileID: 5160751029962555667, guid: a9e0e2575543100115a4ab33742ddc1f, type: 3}
+  - Key: asset.game-object.veg-log.15c04097
+    Asset: {fileID: 8030662916908216928, guid: 15c04097033c85dad409b58687635e7b, type: 3}
+  - Key: asset.game-object.veg-moss.0ce029ad
+    Asset: {fileID: 5776865926084925300, guid: 0ce029adc65dc9ab1eb38fb877050e32, type: 3}
+  - Key: asset.game-object.veg-pebble.156db1bc
+    Asset: {fileID: 8424992073057685511, guid: 156db1bc67ba2c1ee83fcf9e4adada2a, type: 3}
+  - Key: asset.game-object.veg-sapling-a.4d98252e
+    Asset: {fileID: 4013874803542050626, guid: 4d98252e9c0ac0aa8de56e69c7fe201a, type: 3}
+  - Key: asset.game-object.veg-sapling-b.6a744937
+    Asset: {fileID: 4800259410325603617, guid: 6a744937b4b378590fc6610ad2a0bbc3, type: 3}
+  - Key: asset.game-object.veg-sapling-c.3ac583e2
+    Asset: {fileID: 2520136438211320345, guid: 3ac583e2801b7d688478e6a9886219cd, type: 3}
+  - Key: asset.game-object.veg-sedge-a.d756dcf6
+    Asset: {fileID: 7594810280314287112, guid: d756dcf67247ed46f7f563b1ebde1ba9, type: 3}
+  - Key: asset.game-object.veg-sedge-b.5bc8c6b1
+    Asset: {fileID: 661056381540231888, guid: 5bc8c6b11ae04ec13f2198c6b911eb4e, type: 3}
+  - Key: asset.game-object.veg-twig-a.d3fad760
+    Asset: {fileID: 2364648976284652814, guid: d3fad760c026c7fff3e73b0cb216176f, type: 3}
+  - Key: asset.game-object.veg-twig-b.2ea7ca3b
+    Asset: {fileID: 91156853779005469, guid: 2ea7ca3bd4bfe7c2c8d8a96bc5f6b0fe, type: 3}
   - Key: asset.game-object.wall-stone-collection-0-corner-ne.9221769d
     Asset: {fileID: 2798815301503560846, guid: 9221769dcedc85a49bc9e5f189344ee2, type: 3}
   - Key: asset.game-object.wall-stone-collection-0-corner-nw.f0bc445a

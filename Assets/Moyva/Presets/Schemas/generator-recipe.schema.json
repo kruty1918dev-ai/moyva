@@ -1916,6 +1916,31 @@
           "description": "Land cells whose surface exceeds water + lift by more than this stay untouched (cliff shoreline).",
           "minimum": 0.05,
           "x-moyva-editorMinimum": 0.05
+        },
+        "bandCoverage": {
+          "type": "number",
+          "title": "Band Coverage",
+          "description": "Fraction of band cells converted to the shore tile; the rest keep their terrain but still grade toward the waterline. Below 1 the band reads as an irregular partial-tile strip.",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 1.0
+        },
+        "seedSalt": {
+          "type": "integer",
+          "title": "Seed Salt",
+          "description": "Seed salt so the coverage gate does not correlate with relief or layer masks."
+        },
+        "waterTileIds": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "title": "Water Tile Ids",
+          "description": "Extra winner tile ids counted as water for shore detection (e.g. 'swamp' tiles that render water but are not in shared WaterLikeTileIds). Shore-only: not skipped by relief/carve passes.",
+          "items": {
+            "type": "string"
+          }
         }
       },
       "additionalProperties": false,

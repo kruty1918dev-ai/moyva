@@ -77,6 +77,136 @@ namespace Kruty1918.Moyva.Generator.API
         /// Maps environment type IDs to lists of map object registry IDs.
         /// </summary>
         [SerializeField] public Dictionary<string, string[]> AssetPools = new();
+
+        /// <summary>
+        /// Optional additive placement layers evaluated after the legacy
+        /// weighted type selection. Each layer references an
+        /// <see cref="AssetPools"/> entry by <see cref="DecorationLayerRule.Type"/>
+        /// and can spawn additional instances per cell, so low vegetation
+        /// no longer competes with trees for the shared per-tile cap.
+        /// Null or empty keeps legacy behaviour byte-identical.
+        /// </summary>
+        public DecorationLayerRule[] Layers;
+    }
+
+    /// <summary>How a layer relates to water proximity.</summary>
+    public enum DecorationWaterAffinity
+    {
+        /// <summary>Water proximity does not affect the layer.</summary>
+        Any = 0,
+        /// <summary>Cells within WaterRadius of water are skipped.</summary>
+        Avoid = 1,
+        /// <summary>Cells within WaterRadius of water get Weight * WaterBoost.</summary>
+        Prefer = 2,
+        /// <summary>Only cells within WaterRadius of water may spawn.</summary>
+        Require = 3,
+    }
+
+    /// <summary>How a layer relates to forest tiles.</summary>
+    public enum DecorationForestAffinity
+    {
+        /// <summary>Forest membership does not affect the layer.</summary>
+        Any = 0,
+        /// <summary>Only forest tiles whose ring neighbours are all forest.</summary>
+        Interior = 1,
+        /// <summary>Only forest tiles with at least one non-forest neighbour in the ring.</summary>
+        Edge = 2,
+        /// <summary>Only non-forest tiles.</summary>
+        Avoid = 3,
+    }
+
+    [Serializable]
+    public sealed class DecorationLayerRule
+    {
+        /// <summary>AssetPools key whose entries provide this layer's visuals.</summary>
+        public string Type;
+
+        /// <summary>Per-tile spawn probability before biome/affinity modifiers.</summary>
+        [Range(0f, 2f)]
+        public float Weight = 0.5f;
+
+        /// <summary>Maximum placements this layer may add to one cell.</summary>
+        [Min(1)]
+        public int MaxPerTile = 1;
+
+        /// <summary>
+        /// Optional per-biome multiplier applied on top of BiomeRules.
+        /// Keys: grassland, forest, rocky, coast, water. Missing keys = 1.
+        /// </summary>
+        [SerializeField] public Dictionary<string, float> BiomeBoost;
+
+        /// <summary>Water proximity behaviour for this layer.</summary>
+        public DecorationWaterAffinity WaterAffinity = DecorationWaterAffinity.Any;
+
+        /// <summary>Radius in cells for water proximity checks.</summary>
+        [Min(1)]
+        public int WaterRadius = 1;
+
+        /// <summary>Weight multiplier when Prefer sees water within WaterRadius.</summary>
+        [Range(0f, 5f)]
+        public float WaterBoost = 2f;
+
+        /// <summary>Forest membership behaviour for this layer.</summary>
+        public DecorationForestAffinity ForestAffinity = DecorationForestAffinity.Any;
+
+        /// <summary>Ring radius used for interior/edge classification.</summary>
+        [Min(1)]
+        public int ForestEdgeRadius = 1;
+
+        /// <summary>
+        /// Extra spawn probability when a tree anchor (legacy tree/stump
+        /// placement or a layer with FeedsTreeAffinity) sits within
+        /// NearTreeRadius. Weight 0 + NearTreeBoost &gt; 0 means "under trees only".
+        /// </summary>
+        [Range(0f, 2f)]
+        public float NearTreeBoost = 0f;
+
+        /// <summary>Radius in cells for tree-anchor proximity checks.</summary>
+        [Min(1)]
+        public int NearTreeRadius = 1;
+
+        /// <summary>
+        /// Skip cells carrying a gameplay object id (resource POIs, river
+        /// channels) in worldData.ObjectMap so decor never overlaps
+        /// interactive objects.
+        /// </summary>
+        public bool SkipObjectCells = true;
+
+        /// <summary>
+        /// Heavy-prop rule: skip cells within Exclusions.ShorelineExclusionCells
+        /// of water. Light layers should keep this false.
+        /// </summary>
+        public bool ShorelineExclusion;
+
+        /// <summary>
+        /// Run the heavy-footprint resolver so oversized layer props keep
+        /// their full footprint on valid ground.
+        /// </summary>
+        public bool ValidateFootprint;
+
+        /// <summary>
+        /// This layer's placements count as tree anchors for other layers'
+        /// NearTreeBoost (e.g. saplings).
+        /// </summary>
+        public bool FeedsTreeAffinity;
+
+        /// <summary>
+        /// Maximum local surface-height drop across the cell in meters;
+        /// steeper cells are skipped. 0 disables the slope check.
+        /// </summary>
+        [Min(0f)]
+        public float MaxSlopeMeters = 0f;
+
+        /// <summary>Per-layer scale override; 0 inherits VisualVariation.</summary>
+        [Range(0f, 3f)]
+        public float MinScale = 0f;
+
+        /// <summary>Per-layer scale override; 0 inherits VisualVariation.</summary>
+        [Range(0f, 3f)]
+        public float MaxScale = 0f;
+
+        /// <summary>Extra height above the resolved surface (e.g. floating flora).</summary>
+        public float YOffset = 0f;
     }
 
     [Serializable]

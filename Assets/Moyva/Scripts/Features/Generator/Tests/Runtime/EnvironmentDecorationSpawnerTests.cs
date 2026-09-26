@@ -230,6 +230,34 @@ namespace Kruty1918.Moyva.Generator.Tests.Runtime
         }
 
         [Test]
+        public void Spawn_RegistersRenderersWithChunkVisibilityRegistry()
+        {
+            // Arrange: chunk visibility service disables renderers when their
+            // chunk leaves the camera set or is fully fog-hidden; decoration
+            // renderers must be registered against their owning chunk or they
+            // would keep floating over hidden terrain.
+            var prefab = CreatePrefabWithChildVisuals();
+            _registry.SetDefinition("deco-reg", prefab);
+            var visibility = new FakeChunkVisibilityRegistry();
+            var spawner = new EnvironmentDecorationSpawner(
+                _registry, _layout, _roots, chunkRegistry: visibility);
+            var placement = new DecorationPlacement("deco-reg",
+                new Vector3(2f, 0f, 3f), Quaternion.identity, Vector3.one, 9, 3);
+
+            // Act
+            int spawned = spawner.Spawn(new DecorationPlacementResult(new[] { placement }));
+
+            // Assert
+            Assert.AreEqual(1, spawned);
+            var child = FindSpawnedDecorationRoot().GetChild(0);
+            var renderer = child.GetComponentInChildren<Renderer>();
+            Assert.IsTrue(visibility.TryGetChunks(renderer, out var chunks),
+                "Spawned decoration renderer must be registered for chunk visibility");
+            var expected = new MapChunkCoord(1, 0); // tile 9,3 with ChunkSize=8
+            CollectionAssert.AreEquivalent(new[] { expected }, chunks);
+        }
+
+        [Test]
         public void Spawn_FallsBackToPlacementHeight_WhenNoSurfaceMap()
         {
             // Arrange: terrain service present but no surface data for the cell
@@ -334,6 +362,45 @@ namespace Kruty1918.Moyva.Generator.Tests.Runtime
             {
                 return transform != null && CreatedRoots.Contains(transform);
             }
+
+            public bool TryGetOwnedChunk(Transform transform, out MapChunkCoord coord)
+            {
+                coord = default;
+                for (Transform current = transform; current != null; current = current.parent)
+                {
+                    foreach (var pair in _roots)
+                    {
+                        if (pair.Value == current)
+                        {
+                            coord = pair.Key;
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            }
+        }
+
+        private sealed class FakeChunkVisibilityRegistry : IMapVisualChunkRegistry
+        {
+            private readonly Dictionary<Renderer, List<MapChunkCoord>> _map = new();
+
+            public int CameraVisibilityVersion => 0;
+            public void Clear() => _map.Clear();
+            public void ResetVisibilityState() { }
+
+            public void Register(Renderer renderer, IReadOnlyList<MapChunkCoord> chunks)
+            {
+                _map[renderer] = new List<MapChunkCoord>(chunks);
+            }
+
+            public void SetCameraVisible(IReadOnlyCollection<MapChunkCoord> visibleChunks) { }
+            public bool IsCameraVisible(MapChunkCoord coord) => true;
+            public void SetFogFullyHidden(MapChunkCoord coord, bool hidden) { }
+            public void ApplyVisibility() { }
+
+            public bool TryGetChunks(Renderer renderer, out List<MapChunkCoord> chunks)
+                => _map.TryGetValue(renderer, out chunks);
         }
 
         private sealed class FakeTerrainLevelService : IGeneratorTerrainLevelService

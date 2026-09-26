@@ -668,6 +668,222 @@
     "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/decoration/nature/waterplant_C.prefab",
     "required": true
    }
+  },
+  {
+   "id": "veg-grass-cross-a",
+   "visualPrefab": {
+    "$asset": "asset.game-object.veg-grass-cross-a.9d1fb266",
+    "editorPath": "Assets/Moyva/Generated/Vegetation/Prefabs/veg-grass-cross-a.prefab",
+    "required": true
+   }
+  },
+  {
+   "id": "veg-grass-tri-a",
+   "visualPrefab": {
+    "$asset": "asset.game-object.veg-grass-tri-a.85f10850",
+    "editorPath": "Assets/Moyva/Generated/Vegetation/Prefabs/veg-grass-tri-a.prefab",
+    "required": true
+   }
+  },
+  {
+   "id": "veg-grass-tall-a",
+   "visualPrefab": {
+    "$asset": "asset.game-object.veg-grass-tall-a.94d75157",
+    "editorPath": "Assets/Moyva/Generated/Vegetation/Prefabs/veg-grass-tall-a.prefab",
+    "required": true
+   }
+  },
+  {
+   "id": "veg-grass-clump-a",
+   "visualPrefab": {
+    "$asset": "asset.game-object.veg-grass-clump-a.14f747ec",
+    "editorPath": "Assets/Moyva/Generated/Vegetation/Prefabs/veg-grass-clump-a.prefab",
+    "required": true
+   }
+  },
+  {
+   "id": "veg-grass-tall-b",
+   "visualPrefab": {
+    "$asset": "asset.game-object.veg-grass-tall-b.7c0d2efc",
+    "editorPath": "Assets/Moyva/Generated/Vegetation/Prefabs/veg-grass-tall-b.prefab",
+    "required": true
+   }
+  },
+  {
+   "id": "veg-grass-clump-b",
+   "visualPrefab": {
+    "$asset": "asset.game-object.veg-grass-clump-b.3aaae0b6",
+    "editorPath": "Assets/Moyva/Generated/Vegetation/Prefabs/veg-grass-clump-b.prefab",
+    "required": true
+   }
+  },
+  {
+   "id": "veg-bush-a",
+   "visualPrefab": {
+    "$asset": "asset.game-object.veg-bush-a.1684c5ee",
+    "editorPath": "Assets/Moyva/Generated/Vegetation/Prefabs/veg-bush-a.prefab",
+    "required": true
+   }
+  },
+  {
+   "id": "veg-bush-b",
+   "visualPrefab": {
+    "$asset": "asset.game-object.veg-bush-b.8e1cb601",
+    "editorPath": "Assets/Moyva/Generated/Vegetation/Prefabs/veg-bush-b.prefab",
+    "required": true
+   }
+  },
+  {
+   "id": "veg-bush-c",
+   "visualPrefab": {
+    "$asset": "asset.game-object.veg-bush-c.5ee1fc66",
+    "editorPath": "Assets/Moyva/Generated/Vegetation/Prefabs/veg-bush-c.prefab",
+    "required": true
+   }
+  },
+  {
+   "id": "veg-bush-d",
+   "visualPrefab": {
+    "$asset": "asset.game-object.veg-bush-d.bcef89c5",
+    "editorPath": "Assets/Moyva/Generated/Vegetation/Prefabs/veg-bush-d.prefab",
+    "required": true
+   }
+  },
+  {
+   "id": "veg-bush-hedge",
+   "visualPrefab": {
+    "$asset": "asset.game-object.veg-bush-hedge.561af57c",
+    "editorPath": "Assets/Moyva/Generated/Vegetation/Prefabs/veg-bush-hedge.prefab",
+    "required": true
+   }
+  },
+  {
+   "id": "veg-fern-a",
+   "visualPrefab": {
+    "$asset": "asset.game-object.veg-fern-a.49413823",
+    "editorPath": "Assets/Moyva/Generated/Vegetation/Prefabs/veg-fern-a.prefab",
+    "required": true
+   }
+  },
+  {
+   "id": "veg-fern-b",
+   "visualPrefab": {
+    "$asset": "asset.game-object.veg-fern-b.f346e75e",
+    "editorPath": "Assets/Moyva/Generated/Vegetation/Prefabs/veg-fern-b.prefab",
+    "required": true
+   }
+  },
+  {
+   "id": "veg-sedge-a",
+   "visualPrefab": {
+    "$asset": "asset.game-object.veg-sedge-a.d756dcf6",
+    "editorPath": "Assets/Moyva/Generated/Vegetation/Prefabs/veg-sedge-a.prefab",
+    "required": true
+   }
+  },
+  {
+   "id": "veg-sedge-b",
+   "visualPrefab": {
+    "$asset": "asset.game-object.veg-sedge-b.5bc8c6b1",
+    "editorPath": "Assets/Moyva/Generated/Vegetation/Prefabs/veg-sedge-b.prefab",
+    "required": true
+   }
+  },
+  {
+   "id": "veg-flower-a",
+   "visualPrefab": {
+    "$asset": "asset.game-object.veg-flower-a.c850d9d3",
+    "editorPath": "Assets/Moyva/Generated/Vegetation/Prefabs/veg-flower-a.prefab",
+    "required": true
+   }
+  },
+  {
+   "id": "veg-flower-b",
+   "visualPrefab": {
+    "$asset": "asset.game-object.veg-flower-b.d9bfec10",
+    "editorPath": "Assets/Moyva/Generated/Vegetation/Prefabs/veg-flower-b.prefab",
+    "required": true
+   }
+  },
+  {
+   "id": "veg-twig-a",
+   "visualPrefab": {
+    "$asset": "asset.game-object.veg-twig-a.d3fad760",
+    "editorPath": "Assets/Moyva/Generated/Vegetation/Prefabs/veg-twig-a.prefab",
+    "required": true
+   }
+  },
+  {
+   "id": "veg-twig-b",
+   "visualPrefab": {
+    "$asset": "asset.game-object.veg-twig-b.2ea7ca3b",
+    "editorPath": "Assets/Moyva/Generated/Vegetation/Prefabs/veg-twig-b.prefab",
+    "required": true
+   }
+  },
+  {
+   "id": "veg-leafpatch-a",
+   "visualPrefab": {
+    "$asset": "asset.game-object.veg-leafpatch-a.f9b40f18",
+    "editorPath": "Assets/Moyva/Generated/Vegetation/Prefabs/veg-leafpatch-a.prefab",
+    "required": true
+   }
+  },
+  {
+   "id": "veg-leafpatch-b",
+   "visualPrefab": {
+    "$asset": "asset.game-object.veg-leafpatch-b.a9e0e257",
+    "editorPath": "Assets/Moyva/Generated/Vegetation/Prefabs/veg-leafpatch-b.prefab",
+    "required": true
+   }
+  },
+  {
+   "id": "veg-moss",
+   "visualPrefab": {
+    "$asset": "asset.game-object.veg-moss.0ce029ad",
+    "editorPath": "Assets/Moyva/Generated/Vegetation/Prefabs/veg-moss.prefab",
+    "required": true
+   }
+  },
+  {
+   "id": "veg-log",
+   "visualPrefab": {
+    "$asset": "asset.game-object.veg-log.15c04097",
+    "editorPath": "Assets/Moyva/Generated/Vegetation/Prefabs/veg-log.prefab",
+    "required": true
+   }
+  },
+  {
+   "id": "veg-pebble",
+   "visualPrefab": {
+    "$asset": "asset.game-object.veg-pebble.156db1bc",
+    "editorPath": "Assets/Moyva/Generated/Vegetation/Prefabs/veg-pebble.prefab",
+    "required": true
+   }
+  },
+  {
+   "id": "veg-sapling-a",
+   "visualPrefab": {
+    "$asset": "asset.game-object.veg-sapling-a.4d98252e",
+    "editorPath": "Assets/Moyva/Generated/Vegetation/Prefabs/veg-sapling-a.prefab",
+    "required": true
+   }
+  },
+  {
+   "id": "veg-sapling-b",
+   "visualPrefab": {
+    "$asset": "asset.game-object.veg-sapling-b.6a744937",
+    "editorPath": "Assets/Moyva/Generated/Vegetation/Prefabs/veg-sapling-b.prefab",
+    "required": true
+   }
+  },
+  {
+   "id": "veg-sapling-c",
+   "visualPrefab": {
+    "$asset": "asset.game-object.veg-sapling-c.3ac583e2",
+    "editorPath": "Assets/Moyva/Generated/Vegetation/Prefabs/veg-sapling-c.prefab",
+    "required": true
+   }
   }
  ],
  "migration": {

@@ -298,6 +298,113 @@
       "additionalProperties": false,
       "title": "Footprint"
     },
+    "layers": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "minLength": 1
+          },
+          "weight": {
+            "type": "number",
+            "minimum": 0.0,
+            "maximum": 2.0
+          },
+          "maxPerTile": {
+            "type": "integer",
+            "minimum": 1.0
+          },
+          "biomeBoost": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": {
+              "type": "number"
+            }
+          },
+          "waterAffinity": {
+            "type": "string",
+            "enum": [
+              "any",
+              "avoid",
+              "prefer",
+              "require"
+            ]
+          },
+          "waterRadius": {
+            "type": "integer",
+            "minimum": 1.0
+          },
+          "waterBoost": {
+            "type": "number",
+            "minimum": 0.0,
+            "maximum": 5.0
+          },
+          "forestAffinity": {
+            "type": "string",
+            "enum": [
+              "any",
+              "interior",
+              "edge",
+              "avoid"
+            ]
+          },
+          "forestEdgeRadius": {
+            "type": "integer",
+            "minimum": 1.0
+          },
+          "nearTreeBoost": {
+            "type": "number",
+            "minimum": 0.0,
+            "maximum": 2.0
+          },
+          "nearTreeRadius": {
+            "type": "integer",
+            "minimum": 1.0
+          },
+          "skipObjectCells": {
+            "type": "boolean"
+          },
+          "shorelineExclusion": {
+            "type": "boolean"
+          },
+          "validateFootprint": {
+            "type": "boolean"
+          },
+          "feedsTreeAffinity": {
+            "type": "boolean"
+          },
+          "maxSlopeMeters": {
+            "type": "number",
+            "minimum": 0.0
+          },
+          "minScale": {
+            "type": "number",
+            "minimum": 0.0,
+            "maximum": 3.0
+          },
+          "maxScale": {
+            "type": "number",
+            "minimum": 0.0,
+            "maximum": 3.0
+          },
+          "yOffset": {
+            "type": "number"
+          }
+        }
+      },
+      "title": "Decoration Layers"
+    },
     "assetPools": {
       "type": [
         "object",

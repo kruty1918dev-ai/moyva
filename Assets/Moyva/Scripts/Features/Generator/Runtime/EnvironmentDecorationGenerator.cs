@@ -76,13 +76,16 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 float biomeMultiplier = GetBiomeMultiplier(tileId);
                 float adjustedDensity = cellDensity * _config.GlobalDensity * biomeMultiplier;
 
-                int objectCount = CalculateObjectCount(adjustedDensity, seed, x, y);
+                int objectCount = CalculateObjectCount(adjustedDensity, seed, x, y, 0);
                 for (int i = 0; i < objectCount; i++)
                 {
                     if (TryGenerateDecoration(x, y, seed, i, tileId, worldData, out var placement))
                         placements.Add(placement);
                 }
             }
+
+            if (_config.Layers != null && _config.Layers.Length > 0)
+                GenerateLayers(worldData, seed, placements);
 
             return new DecorationPlacementResult(placements);
         }
@@ -195,15 +198,22 @@ namespace Kruty1918.Moyva.Generator.Runtime
             return 1f;
         }
 
-        private int CalculateObjectCount(float density, int seed, int x, int y)
+        private int CalculateObjectCount(float density, int seed, int x, int y, int salt)
         {
             if (density <= 0f)
                 return 0;
 
-            uint hash = DeterministicHash.CellHash(seed, x, y, 0);
+            return CalculateObjectCount(density, seed, x, y, salt, _config.MaxObjectsPerTile);
+        }
+
+        private static int CalculateObjectCount(float density, int seed, int x, int y, int salt, int maxObjects)
+        {
+            if (density <= 0f || maxObjects <= 0)
+                return 0;
+
+            uint hash = DeterministicHash.CellHash(seed, x, y, salt);
             float randomValue = (hash % 10000) / 10000f;
 
-            int maxObjects = _config.MaxObjectsPerTile;
             int count = 0;
             for (int i = 0; i < maxObjects; i++)
             {
@@ -270,7 +280,9 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 rotation,
                 scale,
                 x,
-                y);
+                y,
+                0f,
+                decorationType);
 
             return true;
         }
@@ -353,6 +365,298 @@ namespace Kruty1918.Moyva.Generator.Runtime
         }
 
         /// <summary>
+        /// Additive decoration layers evaluated after the legacy weighted
+        /// pass, so low vegetation, undergrowth and litter no longer compete
+        /// with trees for the shared per-tile cap. Every decision is a pure
+        /// function of (seed, world cell), independent of chunk load order.
+        /// </summary>
+        private void GenerateLayers(GeneratedWorldData worldData, int seed, List<DecorationPlacement> placements)
+        {
+            var rules = _config.Layers;
+            int width = worldData.Width;
+            int height = worldData.Height;
+
+            // Anchor cells let "under trees" layers locate their hosts.
+            var treeAnchors = new HashSet<Vector2Int>();
+            foreach (var p in placements)
+            {
+                if (p.Type == "tree" || p.Type == "stump")
+                    treeAnchors.Add(new Vector2Int(p.TileX, p.TileY));
+            }
+
+            bool[,] forestMap = BuildForestMap(worldData);
+            MarkTreeAnchorGroves(forestMap, treeAnchors);
+
+            for (int li = 0; li < rules.Length; li++)
+            {
+                var rule = rules[li];
+                if (rule == null
+                    || string.IsNullOrEmpty(rule.Type)
+                    || (rule.Weight <= 0f && rule.NearTreeBoost <= 0f)
+                    || !HasPool(rule.Type))
+                {
+                    continue;
+                }
+
+                // Per-layer noise decorrelates patch patterns between layers.
+                float[,] layerNoise = GenerateDensityMap(worldData, seed + 7919 + li * 131);
+
+                for (int x = 0; x < width; x++)
+                for (int y = 0; y < height; y++)
+                {
+                    string tileId = ResolveTileId(x, y, worldData);
+                    if (IsWaterTile(tileId) || HasWaterSheet(x, y, worldData))
+                        continue;
+                    if (!AllowsDecorationTile(tileId) || IsExcludedCell(x, y, worldData))
+                        continue;
+                    if (rule.SkipObjectCells && HasObjectCell(x, y, worldData))
+                        continue;
+                    if (!LayerWaterOk(rule, x, y, worldData, out bool nearWater))
+                        continue;
+                    if (!LayerForestOk(rule, x, y, forestMap))
+                        continue;
+                    if (rule.ShorelineExclusion
+                        && _config.Exclusions.ShorelineExclusionCells > 0
+                        && IsNearWater(x, y, worldData, _config.Exclusions.ShorelineExclusionCells))
+                    {
+                        continue;
+                    }
+                    if (rule.MaxSlopeMeters > 0f && LocalSlope(worldData, x, y) > rule.MaxSlopeMeters)
+                        continue;
+
+                    float weight = rule.Weight
+                                   * _config.GlobalDensity
+                                   * layerNoise[x, y]
+                                   * GetBiomeMultiplier(tileId)
+                                   * GetLayerBiomeBoost(rule, tileId);
+                    if (rule.WaterAffinity == DecorationWaterAffinity.Prefer && nearWater)
+                        weight *= rule.WaterBoost;
+                    if (rule.NearTreeBoost > 0f
+                        && IsNearTreeAnchor(treeAnchors, x, y, rule.NearTreeRadius))
+                    {
+                        weight += rule.NearTreeBoost * _config.GlobalDensity;
+                    }
+                    if (weight <= 0f)
+                        continue;
+
+                    int salt = 1000 + li * 64;
+                    int count = CalculateObjectCount(weight, seed, x, y, salt, rule.MaxPerTile);
+                    for (int i = 0; i < count; i++)
+                    {
+                        int index = salt + i;
+                        if (!TryPlaceLayer(x, y, seed, index, rule, worldData, out var placement))
+                            continue;
+                        placements.Add(placement);
+                        if (rule.FeedsTreeAffinity)
+                            treeAnchors.Add(new Vector2Int(placement.TileX, placement.TileY));
+                    }
+                }
+            }
+        }
+
+        private bool TryPlaceLayer(
+            int x, int y, int seed, int index, DecorationLayerRule rule,
+            GeneratedWorldData worldData, out DecorationPlacement placement)
+        {
+            placement = default;
+            var pool = _config.AssetPools[rule.Type];
+            uint variantHash = DeterministicHash.VariantHash(seed, x, y, index, "layer:" + rule.Type);
+            string assetId = pool[(int)(variantHash % pool.Length)];
+            if (!_objectRegistry.TryGetDefinition(assetId, out var definition))
+                return false;
+
+            Vector3 position = CalculatePosition(x, y, worldData, seed, index);
+            Quaternion rotation = CalculateRotation(seed, x, y, index);
+            Vector3 scale = CalculateScale(seed, x, y, index);
+            if (rule.MinScale > 0f || rule.MaxScale > 0f)
+            {
+                float t = (DeterministicHash.VariantHash(seed, x, y, index, "layerscale") % 10000) / 10000f;
+                float lo = rule.MinScale > 0f ? rule.MinScale : _config.VisualVariation.MinScale;
+                float hi = rule.MaxScale > 0f ? rule.MaxScale : _config.VisualVariation.MaxScale;
+                scale = Vector3.one * Mathf.Lerp(lo, hi, t);
+            }
+
+            if (rule.ValidateFootprint
+                && !TryResolveFootprint(
+                    definition.VisualPrefab, ref position, ref x, ref y,
+                    rotation, scale, worldData))
+            {
+                return false;
+            }
+
+            placement = new DecorationPlacement(
+                assetId, position, rotation, scale, x, y, rule.YOffset, rule.Type);
+            return true;
+        }
+
+        private bool LayerWaterOk(
+            DecorationLayerRule rule, int x, int y, GeneratedWorldData worldData, out bool nearWater)
+        {
+            nearWater = rule.WaterAffinity != DecorationWaterAffinity.Any
+                        && IsNearWater(x, y, worldData, rule.WaterRadius);
+            switch (rule.WaterAffinity)
+            {
+                case DecorationWaterAffinity.Avoid:
+                    return !nearWater;
+                case DecorationWaterAffinity.Require:
+                    return nearWater;
+                default:
+                    return true; // Any/Prefer: allowed, Prefer boosts later.
+            }
+        }
+
+        private bool LayerForestOk(DecorationLayerRule rule, int x, int y, bool[,] forestMap)
+        {
+            if (rule.ForestAffinity == DecorationForestAffinity.Any)
+                return true;
+
+            bool forest = forestMap[x, y];
+            switch (rule.ForestAffinity)
+            {
+                case DecorationForestAffinity.Avoid:
+                    return !forest;
+                case DecorationForestAffinity.Interior:
+                case DecorationForestAffinity.Edge:
+                    if (!forest)
+                        return false;
+                    CountForestRing(forestMap, x, y, rule.ForestEdgeRadius,
+                        out int ringTotal, out int nonForest);
+                    return rule.ForestAffinity == DecorationForestAffinity.Interior
+                        ? nonForest == 0 && ringTotal > 0
+                        : nonForest > 0;
+                default:
+                    return true;
+            }
+        }
+
+        private bool[,] BuildForestMap(GeneratedWorldData worldData)
+        {
+            var map = new bool[worldData.Width, worldData.Height];
+            for (int x = 0; x < worldData.Width; x++)
+            for (int y = 0; y < worldData.Height; y++)
+            {
+                string tileId = ResolveTileId(x, y, worldData);
+                map[x, y] = tileId != null
+                            && tileId.IndexOf("forest", StringComparison.OrdinalIgnoreCase) >= 0;
+            }
+            return map;
+        }
+
+        /// <summary>
+        /// Recipe pipelines rarely emit "forest-*" tile ids — the visible
+        /// forest is wherever decorative trees actually clustered. Marking
+        /// every cell within two cells of a tree anchor turns interior/edge
+        /// affinities into real canopy semantics: interior = ring fully
+        /// covered by the grove, edge = partially covered margin.
+        /// </summary>
+        private static void MarkTreeAnchorGroves(bool[,] forestMap, HashSet<Vector2Int> anchors)
+        {
+            const int groveRadius = 2;
+            int w = forestMap.GetLength(0);
+            int h = forestMap.GetLength(1);
+            foreach (var anchor in anchors)
+            for (int dx = -groveRadius; dx <= groveRadius; dx++)
+            for (int dy = -groveRadius; dy <= groveRadius; dy++)
+            {
+                int nx = anchor.x + dx;
+                int ny = anchor.y + dy;
+                if (nx >= 0 && ny >= 0 && nx < w && ny < h)
+                    forestMap[nx, ny] = true;
+            }
+        }
+
+        /// <summary>
+        /// Ring cells outside the map count as non-forest, so a forest
+        /// reaching the world border is treated as edge there.
+        /// </summary>
+        private static void CountForestRing(
+            bool[,] forestMap, int x, int y, int radius,
+            out int ringTotal, out int nonForest)
+        {
+            ringTotal = 0;
+            nonForest = 0;
+            int w = forestMap.GetLength(0);
+            int h = forestMap.GetLength(1);
+            for (int dx = -radius; dx <= radius; dx++)
+            for (int dy = -radius; dy <= radius; dy++)
+            {
+                if (dx == 0 && dy == 0)
+                    continue;
+                int nx = x + dx;
+                int ny = y + dy;
+                if (nx < 0 || ny < 0 || nx >= w || ny >= h || !forestMap[nx, ny])
+                    nonForest++;
+                ringTotal++;
+            }
+        }
+
+        private static bool IsNearTreeAnchor(HashSet<Vector2Int> anchors, int x, int y, int radius)
+        {
+            for (int dx = -radius; dx <= radius; dx++)
+            for (int dy = -radius; dy <= radius; dy++)
+            {
+                if (anchors.Contains(new Vector2Int(x + dx, y + dy)))
+                    return true;
+            }
+            return false;
+        }
+
+        /// <summary>Largest surface-height drop to a 4-neighbour, in meters.</summary>
+        private static float LocalSlope(GeneratedWorldData worldData, int x, int y)
+        {
+            float[,] heights = worldData?.LogicalTileMap?.SurfaceHeights;
+            if (heights == null)
+                return 0f;
+            float h0 = heights[x, y];
+            float slope = 0f;
+            if (!float.IsNaN(h0))
+            {
+                int w = heights.GetLength(0);
+                int h = heights.GetLength(1);
+                foreach (var d in FourDirs)
+                {
+                    int nx = x + d.x;
+                    int ny = y + d.y;
+                    if (nx < 0 || ny < 0 || nx >= w || ny >= h)
+                        continue;
+                    float hn = heights[nx, ny];
+                    if (!float.IsNaN(hn))
+                        slope = Mathf.Max(slope, Mathf.Abs(hn - h0));
+                }
+            }
+            return slope;
+        }
+
+        private static readonly Vector2Int[] FourDirs =
+        {
+            new Vector2Int(1, 0), new Vector2Int(-1, 0),
+            new Vector2Int(0, 1), new Vector2Int(0, -1),
+        };
+
+        private static bool HasObjectCell(int x, int y, GeneratedWorldData worldData)
+        {
+            return worldData.ObjectMap != null
+                   && !string.IsNullOrWhiteSpace(worldData.ObjectMap[x, y]);
+        }
+
+        private static float GetLayerBiomeBoost(DecorationLayerRule rule, string tileId)
+        {
+            var boost = rule.BiomeBoost;
+            if (boost == null || boost.Count == 0 || string.IsNullOrWhiteSpace(tileId))
+                return 1f;
+
+            tileId = tileId.ToLowerInvariant();
+            string key =
+                tileId.Contains("forest") ? "forest" :
+                IsRockyTile(tileId) ? "rocky" :
+                tileId.Contains("sand") || tileId.Contains("coast") || tileId.Contains("beach") ? "coast" :
+                IsWaterTile(tileId) ? "water" :
+                tileId.Contains("grass") ? "grassland" : null;
+
+            return key != null && boost.TryGetValue(key, out float mult) ? mult : 1f;
+        }
+
+        /// <summary>
         /// Water flora (lilies, water plants) spawn sparsely on water cells
         /// and float just above the sheet surface via <c>YOffset</c>.
         /// </summary>
@@ -388,7 +692,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 CalculateScale(seed, x, y, 0),
                 x,
                 y,
-                WaterFloraSurfaceOffset));
+                WaterFloraSurfaceOffset,
+                type));
         }
 
         private const float WaterFloraSurfaceOffset = 0.03f;
@@ -613,8 +918,10 @@ namespace Kruty1918.Moyva.Generator.Runtime
         public readonly int TileY;
         /// <summary>Extra height above the resolved surface (e.g. water flora).</summary>
         public readonly float YOffset;
+        /// <summary>Pool/layer type that produced this placement (tree, grass, ...).</summary>
+        public readonly string Type;
 
-        public DecorationPlacement(string assetId, Vector3 position, Quaternion rotation, Vector3 scale, int tileX, int tileY, float yOffset = 0f)
+        public DecorationPlacement(string assetId, Vector3 position, Quaternion rotation, Vector3 scale, int tileX, int tileY, float yOffset = 0f, string type = null)
         {
             AssetId = assetId;
             Position = position;
@@ -623,6 +930,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             TileX = tileX;
             TileY = tileY;
             YOffset = yOffset;
+            Type = type;
         }
     }
 
