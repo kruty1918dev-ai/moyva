@@ -372,6 +372,114 @@ namespace Kruty1918.Moyva.Generator.API
         }
     }
 
+    /// <summary>
+    /// Fills small interior holes in the accumulated mask: connected empty
+    /// components that never touch the map border, are no larger than
+    /// <see cref="MaxComponentCells"/>, and sit on terrain that is already
+    /// elevated — the surrounding ring median is at or above
+    /// <see cref="MinRingMedianMeters"/> and the hole's own relief median is
+    /// within <see cref="MaxReliefDropMeters"/> of that ring.
+    /// Noise-driven sea/water pockets that would carve deep shafts into
+    /// highlands are removed before hydrology and mesh building;
+    /// border-connected water, large inland bodies and genuine depressions
+    /// (the hole dips well below its ring) are preserved. Requires the
+    /// recipe's terrain relief field; the mask is left unchanged without it.
+    /// </summary>
+    [System.Serializable]
+    public sealed class TerrainHoleFillStep : GeneratorMaskTransformStep
+    {
+        private static readonly int[] NeighborX = { -1, 0, 1, -1, 1, -1, 0, 1 };
+        private static readonly int[] NeighborY = { -1, -1, -1, 0, 0, 1, 1, 1 };
+
+        [Tooltip("Largest hole component (cells) eligible for filling.")]
+        [Min(1)] public int MaxComponentCells = 32;
+        [Tooltip("Median relief height (meters) of the hole's surrounding land ring " +
+                 "required to treat it as embedded in highland.")]
+        [Min(0f)] public float MinRingMedianMeters = 1.5f;
+        [Tooltip("How far (meters) the hole's own relief median may sit below the ring " +
+                 "median and still be filled; deeper holes are real basins and stay.")]
+        [Min(0f)] public float MaxReliefDropMeters = 1.0f;
+
+        public override bool[,] TransformMask(bool[,] mask, GeneratorMaskContext context)
+        {
+            float[,] field = context?.TerrainHeightField;
+            if (mask == null || field == null ||
+                mask.GetLength(0) != field.GetLength(0) ||
+                mask.GetLength(1) != field.GetLength(1))
+                return mask;
+
+            int w = mask.GetLength(0), h = mask.GetLength(1);
+            int maxCells = Mathf.Max(1, MaxComponentCells);
+            float minRing = MinRingMedianMeters;
+            float maxDrop = Mathf.Max(0f, MaxReliefDropMeters);
+
+            var visited = new bool[w, h];
+            var queue = new Queue<Vector2Int>();
+            var cells = new List<Vector2Int>();
+            var ring = new List<float>();
+            var compHeights = new List<float>();
+            bool[,] result = null;
+
+            for (int sy = 0; sy < h; sy++)
+            for (int sx = 0; sx < w; sx++)
+            {
+                if (visited[sx, sy] || mask[sx, sy])
+                    continue;
+
+                cells.Clear();
+                ring.Clear();
+                bool touchesBorder = false;
+                visited[sx, sy] = true;
+                queue.Enqueue(new Vector2Int(sx, sy));
+                while (queue.Count > 0)
+                {
+                    var c = queue.Dequeue();
+                    cells.Add(c);
+                    if (c.x == 0 || c.y == 0 || c.x == w - 1 || c.y == h - 1)
+                        touchesBorder = true;
+                    for (int i = 0; i < 8; i++)
+                    {
+                        int nx = c.x + NeighborX[i];
+                        int ny = c.y + NeighborY[i];
+                        if (nx < 0 || ny < 0 || nx >= w || ny >= h)
+                            continue;
+                        if (mask[nx, ny])
+                        {
+                            ring.Add(field[nx, ny]);
+                        }
+                        else if (!visited[nx, ny])
+                        {
+                            visited[nx, ny] = true;
+                            queue.Enqueue(new Vector2Int(nx, ny));
+                        }
+                    }
+                }
+
+                if (touchesBorder || cells.Count > maxCells || ring.Count == 0)
+                    continue;
+
+                ring.Sort();
+                float ringMedian = ring[ring.Count / 2];
+                if (ringMedian < minRing)
+                    continue;
+
+                compHeights.Clear();
+                foreach (var c in cells)
+                    compHeights.Add(field[c.x, c.y]);
+                compHeights.Sort();
+                float compMedian = compHeights[compHeights.Count / 2];
+                if (ringMedian - compMedian > maxDrop)
+                    continue;
+
+                result ??= (bool[,])mask.Clone();
+                foreach (var c in cells)
+                    result[c.x, c.y] = true;
+            }
+
+            return result ?? mask;
+        }
+    }
+
     /// <summary>Erode/dilate morphology over the accumulated layer mask.</summary>
     [System.Serializable]
     public sealed class MaskMorphologyStep : GeneratorMaskTransformStep

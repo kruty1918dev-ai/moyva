@@ -3,6 +3,7 @@
     "references": [
         "Kruty1918.Moyva.Generator",
         "Kruty1918.JsonConfig",
+        "Kruty1918.Moyva.Jsonization",
         "Kruty1918.Moyva.Grid",
         "Kruty1918.Moyva.MapChunks"
     ],

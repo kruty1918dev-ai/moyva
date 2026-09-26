@@ -118,6 +118,12 @@
           "$type": "twc-modifier-mask-step",
           "modifierTypeName": "GiantGrey.TileWorldCreator.CellularAutomata",
           "combine": "Add"
+        },
+        {
+          "$type": "terrain-hole-fill-step",
+          "maxComponentCells": 32,
+          "minRingMedianMeters": 1.5,
+          "maxReliefDropMeters": 1.0
         }
       ]
     },

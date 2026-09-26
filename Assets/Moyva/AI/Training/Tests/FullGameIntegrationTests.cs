@@ -252,45 +252,59 @@ namespace Kruty1918.Moyva.AI.Training.Tests
         private static IEnumerator MoveToSettlement(GameplayTrainingSimulation simulation, string player, string actor, Vector2Int target)
         {
             var world = simulation.Episode;
-            Assert.IsTrue(world.Units.TryGetUnitPosition(actor, out var start));
-            var previous = new Dictionary<Vector2Int, Vector2Int>();
-            var queue = new Queue<Vector2Int>();
-            queue.Enqueue(start);
-            previous[start] = start;
-            Vector2Int? goal = null;
-            while (queue.Count > 0 && previous.Count <= 4096)
+            var tried = new HashSet<Vector2Int>();
+            while (true)
             {
-                var from = queue.Dequeue();
-                if (Math.Max(Math.Abs(from.x - target.x), Math.Abs(from.y - target.y)) <= 1) { goal = from; break; }
-                for (int y = -1; y <= 1; y++)
-                    for (int x = -1; x <= 1; x++)
-                    {
-                        var next = from + new Vector2Int(x, y);
-                        if (previous.ContainsKey(next) || !world.Traversal.TryEvaluateStep(actor, from, next,
-                            float.MaxValue, UnitTraversalMode.Pathfinding, out _, out _)) continue;
-                        previous[next] = from;
-                        queue.Enqueue(next);
-                    }
-            }
-            Assert.IsTrue(goal.HasValue,
-                $"Generated world has no legal unit route to the settlement. start={start} target={target} visited={previous.Count}");
-            var path = new Stack<Vector2Int>();
-            for (var cell = goal.Value; cell != start; cell = previous[cell]) path.Push(cell);
-            while (path.Count > 0)
-            {
-                var next = path.Pop();
-                if (!world.MovementQuery.GetMovementTiles(actor).Any(c => c.Position == next && c.IsReachable))
-                    AdvanceRound(simulation, player);
-                var step = world.MovementQuery.GetMovementTiles(actor).FirstOrDefault(c => c.Position == next);
-                Assert.IsTrue(step.IsReachable, $"Production movement cannot reach {next}: {step.Reason}; stamina={world.Units.GetStamina(actor)}");
-                using var cancellation = new CancellationTokenSource();
-                var move = world.Movement.MoveUnitAsync(actor, next, cancellation.Token);
-                float deadline = Time.realtimeSinceStartup + 20;
-                while (!move.IsCompleted && Time.realtimeSinceStartup < deadline) yield return null;
-                if (!move.IsCompleted) cancellation.Cancel();
-                Assert.IsTrue(move.IsCompleted, "Production movement timed out.");
-                move.GetAwaiter().GetResult();
-                Assert.IsTrue(world.Units.TryGetUnitPosition(actor, out var actual) && actual == next);
+                Assert.IsTrue(world.Units.TryGetUnitPosition(actor, out var start));
+                var previous = new Dictionary<Vector2Int, Vector2Int>();
+                var queue = new Queue<Vector2Int>();
+                queue.Enqueue(start);
+                previous[start] = start;
+                Vector2Int? goal = null;
+                while (queue.Count > 0 && previous.Count <= 4096)
+                {
+                    var from = queue.Dequeue();
+                    if (Math.Max(Math.Abs(from.x - target.x), Math.Abs(from.y - target.y)) <= 1
+                        && !tried.Contains(from))
+                    { goal = from; break; }
+                    for (int y = -1; y <= 1; y++)
+                        for (int x = -1; x <= 1; x++)
+                        {
+                            var next = from + new Vector2Int(x, y);
+                            if (previous.ContainsKey(next) || !world.Traversal.TryEvaluateStep(actor, from, next,
+                                float.MaxValue, UnitTraversalMode.Pathfinding, out _, out _)) continue;
+                            previous[next] = from;
+                            queue.Enqueue(next);
+                        }
+                }
+                Assert.IsTrue(goal.HasValue,
+                    $"Generated world has no legal unit route to the settlement. start={start} target={target} visited={previous.Count} tried={tried.Count}");
+                var path = new Stack<Vector2Int>();
+                for (var cell = goal.Value; cell != start; cell = previous[cell]) path.Push(cell);
+                while (path.Count > 0)
+                {
+                    var next = path.Pop();
+                    if (!world.MovementQuery.GetMovementTiles(actor).Any(c => c.Position == next && c.IsReachable))
+                        AdvanceRound(simulation, player);
+                    var step = world.MovementQuery.GetMovementTiles(actor).FirstOrDefault(c => c.Position == next);
+                    Assert.IsTrue(step.IsReachable, $"Production movement cannot reach {next}: {step.Reason}; stamina={world.Units.GetStamina(actor)}");
+                    using var cancellation = new CancellationTokenSource();
+                    var move = world.Movement.MoveUnitAsync(actor, next, cancellation.Token);
+                    float deadline = Time.realtimeSinceStartup + 20;
+                    while (!move.IsCompleted && Time.realtimeSinceStartup < deadline) yield return null;
+                    if (!move.IsCompleted) cancellation.Cancel();
+                    Assert.IsTrue(move.IsCompleted, "Production movement timed out.");
+                    move.GetAwaiter().GetResult();
+                    Assert.IsTrue(world.Units.TryGetUnitPosition(actor, out var actual) && actual == next);
+                }
+
+                // Height-aware fog can hide an adjacent cell across a terrain
+                // edge; ring the target until it enters the owner's vision.
+                if (world.Fog == null || world.Fog.IsVisible(player, target))
+                    yield break;
+                tried.Add(goal.Value);
+                Assert.Less(tried.Count, 8,
+                    $"No target-adjacent cell is visible to '{player}'. target={target}");
             }
         }
 

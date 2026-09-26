@@ -894,6 +894,7 @@
                     "mask-morphology-step",
                     "perlin-noise-mask-step",
                     "shape-mask-step",
+                    "terrain-hole-fill-step",
                     "terrain-level-mask-step",
                     "twc-modifier-mask-step"
                   ]

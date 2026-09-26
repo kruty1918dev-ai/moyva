@@ -1,6 +1,40 @@
-# Work State — 2026-09-26 (square FBX tiles + QA harness)
+# Work State — 2026-09-26 (highland pit fix + square FBX tiles)
 
 ## Current task
+
+**Highland pits: no random base-level shafts inside mountains
+(2026-09-26):**
+- Root cause NOT relief/planner: `SeaMask = invert(_baseLayer)` is pure
+  perlin/CA noise independent of the relief field. Small isolated `false`
+  holes inside `_baseLayer` land on relief 2.5–4.5 m, invert into `SeaMask`
+  blobs, and the `Water` layer stamps `defaultHeight=-0.25` → ~3 m water
+  shafts inside highland ("narrow deep breaks" in renders).
+- Fix: new `TerrainHoleFillStep` (`terrain-hole-fill-step`) appended to
+  `_baseLayer.steps` in `testgeneratorrecipe.json` (+ generated mirror +
+  schema enum). Fills interior `false` components only when
+  `cells ≤ MaxComponentCells(32)` AND ring relief median
+  `≥ MinRingMedianMeters(1.5)` AND own-relief median within
+  `MaxReliefDropMeters(1.0)` of the ring. No relief field → no-op.
+- Applies at `_baseLayer` so Sea/Water/hydrology-sink/Sand/biomes all
+  inherit consistently; border-connected sea, ≥33-cell lakes, lowland
+  ponds and true basins are preserved by construction.
+- Evidence: same-seed 6130 A/B `docs/qa/evidence/pitfix-seed6130/`
+  (before `fbx-square-seed6130`): 10 pit components/53 cells → **0**;
+  sea, river net (R=184) and 90-cell inland lake preserved; `empty=0`,
+  `nanVerts=0`. Production-mask scans: 40 instances over
+  48×48/96×96/mountain profiles × seeds → 0 classified pits.
+- Regression test: `TerrainHoleFillStepTests` (unit cases +
+  `ProductionMask_NoClassifiedPits_AcrossSeedsAndProfiles` real-recipe
+  scan asserting zero pits and non-empty legitimate holes).
+- Side fix: `FullGameIntegrationTests` repositioned units to the first
+  BFS-adjacent cell only; height-aware fog can legitimately hide an
+  adjacent cell across a terrain edge, and the changed 24x24 training
+  world surfaced it — `MoveToSettlement` now rings the target until a
+  visible adjacent cell is found.
+- Recipe seed restored to 777. Full EditMode 883/883.
+- Report: `docs/qa/HIGHLAND_PITS_2026-09-26.md`.
+
+## Previous task (completed)
 
 **Square tiles keep authored FBX shape — removed the slope warp
 (2026-09-26):**
