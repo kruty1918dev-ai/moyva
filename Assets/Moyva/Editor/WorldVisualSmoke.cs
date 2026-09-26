@@ -23,6 +23,7 @@ public static class WorldVisualSmoke
     static string lastStats = "";
     static WorldGeneratedDataSignal lastSignal;
     static object lastLogicalMap;
+    static DiContainer lastContainer;
 
     static WorldVisualSmoke()
     {
@@ -92,6 +93,7 @@ public static class WorldVisualSmoke
                 if (context.gameObject.scene.name != "Gamplay_Scene") continue;
                 var world = context.Container.TryResolve<IWorldGenerationSignalState>();
                 if (world == null || !world.TryGetWorldGeneratedData(out var signal) || signal.TileMap == null) continue;
+                lastContainer = context.Container;
                 var stateType = FindGeneratorType("Kruty1918.Moyva.Generator.Runtime.IMapGenerationState");
                 if (stateType != null)
                 {
@@ -439,6 +441,7 @@ public static class WorldVisualSmoke
         File.WriteAllText(Path.Combine(outDir, "surfaceheightmap.csv"), sDump.ToString());
         File.WriteAllText(Path.Combine(outDir, "terrainlevelmap.csv"), lDump.ToString());
         DumpLogicalMap(outDir, signal);
+        DumpHydrology(outDir, signal);
 
         File.WriteAllText(Path.Combine(outDir, "manifest.txt"), manifest.ToString());
         return stats.ToString();
@@ -454,6 +457,50 @@ public static class WorldVisualSmoke
 
     // Reflection-only access to the internal LogicalTileMap: the editor
     // assembly has no InternalsVisibleTo for Kruty1918.Moyva.Generator.
+    static void DumpHydrology(string outDir, WorldGeneratedDataSignal signal)
+    {
+        try
+        {
+            var storeType = FindGeneratorType("Kruty1918.Moyva.Generator.Runtime.RecipeHydrologyStore");
+            if (storeType == null || lastContainer == null) return;
+            object store = lastContainer.TryResolve(storeType);
+            object plan = store?.GetType().GetProperty("Plan")?.GetValue(store);
+            if (plan == null) return;
+            var pt = plan.GetType();
+            var river = pt.GetField("RiverMask")?.GetValue(plan) as bool[,];
+            var lake = pt.GetField("LakeMask")?.GetValue(plan) as bool[,];
+            var surface = pt.GetField("WaterSurface")?.GetValue(plan) as float[,];
+            var bed = pt.GetField("BedHeight")?.GetValue(plan) as float[,];
+            var parentArr = pt.GetField("FlowParent")?.GetValue(plan) as int[,];
+            var acc = pt.GetField("Accumulation")?.GetValue(plan) as float[,];
+            if (river == null) return;
+            var sb = new StringBuilder();
+            for (int y = 0; y < signal.Height; y++)
+            {
+                for (int x = 0; x < signal.Width; x++)
+                {
+                    if (x > 0) sb.Append(';');
+                    string kind = river[x, y] ? "R" : lake != null && lake[x, y] ? "L" : ".";
+                    float s = surface != null ? surface[x, y] : float.NaN;
+                    float b = bed != null ? bed[x, y] : float.NaN;
+                    int p = parentArr != null ? parentArr[x, y] : -1;
+                    float a = acc != null ? acc[x, y] : float.NaN;
+                    sb.Append(kind)
+                        .Append('|').Append(s.ToString("F2", System.Globalization.CultureInfo.InvariantCulture))
+                        .Append('|').Append(b.ToString("F2", System.Globalization.CultureInfo.InvariantCulture))
+                        .Append('|').Append(p)
+                        .Append('|').Append(a.ToString("F0", System.Globalization.CultureInfo.InvariantCulture));
+                }
+                sb.Append('\n');
+            }
+            File.WriteAllText(Path.Combine(outDir, "hydromap.csv"), sb.ToString());
+        }
+        catch (Exception e)
+        {
+            File.AppendAllText("Library/ai/visual-smoke-errors.log", "DumpHydrology: " + e + "\n");
+        }
+    }
+
     static void DumpLogicalMap(string outDir, WorldGeneratedDataSignal signal)
     {
         if (lastLogicalMap == null) return;
@@ -488,7 +535,7 @@ public static class WorldVisualSmoke
                 bool sandCell = !string.IsNullOrEmpty(id)
                     && id.ToLowerInvariant().Contains("sand")
                     && (h > 1.05f || sv > 1.05f);
-                bool waterCell = IsWaterWinner(layerNames?[x, y]);
+                bool waterCell = IsWaterWinner(layerNames?[x, y]) || IsWaterId(id);
                 if (!sandCell && !waterCell) continue;
                 object stack = getCell.Invoke(lastLogicalMap, new object[] { x, y });
                 if (stack == null) continue;
