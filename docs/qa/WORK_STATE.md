@@ -1,6 +1,130 @@
-# Work State — 2026-09-25 (Nintendo water + sandy bed verified)
+# Work State — 2026-09-26 (QA cycle: water moiré + sedge bounds fixes)
 
 ## Current task
+
+**Autonomous QA cycle (seed 4242) — fixes verified (2026-09-26):**
+- Cycle ran on recipe seed **4242** (restored to user value 777 after);
+  evidence `qa-cycle-seed4242{,-before,-mid,-mid2,-mid3}/`.
+- **fix(water)**: rainbow "soap-bubble" moiré on all water from top-down —
+  root cause was `_CausticsChromance` (chromatic voronoi caustics on the
+  sand bed through transparent water) + `_RefractionChromaticAberration`.
+  NintendoStyle material now: caustics off, CA 0, surface foam single off,
+  translucency off, distance normals off, env reflections off,
+  `_SunReflectionStrength` 0. Water reads clean navy at all distances.
+- **fix(vegetation)**: giant sedge blades (7–14 unit meshes spanning cells
+  and past the map rim) — `BuildSedgeMesh` bend used `lean·0.01·bh·60f`;
+  replaced with `tan(lean°)·bh`. Bounds now 0.2–0.4 units; oob entries
+  128→39 (rest = minor tree/stump rim overhangs ≤1.2u, P3).
+- **regen-safety**: `MoyvaVegetationAssetBuilder.BuildAll()` hooked into
+  `MoyvaAtlasPackImporter.Import()` (was menu-only).
+- Verified: same worldHash twice (deterministic), nanVerts=0, 0 errors,
+  full EditMode 877/877.
+- Observed not-blocking: stump/log litter density reads busy in forests
+  (P3); border-sink ring is a flat pale apron (known cosmetic);
+  dark albedos keep world reading dark (documented caveat); smoke
+  harness covers world-gen only — buildings/units/UI not exercised
+  this cycle.
+- Prior work committed in logical groups: rivers/terrain, vegetation,
+  guidance/economy, TWC texture migration, cliff tiles, QA tooling.
+
+## Previous task (completed)
+
+**KayKit Cliff tiles → dual-grid migration — IMPLEMENTED & verified
+(2026-09-26):**
+- Report: `docs/plans/CLIFF_TILES_DUAL_GRID_REPORT.md`. Source
+  `AtlasV3/Models/TileSet-1.fbx` (19 Cliff_* models) normalized by
+  `MoyvaCliffTileAssetBuilder` (Editor): baked rot/scale, quad-centered
+  pivots, top→Y0, high −0.5/low −0.25 walls, auto canonical yaw from
+  top-face coverage (corner 90/edge 0/interior 180/merged 90 — preset
+  offsets stay 0), face-soup faceted normals, rebuilt UVs.
+- 10 shared meshes under `Generated/Meshes/Cliff/`; 9 theme materials
+  under `Generated/Materials/Cliff/` (T_MOYVA_* albedo, smoothness
+  0.12); **all themes share the same geometry — only texture differs**.
+- 90 `{theme}_{form}[_low]` prefabs rewritten **in place** —
+  root fileIDs preserved, `TilePreset.DUALGRD_*` refs verified intact.
+- Hooked into `MoyvaAtlasPackImporter.Import()` → regen-safe.
+- Verify: compile 0; focused Generator EditMode 135/135; smoke seed-777
+  recipe ×2 identical `worldHash=2F557635C172624E`, verts=749 329,
+  nanVerts=0, 0 errors; land/water counts unchanged (1351/953) — world
+  logic untouched. Evidence `cliff-tiles-seed777{,-rerun}/`.
+- Known: chunky slab seams + dark shadow-side walls = pack aesthetic /
+  dark albedos; iridescent water specular is pre-existing.
+
+## Previous task (completed)
+
+**TWC dual-tiles + texture migration — IMPLEMENTED & verified (2026-09-26):**
+- Plan: `docs/plans/TWC_DUAL_TILES_TEXTURE_MIGRATION_PLAN.md`; report:
+  `docs/plans/TWC_DUAL_TILES_TEXTURE_MIGRATION_REPORT.md`.
+- 7 `T_MOYVA_*_BaseColor` textures under `AtlasV3/Textures/Sources/`;
+  `Moyva_AlbedoAtlas.png` rebuilt in place (2048×4096, 4×8 cells,
+  authored UVs untouched → dual-tile half-composition preserved).
+  Theme→texture map verified by mean colour.
+- `Moyva_Atlas.mat` is albedo-only (`_Smoothness` 0.12); Normal/
+  MetallicSmoothness/Roughness atlas maps deleted after ref check;
+  `MoyvaAtlasPackImporter` rebuilds material without them.
+- Smoothing removed: `FacetNormalsMeshUtility` per-face normals replace
+  all `RecalculateNormals` on border-clamped copies, generated skirts,
+  closures and side walls; authored faceted normals preserved.
+- Stale tile-type presets repointed: `hill`→atlas-stone,
+  `mountain`→atlas-rock_cliff, `lowland`/`forest-*`→atlas-grass.
+  Legacy `tile-registry`/`id-mapping` JSONs keep third-party refs —
+  dead config (disabled MapVisual path + orphaned build layers).
+- Bark: `MoyvaVegetationAssetBuilder` now emits `VegBark.mat` +
+  wrap-UV bark meshes (`veg-log`, `veg-twig-a/b`) — regen-safe.
+- Tests: compile 0 errors; focused Generator suite green;
+  **full EditMode 877/877 PASS**.
+- Smoke: seed 42 ×2 identical `worldHash=5D8E6C1024CA46E8` (841 929
+  verts, nanVerts=0); seed 777 `5187D641E927D132` (nanVerts=0).
+  Evidence: `docs/qa/evidence/twc-migration-seed{42,42-rerun,777}/`.
+- Caveat: world reads darker — supplied textures are intrinsically
+  mid-dark (measured means in the report), not a rendering defect.
+
+## Previous task (completed)
+
+**Vegetation & world dressing — IMPLEMENTED (2026-09-26):**
+- Plan + acceptance: `docs/plans/VEGETATION_AND_WORLD_DRESSING_PLAN.md`
+  (§8 = implementation status, metrics, residual limits).
+- New generator path: `EnvironmentDecorationGenerator.GenerateLayers` —
+  additive per-cell layer rules (`DecorationLayerRule` in JSON
+  `environment-decoration-config.json`, schema extended): water
+  any/prefer/avoid/require, forest any/interior/edge/avoid, nearTree
+  boost, `skipObjectCells`, shoreline exclusion, slope cap, per-layer
+  scale range, per-layer noise salt.
+- **Grove semantics**: `MarkTreeAnchorGroves` marks cells within 2 of
+  spawned tree anchors as forest for affinity purposes — required because
+  the recipe pipeline never emits `forest-*` tile ids (verified across
+  seeds 42/777/12345/9/12 manifests; engine-side forests exist per
+  `Generate_Forests_AppearAcrossSeedSpace`: 66/96 seed×archetype worlds).
+- Assets: `MoyvaVegetationAssetBuilder` (Editor, `-executeMethod
+  Kruty1918.Moyva.Generator.Editor.MoyvaVegetationAssetBuilder
+  .BuildFromMenu`) → 27 `veg-*` prefabs under
+  `Assets/Moyva/Generated/Vegetation/` (grass clump/cross/tall cards ×6,
+  bush cards ×5 from unused bush_001..005 textures, ferns ×2, flower,
+  twigs ×2, leaf patches ×2, moss, log, saplings ×3, sedge) +
+  `VegPalette.png` + `VegFlat` opaque palette material + card materials;
+  all on `DecorSharedStylized` with instancing ON (also enabled on legacy
+  grass mats).
+- Registry: 28 `veg-*` defs in `mapobjectregistry.json` + catalog keys in
+  `MoyvaRuntimeAssetCatalog.prefab` (deterministic md5-path GUIDs).
+- Chunk lifecycle: `EnvironmentDecorationSpawner` now registers each
+  spawned renderer into `IMapVisualChunkRegistry` against its owning
+  chunk → decorations hide/show with terrain under camera culling and
+  fog (previously deco stayed visible on hidden chunks).
+- Layer rules (14): grass .6, tallgrass .14 prefer-water + .22 edge,
+  bush .16, fern .22 interior + .12 edge, litter .03+nearTree .7,
+  flower .06, pebble .1 (rocky ×2.5, slope cap), log .05,
+  sapling .14 edge + .03 meadow, stump .02+nearTree .45,
+  reed .30 require-water r1.
+- Perf (48×48 smoke): gen 4.7–6.4 s, 1658–2771 renderers, ~1.5 GB —
+  within budget (gen <10 s, renderers <4k). No pre-change baseline
+  (older manifests lacked perf fields).
+- Wind: not added — `DecorSharedStylized` has no wind inputs (documented
+  limitation, plan §7/§8).
+- Tests: focused decoration 50/50; **full EditMode 877/877 PASS**.
+- Evidence: `docs/qa/evidence/veg-seed{42,42-tuned,42-grove,9-forest,
+  12-forest,777,12345}/`.
+
+## Earlier task (completed)
 
 **NintendoStyle water + visible sandy bed — DONE + verified (2026-09-25):**
 - Request: use `StylizedWater3_NintendoStyle` for water; sand must be
@@ -195,12 +319,23 @@ Kruty1918.Moyva.Jsonization.Editor.JsonizationBuildService.DevelopmentPlayerSmok
 
 - Seeds 42 (×3 launches), 12345, 777 — world 48×48, `empty=0`, `nanVerts=0`,
   zero TerrainMesh OOB verts, flush map rim on all borders.
+- Rivers/shores/terrain-joints pass (plan doc
+  `docs/plans/RIVERS_AND_TERRAIN_FIX_PLAN.md`), seeds 42/777/12345:
+  - 184 river cells each, acc-order violations 0, orphan/broken river cells 0,
+    every river cell inside a connected water component (777: two legit
+    3-cell streams ending in closed depressions — true local minima).
+  - land-below-rendered-water = 0 on all three seeds (swamp waterTileIds fix).
+  - Waterfall strips now anchored to rendered surfaces: fix8 renders show no
+    floating panes/fins (previously ~600 strips lifted by sink
+    pseudo-surfaces up to ~3 m above the sheet).
+  - Terrain joints solid on all rendered angles; props grounded.
 - Construction overlay verified live: green = buildable grass, red =
   sand/water/unrevealed; grid hugs tile bounds (initial-castle onboarding).
 - Real game camera inspected from all four compass directions at low angle
   (`game_orbit_*`) plus default/iso/topdown/shore poses.
 - Evidence: `docs/qa/evidence/{seed-42,seed-12345,seed-777,seed-42-v3,
-  seed-12345-v2,validation/*}` — same camera poses for before/after.
+  seed-12345-v2,fix5-seed42..fix8-seed42,seed777,seed12345,validation/*}` —
+  same camera poses for before/after.
 
 ## Status of findings
 
@@ -222,6 +357,21 @@ Kruty1918.Moyva.Jsonization.Editor.JsonizationBuildService.DevelopmentPlayerSmok
   `validation/barrier-smoke-host.summary`.
 - Mesh caches hold stale destroyed-mesh references across regen — bounded
   managed-wrapper leak, guarded by `!= null`; housekeeping only.
+- **Rivers/chunk pass — FIXED + verified** (2026-09-26):
+  - Hydrology: topological accumulation, path-traced `MarkRivers` with
+    diagonal brackets + sink receivers, water-channel carve pass in
+    `TerrainPlanApplicationService`, stair flights touching water dropped,
+    route cells skip water.
+  - Shore: noise-gated sand band (`bandCoverage` 0.55), shore-lift early-out
+    fixed, wash-sheet guard (no wash above land), `waterTileIds` extension
+    so Swamp-layer water participates in shore grading.
+  - Waterfall strips: plan pseudo-surfaces replaced by rendered
+    neighbour surfaces + 0.1 m lip overlap — floating panes/fins removed.
+  - Chunk ownership: prop renderers register to the owning
+    `MapChunk_X_Y` ancestor instead of every bounds-overlapping chunk;
+    `ChunkOwnershipTests` 4/4 pass.
+  - EditMode: full suite 830/830 PASS (three stale tests updated to
+    the new receiver-marking/Nintendo-material semantics).
 - Harness lesson: `Temp/` is wiped at every editor launch — write
   `barrier-smoke.request` only after the editor is up; same applies to
   test-result XMLs (copy to `docs/qa/evidence/` before next launch).
@@ -233,10 +383,48 @@ animation; spawned unit/building visuals; underwater views; in-session world
 regeneration (no gameplay regen path exists — only menu-preview regen;
 restart determinism + registry clearing verified instead).
 
+## Economy action guidance (2026-09-26)
+
+Shared "what blocks my action" system for construction + recruitment —
+plan + economy map in `docs/plans/ECONOMY_ACTION_GUIDANCE_PLAN.md`.
+
+- `GameplayGuidanceResolver` composes canonical queries only
+  (`GetResourceProjection`, `TryGetPendingPlacementStatus`,
+  `TryGetEnqueueShortages`, `ProducerFeasibilityResolver`, portfolio +
+  lifecycle + production snapshot) — no parallel validation, no mutation.
+- Deliberate `ConfirmPlacement` rejection -> guidance popup with every
+  deficit (Need/Have/Missing) + per-blocker actions; preview/hover never
+  opens it; repeated clicks reuse the single session.
+- `Recruit` `InsufficientResources` -> goal-linked deduped notification +
+  popup; notification click reopens guidance with live data.
+- Producer suggestions are state-aware: producing -> focus; under
+  construction -> progress; idle -> workers/inputs hint (staffing is
+  automatic); feasible -> "Build X" opens construction, clears filters,
+  jumps pages, highlights the card ~6 s; cyclic/blocked -> honest
+  "unobtainable". Supply-wagon + queue-release options where applicable.
+- Resume-goal re-validates: pending kept -> reopen confirm flow; cleared ->
+  re-select building + `TryPreviewAt(saved tile)`; recruitment -> reopen
+  building panel on Recruit tab; deleted target -> explains itself.
+- Popup blocks map input (full-screen shield in `SyncInputShields`);
+  Esc/X peels popup before panels (`GameplayHtmlPresenter` +
+  `bridge.ClosePanel`).
+- Economy fix: `tavern:cook-steak` (2 wheat -> 3 steak, workerless) removes
+  the documented steak deadlock — barracks/stable units are producible
+  via tavern after starter stock runs out.
+- Tests: `GameplayGuidanceResolverTests` 13, `GameplayGuidanceStateTests` 12,
+  guidance action-map sweep 1 — 27/27 pass; `GameplayHtmlActionMapTests`
+  12/12; `ClosePanel` 22/22; feasibility 8/8; recruitment shortage 7/7;
+  compile clean.
+- Limits: page jump is instant (paged list, no scroll animation);
+  client-role remote rejections degrade to reason text; notifications are
+  in-memory only.
+
 ## Next action
 
-Nintendo water + bed verified; working tree committed as per-feature
-commits. Remaining: full EditMode suite re-run (batch run was starved by a
-concurrently open interactive editor — re-run
-`tools/ai/unity-editmode-tests-quiet.sh` when the editor is free), then
-optional waterfall-material polish pass.
+Rivers, sandy banks, terrain joints, waterfall strips and chunk-owned prop
+rendering verified on seeds 42/777/12345 (evidence `fix8-seed42`, `seed777`,
+`seed12345`). Remaining optional polish: waterfall strips still use the
+opaque Nintendo water material (no dedicated waterfall theme exists in the
+atlas) — acceptable as cascade faces, revisit only if a waterfall material
+is added. Bright cyan rim line along map-border sea cells is the border
+sink sheet — cosmetic.
