@@ -122,6 +122,12 @@ namespace Kruty1918.Moyva.Generator.Editor
             if (cliffMeshes > 0)
                 Debug.Log($"[MoyvaAtlasImporter] Cliff tile set applied: {cliffMeshes} shared meshes.");
 
+            // Generated vegetation shares the same regen pass so mesh fixes
+            // (sedge bounds, bark UVs) cannot drift out of the built assets.
+            int vegPrefabs = MoyvaVegetationAssetBuilder.BuildAll();
+            if (vegPrefabs > 0)
+                Debug.Log($"[MoyvaAtlasImporter] Vegetation set rebuilt: {vegPrefabs} prefabs.");
+
             AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
             ValidateAssetKeys();
             return data.meshes.Length;

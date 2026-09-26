@@ -617,7 +617,7 @@ namespace Kruty1918.Moyva.Generator.Editor
                 for (int s = 0; s < 3; s++)
                 {
                     float t = s / 2f;
-                    float bend = Mathf.Sin(t * Mathf.PI * 0.5f) * lean * 0.01f * bh * 60f;
+                    float bend = Mathf.Sin(t * Mathf.PI * 0.5f) * Mathf.Tan(lean * Mathf.Deg2Rad) * bh;
                     pts[s] = new Vector3(bend, t * bh, 0);
                     ws[s] = w * (1f - t * 0.75f);
                 }
