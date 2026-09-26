@@ -1,6 +1,23 @@
-# Work State — 2026-09-26 (water artifacts + waterfalls + water depth + seabed + pit fix + FBX tiles)
+# Work State — 2026-09-26 (decor GUI + water artifacts + waterfalls + water depth + seabed + pit fix + FBX tiles)
 
 ## Current task
+
+**Decor material inspector (2026-09-26):**
+- Cause: `CustomEditor` on `DecorSharedStylized.shader` pointed at
+  `DecorSharedStylizedShaderGUI`, deleted in `6e7993700`; class was also
+  `#if MOYVA_LEGACY_SCRIPTABLEOBJECT_EDITOR`-gated (retired define), and
+  `Visuals.Editor.asmdef` was removed in `09041d8c2` → phantom reference.
+- Restored the 445-line ShaderGUI ungated under
+  `Features/Visuals/Editor/` + `Kruty1918.Moyva.Visuals.Editor.asmdef`
+  (`includePlatforms: ["Editor"]`); original `.meta` guids kept.
+- GUI carries real validation (`EnsureRenderState` pins blend/ZWrite/
+  queue 2490) → restoration, not attribute removal.
+- Headless verify: assembly compiled clean, TypeCache resolves the
+  class (exact CustomEditor binding match), 3 decor materials open/edit/
+  undo/save/multi-edit; queue+blend+zwrite+keywords consistent; no
+  warning in log. Report: `docs/qa/DECOR_GUI_2026-09-26.md`.
+
+## Previous task
 
 **Water / seam artifacts (2026-09-26):**
 - Factor-by-factor diagnostics on seed 6130: `material-audit.csv`
