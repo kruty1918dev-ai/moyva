@@ -18,8 +18,6 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
     internal sealed class WaterfallVfxSpawner
     {
         private const string RootName = "Waterfalls";
-        /// <summary>SW3 edge-foam emitters are authored 8 m wide.</summary>
-        private const float EdgeEmitterWidthMeters = 8f;
 
         private readonly IMapChunkLayoutService _layout;
         private readonly IMapVisualChunkRootService _roots;
@@ -88,24 +86,20 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                     front.BottomY + 0.05f,
                     center.z + dir.z * 0.15f * cs);
                 string id = $"{front.Anchor.x}_{front.Anchor.y}_{front.Dir.x}_{front.Dir.y}";
+                float frontWidth = front.WidthCells * cs;
 
                 spawned += SpawnOne(
                     config.EdgeFoamPrefab, root, $"wfall_edge_{id}", lipPos, rotation,
-                    new Vector3(
-                        Mathf.Clamp(front.WidthCells * cs / EdgeEmitterWidthMeters, 0.1f, 2f) * vfxScale,
-                        vfxScale, vfxScale),
-                    maxParticles);
+                    Vector3.one * vfxScale, frontWidth, maxParticles);
                 spawned += SpawnOne(
                     config.ImpactSplashPrefab, root, $"wfall_splash_{id}", basePos, rotation,
-                    Vector3.one * vfxScale
-                        * Mathf.Clamp(front.WidthCells * 0.6f, 0.6f, 2.5f),
-                    maxParticles);
+                    Vector3.one * vfxScale, frontWidth, maxParticles);
                 if (front.Drop >= mistDrop)
                 {
                     spawned += SpawnOne(
                         config.MistPrefab, root, $"wfall_mist_{id}", basePos, rotation,
                         Vector3.one * vfxScale,
-                        maxParticles);
+                        Mathf.Max(2f, frontWidth), maxParticles);
                 }
             }
             return spawned;
@@ -146,6 +140,15 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             return root;
         }
 
+        /// <summary>
+        /// Keeps the prefab transform uniformly scaled and writes the real
+        /// front width into the emitter shape instead: the SW3 waterfall
+        /// emitters are flat (shape.scale.x spans the pour), so transform
+        /// X-scaling would squash their particle pattern into a blob while
+        /// a uniform scale keeps the authored look. shape.scale is in the
+        /// system's local space, so it compensates the uniform transform
+        /// scale to land exactly on the requested world width.
+        /// </summary>
         private static int SpawnOne(
             GameObject prefab,
             Transform parent,
@@ -153,6 +156,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             Vector3 position,
             Quaternion rotation,
             Vector3 scale,
+            float shapeWidth,
             int maxParticles)
         {
             if (prefab == null)
@@ -168,6 +172,13 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 var main = systems[i].main;
                 if (main.maxParticles > maxParticles)
                     main.maxParticles = maxParticles;
+                if (shapeWidth > 0f)
+                {
+                    var shape = systems[i].shape;
+                    Vector3 s = shape.scale;
+                    s.x = shapeWidth / Mathf.Max(0.0001f, scale.x);
+                    shape.scale = s;
+                }
             }
             return 1;
         }

@@ -454,6 +454,7 @@ public static class WorldVisualSmoke
         DumpSeabed(outDir, signal, targets);
         DumpWaterfalls(outDir, signal, targets);
         DumpWaterMaterial(outDir, targets);
+        DumpArtifacts(outDir, signal, targets);
 
         File.WriteAllText(Path.Combine(outDir, "manifest.txt"), manifest.ToString());
         return stats.ToString();
@@ -808,6 +809,170 @@ public static class WorldVisualSmoke
     // Dumps the ACTUAL water material state of a rendered chunk: effective
     // shader, keywords and the depth-shading parameters that drive the
     // shore->deep gradient. Answers "which material is really on the water".
+    /// <summary>
+    /// Artifact forensics for the water/seam task: a per-chunk
+    /// submesh-vs-material audit, a waterfall VFX placement dump, the
+    /// tallest land wall close-up, a water-to-map-border shot and a
+    /// uniform "clay" material pass that removes every transparency /
+    /// refraction / foam variable so geometry-vs-material causes can be
+    /// separated from shading ones.
+    /// </summary>
+    static void DumpArtifacts(string outDir, WorldGeneratedDataSignal signal, List<MeshFilter> targets)
+    {
+        try
+        {
+            float cs = signal.CellSize <= 0.0001f ? 1f : signal.CellSize;
+
+            // 1) Combined-mesh material audit: slots must align with
+            //    submeshes, and list which slots hold transparent water.
+            var sb = new StringBuilder("renderer;mesh;submeshes;materialSlots;slots(name|queue|shader)\n");
+            foreach (var mf in targets)
+            {
+                var mr = mf.GetComponent<MeshRenderer>();
+                var mesh = mf.sharedMesh;
+                var mats = mr != null ? mr.sharedMaterials : null;
+                sb.Append(mf.name).Append(';')
+                  .Append(mesh != null ? mesh.name : "null").Append(';')
+                  .Append(mesh != null ? mesh.subMeshCount : -1).Append(';')
+                  .Append(mats != null ? mats.Length : -1).Append(';');
+                if (mats != null)
+                    for (int i = 0; i < mats.Length; i++)
+                        sb.Append('[').Append(i).Append("]=")
+                          .Append(mats[i] != null
+                              ? mats[i].name + "|q" + mats[i].renderQueue + "|" + mats[i].shader.name
+                              : "null");
+                sb.Append('\n');
+            }
+            File.WriteAllText(Path.Combine(outDir, "material-audit.csv"), sb.ToString());
+
+            // 2) Waterfall VFX audit: every spawned instance with its
+            //    effective emitter width and particle cap.
+            var vsb = new StringBuilder("name;posX;posY;posZ;scaleX;scaleY;scaleZ;system;shapeScaleX;maxParticles\n");
+            foreach (var ps in UnityEngine.Object.FindObjectsByType<ParticleSystem>(
+                FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                var t = ps.transform;
+                bool ours = t.name.StartsWith("wfall_", StringComparison.Ordinal)
+                            || (t.parent != null && t.parent.name.StartsWith("wfall_", StringComparison.Ordinal));
+                if (!ours) continue;
+                var p = t.position;
+                var s = t.localScale;
+                vsb.Append(t.name).Append(';')
+                   .Append(p.x.ToString("F2")).Append(';')
+                   .Append(p.y.ToString("F2")).Append(';')
+                   .Append(p.z.ToString("F2")).Append(';')
+                   .Append(s.x.ToString("F2")).Append(';')
+                   .Append(s.y.ToString("F2")).Append(';')
+                   .Append(s.z.ToString("F2")).Append(';')
+                   .Append(ps.name).Append(';')
+                   .Append(ps.shape.scale.x.ToString("F2")).Append(';')
+                   .Append(ps.main.maxParticles).Append('\n');
+            }
+            File.WriteAllText(Path.Combine(outDir, "waterfall-vfx.csv"), vsb.ToString());
+
+            // 3) Tallest land-to-land wall: largest 4-neighbour surface
+            //    drop where both cells are non-water.
+            Vector3 wallLook = Vector3.zero, wallCam = Vector3.zero;
+            bool haveWall = false;
+            if (signal.SurfaceHeightMap != null && signal.TileMap != null)
+            {
+                float bestDrop = 0f;
+                Vector2Int low = default, high = default;
+                int dx = 0, dy = 0;
+                for (int y = 0; y < signal.Height; y++)
+                for (int x = 0; x < signal.Width; x++)
+                {
+                    if (IsWaterId(signal.TileMap[x, y])) continue;
+                    for (int d = 0; d < 4; d++)
+                    {
+                        int nx = x + (d == 0 ? 1 : d == 1 ? -1 : 0);
+                        int ny = y + (d == 2 ? 1 : d == 3 ? -1 : 0);
+                        if (nx < 0 || ny < 0 || nx >= signal.Width || ny >= signal.Height) continue;
+                        if (IsWaterId(signal.TileMap[nx, ny])) continue;
+                        float drop = signal.SurfaceHeightMap[x, y] - signal.SurfaceHeightMap[nx, ny];
+                        if (drop > bestDrop)
+                        {
+                            bestDrop = drop; low = new Vector2Int(nx, ny); high = new Vector2Int(x, y);
+                            dx = nx - x; dy = ny - y;
+                        }
+                    }
+                }
+                if (bestDrop > 0.5f)
+                {
+                    haveWall = true;
+                    Vector3 lowW = new Vector3(low.x * cs, signal.SurfaceHeightMap[low.x, low.y], low.y * cs);
+                    Vector3 highW = new Vector3(high.x * cs, signal.SurfaceHeightMap[high.x, high.y], high.y * cs);
+                    var n = new Vector3(dx, 0f, dy);
+                    wallLook = new Vector3(highW.x + n.x * 0.5f * cs, (lowW.y + highW.y) * 0.5f, highW.z + n.z * 0.5f * cs);
+                    wallCam = lowW + n * (bestDrop * 1.6f + 5f) + Vector3.up * (bestDrop * 0.45f + 1f);
+                    File.AppendAllText(Path.Combine(outDir, "artifact-notes.txt"),
+                        $"wall: drop={bestDrop:F2} high={high}->{highW.y:F2} low={low}->{lowW.y:F2} dir={dx},{dy}\n");
+                    ShotAt(targets, outDir, "wall_closeup",
+                        wallCam, Quaternion.LookRotation(wallLook - wallCam, Vector3.up));
+                }
+            }
+
+            // 4) Water at the map border: sheet edge at the world rim.
+            if (signal.TileMap != null)
+            {
+                Vector2Int bw = new Vector2Int(-1, -1);
+                for (int x = 0; x < signal.Width && bw.x < 0; x++)
+                for (int y = 0; y < signal.Height; y++)
+                    if (IsWaterId(signal.TileMap[x, y]) && y + 1 == signal.Height)
+                    { bw = new Vector2Int(x, y); break; }
+                if (bw.x >= 0)
+                {
+                    float wy = signal.SurfaceHeightMap != null ? signal.SurfaceHeightMap[bw.x, bw.y] : 0f;
+                    var wpos = new Vector3(bw.x * cs, wy + 1.5f, (bw.y + 1) * cs + 9f);
+                    ShotAt(targets, outDir, "border_water",
+                        wpos, Quaternion.LookRotation(
+                            new Vector3(bw.x * cs, wy - 0.5f, bw.y * cs) - wpos, Vector3.up));
+                }
+            }
+
+            // 5) Clay pass: one opaque grey material on every slot kills
+            //    all transparency/refraction/foam variables at once — any
+            //    stripe or gap still visible is geometry, not shading.
+            var clay = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+            try
+            {
+                clay.color = new Color(0.62f, 0.6f, 0.55f);
+                var saved = new Dictionary<MeshRenderer, Material[]>();
+                foreach (var mf in targets)
+                {
+                    var mr = mf.GetComponent<MeshRenderer>();
+                    if (mr == null || mr.sharedMaterials == null) continue;
+                    saved[mr] = mr.sharedMaterials;
+                    var repl = new Material[mr.sharedMaterials.Length];
+                    for (int i = 0; i < repl.Length; i++) repl[i] = clay;
+                    mr.sharedMaterials = repl;
+                }
+                try
+                {
+                    Vector3 center = signal.HasMapWorldBounds
+                        ? signal.MapWorldBoundsCenter
+                        : new Vector3(signal.Width * cs * 0.5f, 0f, signal.Height * cs * 0.5f);
+                    float R = Mathf.Max(signal.Width, signal.Height) * cs;
+                    ShotAt(targets, outDir, "clay_iso",
+                        center + new Vector3(0f, R * 0.6f, -R * 0.6f),
+                        Quaternion.LookRotation(center - (center + new Vector3(0f, R * 0.6f, -R * 0.6f)), Vector3.up));
+                    if (haveWall)
+                        ShotAt(targets, outDir, "clay_wall",
+                            wallCam, Quaternion.LookRotation(wallLook - wallCam, Vector3.up));
+                }
+                finally
+                {
+                    foreach (var kv in saved) if (kv.Key != null) kv.Key.sharedMaterials = kv.Value;
+                }
+            }
+            finally { UnityEngine.Object.DestroyImmediate(clay); }
+        }
+        catch (Exception e)
+        {
+            File.AppendAllText("Library/ai/visual-smoke-errors.log", "DumpArtifacts: " + e + "\n");
+        }
+    }
+
     static void DumpWaterMaterial(string outDir, List<MeshFilter> targets)
     {
         try

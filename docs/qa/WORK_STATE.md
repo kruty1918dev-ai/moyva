@@ -1,6 +1,28 @@
-# Work State — 2026-09-26 (waterfalls + water depth + seabed + pit fix + FBX tiles)
+# Work State — 2026-09-26 (water artifacts + waterfalls + water depth + seabed + pit fix + FBX tiles)
 
 ## Current task
+
+**Water / seam artifacts (2026-09-26):**
+- Factor-by-factor diagnostics on seed 6130: `material-audit.csv`
+  (slots==submeshes on all 9 chunk renderers; water q3001 draws before
+  waterfall q3000 = correct submerged-base overdraw), `waterfall-vfx.csv`,
+  `clay_iso`/`clay_wall` (all slots → opaque URP/Lit), `wall_closeup`,
+  `border_water` in `WorldVisualSmoke.DumpArtifacts`.
+- Confirmed defect fixed: `WaterfallVfxSpawner` transform-X-squashed the
+  SW3 emitters — Edge shape authored 8 m wide in `shape.scale.x` → blob;
+  Splash 16 m shape sprayed walls on narrow fronts. Now transform stays
+  uniform (`vfxScale`) and `shape.scale.x = frontWidth/uniformScale`.
+- Confirmed-not-defects (kept): authored cliff chamfer seams + veg-card
+  silhouettes (clay pass: no voids/UV tear), SW3 intersection-foam
+  waterline, elevated water sheets on dark pits, aquatic props on water
+  (`waterAffinity`), TransparentCutout veg (AlphaTest+40, ZWrite, clip).
+- Already-fixed symptoms verified: sandy bands → seabed (`c3a14b9a`),
+  stretched water plates → curtains (`94babbd3`).
+- Planner tests 10/10 after change; smoke PASS same worldHash.
+- Report: `docs/qa/WATER_ARTIFACTS_2026-09-26.md`; evidence:
+  `docs/qa/evidence/artifacts-seed6130/`.
+
+## Previous task
 
 **Automatic SW3 waterfalls (2026-09-26):**
 - Cause: `CollectWaterfallSource` drew stretched unit quads on the lake
