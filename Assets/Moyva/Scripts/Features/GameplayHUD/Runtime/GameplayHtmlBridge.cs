@@ -596,36 +596,64 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 return;
             }
 
-            // Recruitment stays actionable while resources are short: the
-            // rejection details already list every missing resource, so pin it
-            // as a notification (which also refreshes the feedback line) and
-            // keep the in-row producer shortcuts available for navigation.
-            // Other rejection kinds (panel closing, wrong context) only get
-            // transient feedback.
-            if (result.Reason != UiActionReason.InsufficientResources)
-            {
-                SetResult(result, string.Empty);
-                return;
-            }
-            string details = string.IsNullOrWhiteSpace(result.Details)
-                ? _state.T(result.Reason.ToString())
-                : _state.T(result.Details);
-
             // Guidance goal: reopening this notification or the popup itself
-            // rebuilds the blocker list from live canonical queries.
+            // rebuilds the blocker list from live canonical queries. Built for
+            // every rejection kind (except transient modal blocks) — the unit
+            // source blocker explains where the unit comes from even when the
+            // failure was eligibility, not resources.
             GuidanceGoal goal = null;
             if (_readModel != null
-                && _roles?.Resolve().Role != LocalGameplayRole.Client)
+                && _roles?.Resolve().Role != LocalGameplayRole.Client
+                && result.Reason != UiActionReason.ModalBlocked)
             {
                 _readModel.TryBuildRecruitmentGuidance(
                     ResolveGuidanceOwnerId(), _readModel.SelectionPosition,
                     unitTypeId, out goal);
             }
+
+            // Resource rejections also pin a notification so the goal stays
+            // reachable from the list; other rejections get transient
+            // feedback plus the popup.
+            if (result.Reason != UiActionReason.InsufficientResources)
+            {
+                if (goal != null)
+                    _state.OpenGuidance(goal);
+                else
+                    SetResult(result, string.Empty);
+                return;
+            }
+            string details = string.IsNullOrWhiteSpace(result.Details)
+                ? _state.T(result.Reason.ToString())
+                : _state.T(result.Details);
             _state.AddNotification(
                 _state.TF("Cannot recruit {0}: {1}", _state.T(unitTypeId), details),
                 "Warning", goal: goal);
             if (goal != null)
                 _state.OpenGuidance(goal);
+        }
+
+        /// <summary>"?" on a unit card — opens the guidance popup explaining
+        /// where the unit comes from (which building trains it, what each
+        /// unit consumes) and any current shortages, without attempting the
+        /// enqueue.</summary>
+        public void RecruitHelp(object value)
+        {
+            string unitTypeId = value?.ToString()?.Trim();
+            if (string.IsNullOrWhiteSpace(unitTypeId) || _readModel == null)
+                return;
+            if (_roles?.Resolve().Role == LocalGameplayRole.Client)
+            {
+                _state.SetFeedback(_state.T("Guidance is available on the host only."));
+                return;
+            }
+            if (_readModel.TryBuildRecruitmentGuidance(
+                    ResolveGuidanceOwnerId(), _readModel.SelectionPosition,
+                    unitTypeId, out GuidanceGoal goal))
+            {
+                _state.OpenGuidance(goal);
+                return;
+            }
+            _state.SetFeedback(_state.T("No guidance is available for this unit."));
         }
 
         public void CancelRecruitment(object value)

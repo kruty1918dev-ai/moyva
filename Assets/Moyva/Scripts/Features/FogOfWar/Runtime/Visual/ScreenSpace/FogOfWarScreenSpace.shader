@@ -727,9 +727,35 @@ Shader "Moyva/FogOfWar/ScreenSpace"
                     -0.5.xx,
                     0.5.xx);
 
+            float2 rawGridUnitsPerPixel =
+                fwidth(gridPosition);
+
+            /*
+             * The bevel is stable only while one screen pixel covers a
+             * small fraction of a cell. On steep surfaces (cliff walls,
+             * props) and at depth silhouettes the reconstructed world
+             * position jumps between distant cells, so fwidth explodes
+             * and a clamped half-cell band turns into flickering stripes.
+             * Fade the bevel out instead of letting it smear.
+             */
+            float maxGridFootprint =
+                max(
+                    rawGridUnitsPerPixel.x,
+                    rawGridUnitsPerPixel.y);
+
+            float bevelVisibility =
+                1.0
+                - smoothstep(
+                    0.08,
+                    0.20,
+                    maxGridFootprint);
+
+            if (bevelVisibility <= 0.0)
+                return 0.0;
+
             float2 gridUnitsPerPixel =
                 max(
-                    fwidth(gridPosition),
+                    rawGridUnitsPerPixel,
                     0.00001.xx);
 
             float widthPixels =
@@ -747,14 +773,14 @@ Shader "Moyva/FogOfWar/ScreenSpace"
                     gridUnitsPerPixel.x
                     * widthPixels,
                     0.002,
-                    0.48);
+                    0.25);
 
             float widthY =
                 clamp(
                     gridUnitsPerPixel.y
                     * widthPixels,
                     0.002,
-                    0.48);
+                    0.25);
 
             float leftDistance =
                 localPosition.x + 0.5;
@@ -918,7 +944,9 @@ Shader "Moyva/FogOfWar/ScreenSpace"
                         0.25,
                         _MoyvaFogVirtualDepthGradientPower));
 
-            return saturate(edgeWeight);
+            return saturate(
+                edgeWeight
+                * bevelVisibility);
         }
 
         ENDHLSL

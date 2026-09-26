@@ -23,6 +23,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         Placement = 2,
         Eligibility = 3,
         Generic = 4,
+        /// <summary>Where the goal unit comes from: an owned operational
+        /// recruiter, one under construction, a buildable recruiter or an
+        /// honest "no source" entry.</summary>
+        UnitSource = 5,
     }
 
     internal enum GuidanceOptionKind
@@ -95,8 +99,12 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         public GuidanceBlockerKind Kind;
         public string Title = string.Empty;
         public string Detail = string.Empty;
-        /// <summary>Resource id for Resource/Population-food blockers.</summary>
+        /// <summary>Resource id for Resource/Population-food blockers; unit
+        /// type id for UnitSource blockers.</summary>
         public string ResourceId = string.Empty;
+        /// <summary>Recruiter building id for UnitSource blockers — resolved
+        /// to a display name by the read model.</summary>
+        public string BuildingId = string.Empty;
         public float Required;
         public float Available;
         public float Reserved;
@@ -286,9 +294,18 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     Position = buildingPosition,
                 },
             };
+            // Unit source: which building trains this unit and how to get
+            // one — informational when a recruiter already exists, a real
+            // blocker when none is placed or buildable. Added before the
+            // query check so the "?" help entry always explains the source.
+            AddUnitSourceBlocker(model, ownerId, unitTypeId);
+
             var query = _recruitment as IUnitRecruitmentQuery;
             if (query == null)
+            {
+                Refresh(model, ownerId);
                 return model;
+            }
 
             string settlementId = null;
             if (_economyInfo != null
@@ -319,7 +336,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                         };
                         if (shortage.PopulationBlocker == PopulationGrowthBlocker.Housing)
                         {
-                            blocker.Detail = "Housing is full — residents cannot grow.";
+                            blocker.Detail = "Units are recruited from free residents — housing is full, so residents cannot grow.";
                             string housing = HousingBuildingId(ownerId);
                             if (!string.IsNullOrWhiteSpace(housing))
                                 blocker.Options.Add(new GuidanceOption(
@@ -328,12 +345,12 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                         }
                         else if (shortage.PopulationBlocker == PopulationGrowthBlocker.Food)
                         {
-                            blocker.Detail = "Food stock is empty — residents starve.";
+                            blocker.Detail = "Units are recruited from free residents — food stock is empty, so residents starve.";
                             AddFoodProducerOption(blocker, ownerId, settlementId, feasibility);
                         }
                         else
                         {
-                            blocker.Detail = "No free residents in this settlement.";
+                            blocker.Detail = "No free residents in this settlement — units are recruited from free residents.";
                             AddFoodProducerOption(blocker, ownerId, settlementId, feasibility);
                         }
                         model.Blockers.Add(blocker);
@@ -403,6 +420,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                         break;
                     case GuidanceBlockerKind.Placement:
                         blocker.Resolved = PlacementCleared(model.Goal);
+                        break;
+                    case GuidanceBlockerKind.UnitSource:
+                        blocker.Resolved = UnitSourceAvailable(
+                            ownerId, blocker.ResourceId);
                         break;
                     default:
                         blocker.Resolved = false;
@@ -614,6 +635,181 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     };
                 }
             }
+        }
+
+        /// <summary>"Where does this unit come from": scans owner placements
+        /// for an operational or under-construction recruiter, then the
+        /// building registry for a selectable recruiter, and reports the
+        /// recipe's population/training cost so the player knows what each
+        /// unit consumes.</summary>
+        private void AddUnitSourceBlocker(GuidanceModel model,
+            string ownerId, string unitTypeId)
+        {
+            if (model == null || string.IsNullOrWhiteSpace(unitTypeId))
+                return;
+
+            var blocker = new GuidanceBlocker
+            {
+                Kind = GuidanceBlockerKind.UnitSource,
+                ResourceId = unitTypeId.Trim(),
+                Title = "Unit source",
+                Required = 1f,
+            };
+
+            ProducerLocation operational = null, constructing = null;
+            CollectRecruiterLocations(ownerId, blocker.ResourceId,
+                ref operational, ref constructing);
+
+            string buildableId = null;
+            string anyId = null;
+            UnitRecruitmentRecipeDefinition recipe = null;
+            if (_buildings != null)
+            {
+                foreach (var definition in _buildings.GetAll())
+                {
+                    if (!TryGetUnitRecipe(definition, blocker.ResourceId,
+                            out var candidate))
+                        continue;
+                    anyId ??= definition.Id;
+                    recipe ??= candidate;
+                    var availability = _availability?.EvaluateSelectionAvailability(
+                        definition.Id, ownerId);
+                    if (buildableId == null
+                        && (!availability.HasValue || availability.Value.CanSelect))
+                        buildableId = definition.Id;
+                }
+            }
+
+            blocker.BuildingId =
+                operational?.BuildingId
+                ?? constructing?.BuildingId
+                ?? buildableId
+                ?? anyId
+                ?? string.Empty;
+
+            if (operational != null)
+            {
+                blocker.Detail = UnitSourceDetail(recipe);
+                blocker.Options.Add(new GuidanceOption(
+                    GuidanceOptionKind.FocusProducer,
+                    operational.BuildingId,
+                    "This building trains this unit.",
+                    operational.BuildingId, null, operational.Position));
+            }
+            else if (constructing != null)
+            {
+                blocker.Detail = UnitSourceDetail(recipe);
+                blocker.Options.Add(new GuidanceOption(
+                    GuidanceOptionKind.ProducerConstructing,
+                    constructing.BuildingId,
+                    "Recruiter is under construction — it trains this unit once finished.",
+                    constructing.BuildingId, null, constructing.Position));
+            }
+            else if (!string.IsNullOrWhiteSpace(buildableId))
+            {
+                blocker.Detail = UnitSourceDetail(recipe);
+                blocker.Options.Add(new GuidanceOption(
+                    GuidanceOptionKind.BuildProducer,
+                    buildableId,
+                    "Build this to train the unit.",
+                    buildableId));
+            }
+            else
+            {
+                blocker.Detail = anyId != null
+                    ? "A building that trains this unit exists but cannot be built yet."
+                    : "No building can train this unit.";
+                blocker.Options.Add(new GuidanceOption(
+                    GuidanceOptionKind.Unobtainable,
+                    blocker.ResourceId, blocker.Detail));
+            }
+            model.Blockers.Add(blocker);
+        }
+
+        private static string UnitSourceDetail(UnitRecruitmentRecipeDefinition recipe)
+        {
+            if (recipe == null)
+                return "Trained at a recruiter building.";
+            return $"Needs {Math.Max(1, recipe.PopulationCost)} free resident(s) "
+                + $"per unit and {Math.Max(1, recipe.TrainingTurns)} turn(s) of training.";
+        }
+
+        private bool UnitSourceAvailable(string ownerId, string unitTypeId)
+        {
+            ProducerLocation operational = null, constructing = null;
+            CollectRecruiterLocations(ownerId, unitTypeId,
+                ref operational, ref constructing);
+            return operational != null;
+        }
+
+        /// <summary>Finds owner placements whose building can recruit the
+        /// unit type, bucketed by operational vs under construction.</summary>
+        private void CollectRecruiterLocations(string ownerId, string unitTypeId,
+            ref ProducerLocation operational, ref ProducerLocation constructing)
+        {
+            if (_portfolio == null || _buildings == null
+                || string.IsNullOrWhiteSpace(unitTypeId))
+                return;
+            var placements = _portfolio.GetOwnerPlacements(ownerId);
+            if (placements == null)
+                return;
+            for (int i = 0; i < placements.Count; i++)
+            {
+                var placement = placements[i];
+                if (!TryGetUnitRecipe(
+                        _buildings.GetById(placement.BuildingId), unitTypeId, out _))
+                    continue;
+
+                if (!(_lifecycle?.IsOperational(placement.Position) ?? true))
+                {
+                    if (constructing == null)
+                    {
+                        string detail = "Under construction.";
+                        if (_lifecycle != null
+                            && _lifecycle.TryGetProgress(
+                                placement.Position, out int done, out int total))
+                            detail = $"Under construction ({done}/{total}).";
+                        constructing = new ProducerLocation
+                        {
+                            BuildingId = placement.BuildingId,
+                            Position = placement.Position,
+                            Detail = detail,
+                        };
+                    }
+                    continue;
+                }
+
+                if (operational == null)
+                {
+                    operational = new ProducerLocation
+                    {
+                        BuildingId = placement.BuildingId,
+                        Position = placement.Position,
+                    };
+                }
+            }
+        }
+
+        private static bool TryGetUnitRecipe(BuildingDefinition definition,
+            string unitTypeId, out UnitRecruitmentRecipeDefinition recipe)
+        {
+            recipe = null;
+            if (definition == null
+                || !BuildingDefinitionCapabilities.TryGetEnabledModule(
+                    definition, out UnitRecruitmentBuildingModule module)
+                || module.Recipes == null)
+                return false;
+            for (int i = 0; i < module.Recipes.Count; i++)
+            {
+                var candidate = module.Recipes[i];
+                if (candidate == null
+                    || !string.Equals(candidate.UnitTypeId?.Trim(),
+                        unitTypeId, StringComparison.Ordinal))
+                    continue;
+                recipe = candidate;
+                return true;
+            }
+            return false;
         }
 
         private void AddFoodProducerOption(GuidanceBlocker blocker,

@@ -39,6 +39,8 @@ namespace Kruty1918.Moyva.Economy.Runtime
                     ProductionCyclesCompleted = result.ProductionCyclesCompleted,
                 });
 
+                PublishForagedResources(state, result, signalBus);
+
                 // Check deactivation
                 if (!state.IsActive)
                 {
@@ -52,6 +54,29 @@ namespace Kruty1918.Moyva.Economy.Runtime
 
                 // Check resource deficits
                 CheckDeficits(state, database, signalBus);
+            }
+        }
+
+        private void PublishForagedResources(EconomySettlementState state, EconomyTickResult result, SignalBus signalBus)
+        {
+            var foraged = result?.ForagedResources;
+            if (foraged == null || foraged.Count == 0)
+                return;
+
+            for (int index = 0; index < foraged.Count; index++)
+            {
+                var entry = foraged[index];
+                if (string.IsNullOrWhiteSpace(entry.Key) || entry.Value <= 0f)
+                    continue;
+
+                signalBus.Fire(new SettlementResourceChangedSignal
+                {
+                    SettlementId = state.SettlementId,
+                    OwnerId = NormalizeOwnerId(state.OwnerId),
+                    ResourceId = entry.Key,
+                    NewAmount = state.GetResource(entry.Key),
+                    Delta = entry.Value,
+                });
             }
         }
 

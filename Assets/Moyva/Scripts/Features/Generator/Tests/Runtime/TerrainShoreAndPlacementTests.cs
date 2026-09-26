@@ -56,6 +56,44 @@ namespace Kruty1918.Moyva.Generator.Tests.Runtime
         }
 
         [Test]
+        public void SubmergedDepth_SinksConvertedCellBelowWaterline()
+        {
+            var map = BuildMap(3, 1);
+            map.AddSample(0, 0, Water(WaterLevel));
+            map.AddSample(1, 0, Land("grass", 0.5f));
+            map.AddSample(2, 0, Land("grass", 0.5f));
+
+            var config = Config(band: 1, blend: 0);
+            config.SubmergedDepthMeters = 0.5f;
+            new TerrainShorePlanner().Apply(map, config, null);
+            map.ReprojectAll();
+
+            Assert.AreEqual("sand", map.TileIds[1, 0]);
+            Assert.AreEqual(WaterLevel - 0.5f, map.SurfaceHeights[1, 0], 0.0001f);
+        }
+
+        [Test]
+        public void SubmergedDepth_NonConvertedCellStaysAboveWaterline()
+        {
+            var map = BuildMap(3, 1);
+            map.AddSample(0, 0, Water(WaterLevel));
+            map.AddSample(1, 0, Land("grass", 0.5f));
+            map.AddSample(2, 0, Land("grass", 0.5f));
+
+            var config = Config(band: 1, blend: 0);
+            config.SubmergedDepthMeters = 0.5f;
+            config.BandCoverage = 0f; // converts nothing: band cell keeps grass
+            new TerrainShorePlanner().Apply(map, config, null);
+            map.ReprojectAll();
+
+            // Submersion only applies to converted shore cells: a band cell
+            // that keeps its terrain still grades to one rise step above the
+            // lifted waterline floor so the wash sheet stays below it.
+            Assert.AreEqual("grass", map.TileIds[1, 0]);
+            Assert.AreEqual(WaterLevel + 0.04f + 0.2f, map.SurfaceHeights[1, 0], 0.0001f);
+        }
+
+        [Test]
         public void BlendRing_CapsHeightWithoutChangingTile()
         {
             var map = BuildMap(4, 1);

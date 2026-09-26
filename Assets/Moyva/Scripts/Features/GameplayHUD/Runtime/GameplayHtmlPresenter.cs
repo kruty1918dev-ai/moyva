@@ -406,6 +406,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             AddIconGlobals(globals, snapshot);
             if (_anchor.NotificationsIcon != null) globals["gameplay_notifications_icon"] = _anchor.NotificationsIcon;
             if (_anchor.MenuIcon != null) globals["gameplay_menu_icon"] = _anchor.MenuIcon;
+            snapshot.HasPopulationIcon = _anchor.PopulationIcon != null;
+            if (snapshot.HasPopulationIcon)
+                globals[GameplayHtmlIconKeys.Population] = _anchor.PopulationIcon;
 
             var regions = GameplayHtmlMarkup.BuildRegions(snapshot, _state);
             if (force || !_mounted || _viewportClass != viewportClass || !_host.UpdateRegions(regions, globals))

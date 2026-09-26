@@ -161,6 +161,14 @@ namespace Kruty1918.Moyva.Economy.Runtime
                         break;
                     }
 
+                    if (UnityEngine.Random.value
+                        >= Mathf.Clamp01(recipe.SuccessChance))
+                    {
+                        progress -= turnsPerCycle;
+                        completed++;
+                        continue;
+                    }
+
                     ConsumeRecipeInputs(
                         state,
                         recipe.Inputs);

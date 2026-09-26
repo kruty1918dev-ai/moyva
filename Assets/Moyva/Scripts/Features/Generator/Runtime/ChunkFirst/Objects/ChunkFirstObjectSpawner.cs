@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Kruty1918.Moyva.Generator.API;
+using Kruty1918.Moyva.Generator.Runtime.Floating;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.MapChunks.API;
 using UnityEngine;
@@ -16,6 +17,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         private readonly ITerrainPlacementPolicy _placementPolicy;
         private readonly EnvironmentObjectPlacementResolver _placementResolver;
         private readonly FootprintRules _footprintRules;
+        private readonly WaterFloatRules _floatRules;
+        private readonly IWaterFloatService _waterFloats;
         private readonly Dictionary<MapChunkCoord, Transform> _objectRoots = new Dictionary<MapChunkCoord, Transform>();
         private readonly Dictionary<Vector2Int, List<GameObject>> _propsByCell = new Dictionary<Vector2Int, List<GameObject>>();
         private readonly HashSet<Vector2Int> _clearedPropCells = new HashSet<Vector2Int>();
@@ -27,7 +30,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             [Zenject.InjectOptional] IGeneratorTerrainLevelService terrainLevels = null,
             [Zenject.InjectOptional] ITerrainPlacementPolicy placementPolicy = null,
             [Zenject.InjectOptional] EnvironmentObjectPlacementResolver placementResolver = null,
-            [Zenject.InjectOptional] EnvironmentDecorationConfig decorationConfig = null)
+            [Zenject.InjectOptional] EnvironmentDecorationConfig decorationConfig = null,
+            [Zenject.InjectOptional] IWaterFloatService waterFloats = null)
         {
             _environment = environment;
             _layout = layout;
@@ -36,6 +40,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             _placementPolicy = placementPolicy;
             _placementResolver = placementResolver;
             _footprintRules = decorationConfig?.Footprint ?? new FootprintRules();
+            _floatRules = decorationConfig?.Floating ?? new WaterFloatRules();
+            _waterFloats = waterFloats;
         }
 
         public int Spawn(GeneratedWorldData worldData)
@@ -282,9 +288,39 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             {
                 instance.transform.localRotation = rotation;
                 TrackProp(cell, instance);
+
+                // Free-floating water props (lilies, rafts) bob with the
+                // replicated wave field; rooted water objects stay fixed.
+                if (IsWaterAuthoredObject(sample)
+                    && (WaterFloatIdRules.IsFloatingId(resolvedId)
+                        || WaterFloatIdRules.IsFloatingId(sample.PresetId)
+                        || WaterFloatIdRules.IsFloatingId(sample.LayerId)))
+                {
+                    _waterFloats?.Register(
+                        instance.transform,
+                        instance.transform.position.y,
+                        ResolveFloatRadius(prefab));
+                }
             }
 
             return true;
+        }
+
+        private float ResolveFloatRadius(GameObject prefab)
+        {
+            var filter = prefab != null
+                ? prefab.GetComponentInChildren<MeshFilter>()
+                : null;
+            if (filter == null || filter.sharedMesh == null)
+                return _floatRules.DefaultSampleRadius;
+
+            Vector3 extents = filter.sharedMesh.bounds.extents;
+            Vector3 scale = filter.transform.lossyScale;
+            return Mathf.Clamp(
+                Mathf.Max(extents.x * Mathf.Abs(scale.x),
+                    extents.z * Mathf.Abs(scale.z)),
+                0.05f,
+                4f);
         }
 
         // Every cell under a prop footprint must be in bounds, land-only and
@@ -424,7 +460,16 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 instance.name = $"{prefab.name}_{hash:x8}";
                 instance.transform.localPosition = position;
                 if (skipWaterCells)
+                {
                     TrackProp(cell, instance);
+                    if (WaterFloatIdRules.IsFloatingId(id))
+                    {
+                        _waterFloats?.Register(
+                            instance.transform,
+                            instance.transform.position.y,
+                            ResolveFloatRadius(prefab));
+                    }
+                }
                 spawned++;
             }
 

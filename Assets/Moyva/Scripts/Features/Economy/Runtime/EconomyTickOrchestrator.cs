@@ -12,6 +12,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
         private readonly EconomyPopulationService _populationService = new EconomyPopulationService();
         private readonly EconomyWorkerAllocationService _workerService = new EconomyWorkerAllocationService();
         private readonly EconomyProductionTickService _productionService = new EconomyProductionTickService();
+        private readonly EconomyForagingService _foragingService = new EconomyForagingService();
 
         /// <summary>
         /// Execute one turn. Mutates <paramref name="state"/> in place.
@@ -46,11 +47,15 @@ namespace Kruty1918.Moyva.Economy.Runtime
             result.AvailableWorkers = available;
             result.AssignedWorkers = assigned;
 
-            // 3. Production tick
+            // 3. Foraging tick: residents gather basic resources from the map.
+            // Runs before production so foraged inputs can feed recipes this turn.
+            result.ForagedResources = _foragingService.Tick(state, rules);
+
+            // 4. Production tick
             int cycles = _productionService.Tick(state, rules, database, turnDurationSeconds);
             result.ProductionCyclesCompleted = cycles;
 
-            // 4. Settlement deactivation check
+            // 5. Settlement deactivation check
             if (rules.Settlement.DeactivateSettlementWhenPopulationIsZero && state.Residents.Count == 0)
                 state.IsActive = false;
 

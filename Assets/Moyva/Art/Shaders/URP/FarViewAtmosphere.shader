@@ -150,15 +150,22 @@ Shader "Hidden/Moyva/FarViewAtmosphere"
             }
 
             // Bilinear hidden weight (fog R channel) at the pixel's real
-            // surface position. Sky and missing depth stay fully visible.
+            // surface position. Pixels the fog composite paints as unexplored
+            // must stay hidden here: sky/no-geometry pixels and any frame
+            // where scene depth is unavailable both count as unexplored,
+            // otherwise the atmosphere would redraw over the fog and expose
+            // the map boundary silhouette.
             float MoyvaHiddenWeight(float2 uv)
             {
-                if (_MoyvaFogEnabled < 0.5 || _MoyvaFarViewDepthAvailable < 0.5)
+                if (_MoyvaFogEnabled < 0.5)
                     return 0.0;
+
+                if (_MoyvaFarViewDepthAvailable < 0.5)
+                    return 1.0;
 
                 float rawDepth = SampleSceneDepth(UnityStereoTransformScreenSpaceTex(uv));
                 if (rawDepth <= 0.00001)
-                    return 0.0;
+                    return 1.0;
 
                 float3 worldPos = ComputeWorldSpacePosition(uv, rawDepth, UNITY_MATRIX_I_VP);
                 float2 gridPos = MoyvaWorldToFogGrid(worldPos);

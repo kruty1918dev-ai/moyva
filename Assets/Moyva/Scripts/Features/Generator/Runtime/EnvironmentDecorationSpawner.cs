@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.Generator.API;
+using Kruty1918.Moyva.Generator.Runtime.Floating;
 using Kruty1918.Moyva.MapChunks.API;
 using Kruty1918.Moyva.Shared.Graphics;
 using UnityEngine;
@@ -20,6 +21,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
         private readonly IMapVisualChunkRegistry _chunkRegistry;
         private readonly EnvironmentObjectPlacementResolver _placementResolver;
         private readonly IGraphicsSettingsService _graphicsSettings;
+        private readonly IWaterFloatService _waterFloats;
+        private readonly float _defaultFloatRadius;
         private readonly bool _alignToSurface;
         private readonly float _footprintShrink;
         private readonly Dictionary<MapChunkCoord, Transform> _decorationRoots = new Dictionary<MapChunkCoord, Transform>();
@@ -34,7 +37,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
             [Zenject.InjectOptional] EnvironmentDecorationConfig config = null,
             [Zenject.InjectOptional] EnvironmentObjectPlacementResolver placementResolver = null,
             [Zenject.InjectOptional] IMapVisualChunkRegistry chunkRegistry = null,
-            [Zenject.InjectOptional] IGraphicsSettingsService graphicsSettings = null)
+            [Zenject.InjectOptional] IGraphicsSettingsService graphicsSettings = null,
+            [Zenject.InjectOptional] IWaterFloatService waterFloats = null)
         {
             _objectRegistry = objectRegistry ?? throw new ArgumentNullException(nameof(objectRegistry));
             _layout = layout ?? throw new ArgumentNullException(nameof(layout));
@@ -43,6 +47,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
             _placementResolver = placementResolver;
             _chunkRegistry = chunkRegistry;
             _graphicsSettings = graphicsSettings;
+            _waterFloats = waterFloats;
+            _defaultFloatRadius = config?.Floating?.DefaultSampleRadius ?? 0.3f;
             _alignToSurface = config?.VisualVariation?.AlignToSurface ?? true;
             _footprintShrink = config?.Footprint?.FootprintShrink ?? 0.9f;
         }
@@ -231,17 +237,43 @@ namespace Kruty1918.Moyva.Generator.Runtime
             instance.transform.localRotation = localRotation;
             instance.transform.localScale = placement.Scale;
 
+            // Free-floating water flora (lilies) bob with the replicated wave
+            // field; rooted plants like reeds stay fixed.
+            bool floats = _waterFloats != null
+                && (WaterFloatIdRules.IsFloatingId(definition.Id)
+                    || WaterFloatIdRules.IsFloatingId(placement.Type)
+                    || WaterFloatIdRules.IsFloatingId(placement.AssetId));
+            float floatRadius = _defaultFloatRadius;
+
             // Decorations keep their prefab-authored shadow casting; only ensure they receive shadows.
             var renderers = instance.GetComponentsInChildren<Renderer>(true);
             foreach (var renderer in renderers)
             {
                 renderer.receiveShadows = true;
+                if (floats)
+                {
+                    Bounds bounds = renderer.bounds;
+                    floatRadius = Mathf.Max(
+                        floatRadius,
+                        Mathf.Clamp(
+                            Mathf.Max(bounds.extents.x, bounds.extents.z),
+                            0.05f,
+                            4f));
+                }
                 if (_chunkRegistry != null)
                 {
                     _singleChunkBuffer.Clear();
                     _singleChunkBuffer.Add(coord);
                     _chunkRegistry.Register(renderer, _singleChunkBuffer);
                 }
+            }
+
+            if (floats)
+            {
+                _waterFloats.Register(
+                    instance.transform,
+                    instance.transform.position.y,
+                    floatRadius);
             }
 
             var colliders = instance.GetComponentsInChildren<Collider>(true);

@@ -1,5 +1,6 @@
 using Kruty1918.SaveSystem;
 using System;
+using System.Collections.Generic;
 using System.Text;
 using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Grid.API;
@@ -179,13 +180,41 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
             try
             {
-                var placementResult = _decorationGenerator.Generate(worldData);
-                _decorationSpawner.Spawn(placementResult);
+                var stats = new DecorationPlacementStats();
+                var placementResult = _decorationGenerator.Generate(worldData, stats);
+                int spawned = _decorationSpawner.Spawn(placementResult);
+                Debug.Log(
+                    $"[EnvironmentDecorations] placements={placementResult?.Count ?? 0} " +
+                    $"spawned={spawned} attempts={stats.Attempts} waterCells={stats.WaterCells} " +
+                    $"topRejects={FormatTopRejects(stats)}");
             }
             catch (System.Exception ex)
             {
                 Debug.LogWarning($"[EnvironmentDecorations] Failed to generate decorations: {ex.Message}");
             }
+        }
+
+        private static string FormatTopRejects(DecorationPlacementStats stats)
+        {
+            if (stats == null || stats.Rejects.Count == 0)
+                return "none";
+
+            var sorted = new List<KeyValuePair<string, int>>(stats.Rejects);
+            sorted.Sort((a, b) => b.Value.CompareTo(a.Value));
+            var sb = new StringBuilder();
+            int shown = 0;
+            foreach (var kv in sorted)
+            {
+                if (shown++ > 0)
+                    sb.Append(", ");
+                if (shown > 6)
+                {
+                    sb.Append("...");
+                    break;
+                }
+                sb.Append(kv.Key).Append('=').Append(kv.Value);
+            }
+            return sb.ToString();
         }
 
         private static void ApplyVisualBounds(

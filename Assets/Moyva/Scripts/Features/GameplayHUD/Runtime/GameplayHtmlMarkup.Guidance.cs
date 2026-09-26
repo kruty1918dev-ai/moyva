@@ -53,7 +53,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             for (int index = 0; index < guidance.Blockers.Length; index++)
             {
                 var blocker = guidance.Blockers[index];
-                AppendGuidanceBlocker(html, blocker, index, guidance.FocusIndex, state);
+                AppendGuidanceBlocker(html, blocker, index, guidance.FocusIndex, state, snapshot);
             }
             html.Append("</view></scroll>");
 
@@ -82,7 +82,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         private static void AppendGuidanceBlocker(
             StringBuilder html, GameplayGuidanceBlockerSnapshot blocker,
-            int index, int focusIndex, GameplayHtmlState state)
+            int index, int focusIndex, GameplayHtmlState state, GameplayHtmlSnapshot snapshot = null)
         {
             html.Append("<view className=\"guidance-blocker")
                 .Append(blocker.Resolved ? " resolved" : string.Empty)
@@ -92,7 +92,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             bool resourceLike = blocker.Kind == GuidanceBlockerKind.Resource
                 || blocker.Kind == GuidanceBlockerKind.Population;
-            if (resourceLike && !string.IsNullOrWhiteSpace(blocker.ResourceId))
+            bool iconed = resourceLike
+                || blocker.Kind == GuidanceBlockerKind.UnitSource;
+            if (iconed && (!string.IsNullOrWhiteSpace(blocker.ResourceId)
+                    || blocker.Kind == GuidanceBlockerKind.Population && PopulationIconKey(snapshot) != null))
                 RowIcon(html, true, blocker.IconGlobalKey,
                     Display(blocker.ResourceId), true);
             else

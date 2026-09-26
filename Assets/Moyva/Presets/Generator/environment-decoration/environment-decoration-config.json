@@ -45,6 +45,32 @@
     "maxGroundDeltaMeters": 0.6,
     "footprintShrink": 0.9
   },
+  "floating": {
+    "enabled": true,
+    "frameStride": 2,
+    "smoothing": 0.3,
+    "tiltStrength": 2.0,
+    "defaultSampleRadius": 0.3,
+    "waveFrequency": 0.8,
+    "waveSpeed": 0.96,
+    "waveHeight": 0.1,
+    "directionX": 1.0,
+    "directionY": 1.0,
+    "waves": [
+      {
+        "enabled": true,
+        "waveLength": 10.34,
+        "amplitude": 0.1086,
+        "directionDegrees": 35.64
+      },
+      {
+        "enabled": true,
+        "waveLength": 7.6,
+        "amplitude": 0.1216,
+        "directionDegrees": 274.0
+      }
+    ]
+  },
   "layers": [
     {
       "type": "grass",

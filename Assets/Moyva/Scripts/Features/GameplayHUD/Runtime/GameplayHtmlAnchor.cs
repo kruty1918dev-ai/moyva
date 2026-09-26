@@ -29,6 +29,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         [SerializeField] private TMP_FontAsset _fontAsset;
         [SerializeField] private Sprite _notificationsIcon;
         [SerializeField] private Sprite _menuIcon;
+        [SerializeField] private Sprite _populationIcon;
         [SerializeField] private GameObject[] _legacyScreenRoots = Array.Empty<GameObject>();
         [SerializeField] private bool _editorLivePreview = true;
         [SerializeField] private PreviewScreen _editorPreviewScreen = PreviewScreen.FirstCastle;
@@ -48,6 +49,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         public TMP_FontAsset FontAsset => _fontAsset;
         public Sprite NotificationsIcon => _notificationsIcon;
         public Sprite MenuIcon => _menuIcon;
+        public Sprite PopulationIcon => _populationIcon;
 
         public string ViewportClass
         {
@@ -259,6 +261,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 globals["moyvaFont"] = _fontAsset;
             globals["gameplay_notifications_icon"] = _notificationsIcon;
             globals["gameplay_menu_icon"] = _menuIcon;
+            globals[GameplayHtmlIconKeys.Population] = _populationIcon;
+            snapshot.HasPopulationIcon = _populationIcon != null;
 
             UnityHtmlMountResult result = _previewHost.Mount(
                 root,

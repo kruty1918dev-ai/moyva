@@ -294,6 +294,94 @@
       "additionalProperties": false,
       "title": "Footprint"
     },
+    "floating": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "title": "Enabled"
+        },
+        "frameStride": {
+          "type": "integer",
+          "minimum": 1,
+          "x-moyva-editorMinimum": 1
+        },
+        "smoothing": {
+          "type": "number",
+          "minimum": 0.01,
+          "x-moyva-editorMinimum": 0.01
+        },
+        "tiltStrength": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 8.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 8.0
+        },
+        "defaultSampleRadius": {
+          "type": "number",
+          "minimum": 0.05,
+          "x-moyva-editorMinimum": 0.05
+        },
+        "waveFrequency": {
+          "type": "number",
+          "minimum": 0.0001,
+          "x-moyva-editorMinimum": 0.0001
+        },
+        "waveSpeed": {
+          "type": "number"
+        },
+        "waveHeight": {
+          "type": "number"
+        },
+        "directionX": {
+          "type": "number"
+        },
+        "directionY": {
+          "type": "number"
+        },
+        "waves": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "enabled": {
+                "type": "boolean"
+              },
+              "waveLength": {
+                "type": "number",
+                "minimum": 0.01,
+                "x-moyva-editorMinimum": 0.01
+              },
+              "amplitude": {
+                "type": "number",
+                "minimum": 0.0,
+                "x-moyva-editorMinimum": 0.0
+              },
+              "directionDegrees": {
+                "type": "number",
+                "minimum": 0.0,
+                "maximum": 360.0,
+                "x-moyva-editorMinimum": 0.0,
+                "x-moyva-editorMaximum": 360.0
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false,
+      "title": "Floating"
+    },
     "assetPools": {
       "type": [
         "object",

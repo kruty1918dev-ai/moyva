@@ -73,6 +73,11 @@ namespace Kruty1918.Moyva.Generator.API
         public FootprintRules Footprint = new();
 
         /// <summary>
+        /// Analytic wave floating for water-authored props and water flora.
+        /// </summary>
+        public WaterFloatRules Floating = new();
+
+        /// <summary>
         /// Asset variant pools for each environment type.
         /// Maps environment type IDs to lists of map object registry IDs.
         /// </summary>
@@ -239,6 +244,102 @@ namespace Kruty1918.Moyva.Generator.API
         /// </summary>
         [Range(0.3f, 1f)]
         public float FootprintShrink = 0.9f;
+    }
+
+    /// <summary>
+    /// Physics-free buoyancy tuning for objects registered with
+    /// IWaterFloatService. The wave terms replicate the vertical Gerstner sum
+    /// of the Stylized Water 3 water material so floating matches the
+    /// rendered surface 1:1; if the water material or its wave profile
+    /// changes, mirror the new values here.
+    /// </summary>
+    [Serializable]
+    public sealed class WaterFloatRules
+    {
+        /// <summary>Master switch for wave floating.</summary>
+        public bool Enabled = true;
+
+        /// <summary>
+        /// Update window: each floater re-samples once every Nth frame
+        /// (round-robin). Higher values halve CPU cost on weak devices.
+        /// </summary>
+        [Min(1)]
+        public int FrameStride = 2;
+
+        /// <summary>
+        /// Seconds to blend toward the sampled wave pose; acts as the
+        /// floater's inertia. 0 disables smoothing.
+        /// </summary>
+        [Min(0.01f)]
+        public float Smoothing = 0.3f;
+
+        /// <summary>
+        /// Wave-slope to tilt multiplier; 0 keeps objects upright.
+        /// </summary>
+        [Range(0f, 8f)]
+        public float TiltStrength = 2f;
+
+        /// <summary>
+        /// Fallback wave-normal sampling radius when a prefab's mesh bounds
+        /// cannot be measured.
+        /// </summary>
+        [Min(0.05f)]
+        public float DefaultSampleRadius = 0.3f;
+
+        /// <summary>Material _WaveFrequency.</summary>
+        [Min(0.0001f)]
+        public float WaveFrequency = 0.8f;
+
+        /// <summary>Material _Speed * _WaveSpeed.</summary>
+        public float WaveSpeed = 0.96f;
+
+        /// <summary>Material _WaveHeight; scales every wave amplitude.</summary>
+        public float WaveHeight = 0.1f;
+
+        /// <summary>Material _Direction.x.</summary>
+        public float DirectionX = 1f;
+
+        /// <summary>Material _Direction.y.</summary>
+        public float DirectionY = 1f;
+
+        /// <summary>
+        /// Enabled layers of the water material's WaveProfile
+        /// ("Default Wave Profile").
+        /// </summary>
+        public WaterFloatWave[] Waves =
+        {
+            new WaterFloatWave
+            {
+                WaveLength = 10.34f,
+                Amplitude = 0.1086f,
+                DirectionDegrees = 35.64f,
+            },
+            new WaterFloatWave
+            {
+                WaveLength = 7.60f,
+                Amplitude = 0.1216f,
+                DirectionDegrees = 274f,
+            },
+        };
+    }
+
+    /// <summary>A single Gerstner wave layer mirrored from a WaveProfile.</summary>
+    [Serializable]
+    public sealed class WaterFloatWave
+    {
+        public bool Enabled = true;
+
+        /// <summary>Distance between crests in meters.</summary>
+        [Min(0.01f)]
+        public float WaveLength = 10f;
+
+        /// <summary>Wave height in meters before the material's _WaveHeight scale.</summary>
+        [Min(0f)]
+        public float Amplitude = 0.1f;
+
+        /// <summary>Travel direction in degrees around the Y axis.</summary>
+        [Range(0f, 360f)]
+        public float DirectionDegrees;
     }
 
     [Serializable]

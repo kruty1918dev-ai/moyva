@@ -599,7 +599,7 @@ namespace Kruty1918.Moyva.Tests.Bootstrap
                         {
                             new GameplayGuidanceBlockerSnapshot(
                                 GuidanceBlockerKind.Resource, "wood", string.Empty, "wood",
-                                10f, 2f, 10f, false,
+                                string.Empty, 10f, 2f, 10f, false,
                                 new[]
                                 {
                                     new GameplayGuidanceOptionSnapshot(
@@ -620,7 +620,7 @@ namespace Kruty1918.Moyva.Tests.Bootstrap
                                 }),
                             new GameplayGuidanceBlockerSnapshot(
                                 GuidanceBlockerKind.Population, "Population",
-                                "Housing is full", string.Empty,
+                                "Housing is full", string.Empty, string.Empty,
                                 3f, 0f, 0f, false,
                                 new[]
                                 {

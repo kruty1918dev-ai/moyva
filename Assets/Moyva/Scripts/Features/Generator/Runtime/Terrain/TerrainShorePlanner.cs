@@ -100,6 +100,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             float lift = Mathf.Max(0f, config.ShoreLiftMeters);
             float rise = Mathf.Max(0.01f, config.RisePerCellMeters);
             float maxDrop = Mathf.Max(0.01f, config.MaxDropToWaterMeters);
+            float submerge = Mathf.Max(0f, config.SubmergedDepthMeters);
 
             for (int x = 0; x < width; x++)
             for (int y = 0; y < height; y++)
@@ -143,17 +144,20 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 bool convert = distance <= band
                     && Geography.DeterministicNoise.Hash01(
                         config.SeedSalt, x, y, 5) < config.BandCoverage;
-                float cap = floor + Mathf.Max(0, distance - 1) * rise;
+                // Converted shore cells may be pushed below the waterline:
+                // the submerged shelf sinks SubmergedDepthMeters under the
+                // sheet so the waterline reads as a step into shallow water
+                // instead of a coplanar seam. Cells that keep their terrain
+                // still rise to the lifted waterline floor — a water-adjacent
+                // non-shore cell can never sit below the wash sheet.
+                float anchor = convert && submerge > 0f ? level - submerge : floor;
+                float cap = anchor + Mathf.Max(0, distance - 1) * rise;
                 if (!convert && distance <= band)
-                    cap = floor + distance * rise;
-                // Band cells that keep their terrain still rise to the
-                // waterline floor — a water-adjacent cell can never sit
-                // below the wash sheet. Blend cells only cap downward.
-                float target = convert
-                    ? Mathf.Clamp(original, floor, cap)
-                    : distance <= band
-                        ? Mathf.Clamp(original, floor, cap)
-                        : Mathf.Min(original, cap);
+                    cap = anchor + distance * rise;
+                // Blend cells only cap downward.
+                float target = convert || distance <= band
+                    ? Mathf.Clamp(original, anchor, cap)
+                    : Mathf.Min(original, cap);
                 // Skip only when nothing changes — a band cell below the
                 // waterline still needs the lift that hides the wash sheet.
                 if (!convert && Mathf.Abs(target - original) <= 0.0001f)

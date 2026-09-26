@@ -481,7 +481,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
     internal sealed class GameplayGuidanceBlockerSnapshot
     {
         public GameplayGuidanceBlockerSnapshot(GuidanceBlockerKind kind,
-            string title, string detail, string resourceId,
+            string title, string detail, string resourceId, string buildingId,
             float required, float available, float reserved,
             bool resolved, GameplayGuidanceOptionSnapshot[] options)
         {
@@ -489,6 +489,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             Title = title ?? string.Empty;
             Detail = detail ?? string.Empty;
             ResourceId = resourceId ?? string.Empty;
+            BuildingId = buildingId ?? string.Empty;
             Required = required;
             Available = available;
             Reserved = reserved;
@@ -500,13 +501,21 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         public string Title { get; }
         public string Detail { get; }
         public string ResourceId { get; }
+        /// <summary>Recruiter building id for UnitSource blockers.</summary>
+        public string BuildingId { get; }
         public float Required { get; }
         public float Available { get; }
         public float Reserved { get; }
         public bool Resolved { get; }
         public GameplayGuidanceOptionSnapshot[] Options { get; }
         public float Missing => Required > Available ? Required - Available : 0f;
-        public string IconGlobalKey => GameplayHtmlIconKeys.Resource(ResourceId);
+        public string IconGlobalKey => Kind == GuidanceBlockerKind.UnitSource
+            && !string.IsNullOrWhiteSpace(ResourceId)
+            ? GameplayHtmlIconKeys.Unit(ResourceId)
+            : Kind == GuidanceBlockerKind.Population
+                && string.IsNullOrWhiteSpace(ResourceId)
+                ? GameplayHtmlIconKeys.Population
+                : GameplayHtmlIconKeys.Resource(ResourceId);
     }
 
     /// <summary>View snapshot for the action-guidance popup — rebuilt from
@@ -593,16 +602,18 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
     internal readonly struct GameplayFactSnapshot
     {
-        public GameplayFactSnapshot(string label, string value, string context)
+        public GameplayFactSnapshot(string label, string value, string context, string iconKey = null)
         {
             Label = label ?? string.Empty;
             Value = value ?? string.Empty;
             Context = context ?? string.Empty;
+            IconKey = iconKey ?? string.Empty;
         }
 
         public string Label { get; }
         public string Value { get; }
         public string Context { get; }
+        public string IconKey { get; }
     }
 
     internal readonly struct GameplayBuildingOptionSnapshot
@@ -817,6 +828,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
     internal static class GameplayHtmlIconKeys
     {
+        public const string Population = "gameplay_population_icon";
+
         public static string Building(string id) => $"gameplay_building_icon_{Sanitize(id)}";
         public static string Unit(string id) => $"gameplay_unit_icon_{Sanitize(id)}";
         public static string Resource(string id) => $"gameplay_resource_icon_{Sanitize(id)}";
@@ -891,6 +904,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
     internal sealed class GameplayHtmlSnapshot
     {
         public IReadOnlyDictionary<string, Sprite> Icons = new Dictionary<string, Sprite>();
+        public bool HasPopulationIcon;
         public string OwnerId = "player_0";
         public string KingdomName = "Your Kingdom";
         public int Round = 1;

@@ -267,14 +267,13 @@ namespace Kruty1918.Moyva.Generator.Runtime
             TerrainRouteConfig config,
             TerrainPassageConfig passages)
         {
-            AddRouteCells(map, routes.RoadCells, config, config.RoadTileId, "route:road");
-            AddRouteCells(map, routes.FootpathCells, config, config.FootpathTileId, "route:footpath");
+            AddRouteCells(map, routes.RoadCells, config.RoadTileId, "route:road");
+            AddRouteCells(map, routes.FootpathCells, config.FootpathTileId, "route:footpath");
         }
 
         private static void AddRouteCells(
             LogicalTileMap map,
             List<Vector2Int> cells,
-            TerrainRouteConfig config,
             string tileId,
             string layerId)
         {
@@ -308,8 +307,11 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     continue;
 
                 // Road/footpath are full dual-grid tile themes: the route
-                // sample rides a few millimetres above the terrain surface so
-                // it wins the visual composition while traversal stays flat.
+                // sample replaces the terrain samples on the cell instead of
+                // riding above them. A coplanar overlay pair would render two
+                // materials on one tile and z-fight; a single replaced sample
+                // keeps exactly one texture per tile and traversal stays flat.
+                stack.RemoveAll(sample => sample.IsTerrainLike);
                 stack.Add(new TileLayerSample(
                     layerId: layerId,
                     layerName: tileId,
@@ -322,7 +324,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     layerOrder: 0,
                     terrainPriority: 0,
                     height: surface,
-                    surfaceHeight: surface + Mathf.Max(0f, config.OverlaySurfaceOffsetMeters),
+                    surfaceHeight: surface,
                     sourceLayerId: null,
                     tileGeometryMode: TileGeometryMode.SolidTerrain,
                     authoredClosurePolicy: AuthoredClosurePolicy.PreserveAuthored));

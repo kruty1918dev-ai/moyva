@@ -38,6 +38,24 @@ namespace Kruty1918.Moyva.Tests.Bootstrap
             return definition;
         }
 
+        private static BuildingDefinition Recruiter(string id, string unitTypeId)
+        {
+            var definition = new BuildingDefinition { Id = id, DisplayName = id };
+            definition.Modules.Add(new UnitRecruitmentBuildingModule
+            {
+                Recipes =
+                {
+                    new UnitRecruitmentRecipeDefinition
+                    {
+                        UnitTypeId = unitTypeId,
+                        PopulationCost = 2,
+                        TrainingTurns = 3,
+                    },
+                },
+            });
+            return definition;
+        }
+
         private static GameplayGuidanceResolver Resolver(
             FakeRegistry registry, FakeAvailability availability,
             FakeConstructionCommands construction, FakeEconomy economy,
@@ -273,9 +291,11 @@ namespace Kruty1918.Moyva.Tests.Bootstrap
 
             Assert.AreEqual(GuidanceGoalKind.Recruitment, model.Goal.Kind);
             Assert.AreEqual("unit-x", model.Goal.UnitTypeId);
-            Assert.AreEqual(2, model.Blockers.Count);
+            // Two shortage blockers plus the trailing unit-source entry.
+            Assert.AreEqual(3, model.Blockers.Count);
             Assert.AreEqual("res-a", model.Blockers[0].ResourceId);
             Assert.AreEqual("res-b", model.Blockers[1].ResourceId);
+            Assert.AreEqual(GuidanceBlockerKind.UnitSource, model.Blockers[2].Kind);
         }
 
         [Test]
@@ -337,22 +357,112 @@ namespace Kruty1918.Moyva.Tests.Bootstrap
                 recruitment: recruitment)
                 .BuildRecruitment(Owner, Tile, "unit-x");
 
-            Assert.AreEqual(1, model.Blockers.Count);
+            Assert.AreEqual(2, model.Blockers.Count);
             Assert.AreEqual(GuidanceBlockerKind.Generic, model.Blockers[0].Kind);
             Assert.AreEqual("building queue is full", model.Blockers[0].Detail);
+            Assert.AreEqual(GuidanceBlockerKind.UnitSource, model.Blockers[1].Kind);
         }
 
         [Test]
-        public void Recruitment_NoQuerySupport_ReturnsEmptyModel()
+        public void Recruitment_NoQuerySupport_StillExplainsUnitSource()
         {
+            var registry = new FakeRegistry(Recruiter("barracks", "unit-x"));
+
             GuidanceModel model = Resolver(
-                new FakeRegistry(), new FakeAvailability(),
+                registry, new FakeAvailability(),
                 new FakeConstructionCommands(), new FakeEconomy(),
                 recruitment: new FakeRecruitmentNoQuery())
                 .BuildRecruitment(Owner, Tile, "unit-x");
 
-            Assert.AreEqual(0, model.Blockers.Count);
-            Assert.IsFalse(model.AllResolved); // nothing to resume into
+            Assert.AreEqual(1, model.Blockers.Count);
+            var blocker = model.Blockers[0];
+            Assert.AreEqual(GuidanceBlockerKind.UnitSource, blocker.Kind);
+            Assert.AreEqual("unit-x", blocker.ResourceId);
+            Assert.AreEqual("barracks", blocker.BuildingId);
+            Assert.IsTrue(blocker.Options.Exists(
+                o => o.Kind == GuidanceOptionKind.BuildProducer
+                    && o.BuildingId == "barracks"));
+        }
+
+        [Test]
+        public void Recruitment_PlacedRecruiter_OffersFocusAndIsResolved()
+        {
+            var registry = new FakeRegistry(Recruiter("barracks", "unit-x"));
+            var portfolio = new FakePortfolio(
+                new ConstructionSavedPlacement(new Vector2Int(7, 7), "barracks", Owner));
+            var recruitment = new FakeRecruitment
+            {
+                Shortages = new List<UnitRecruitmentShortage>
+                {
+                    new UnitRecruitmentShortage("res-a", false, 10f, 0f, 0f),
+                },
+                Reason = "not enough",
+            };
+
+            GuidanceModel model = Resolver(
+                registry, new FakeAvailability(),
+                new FakeConstructionCommands(), new FakeEconomy(),
+                portfolio, recruitment: recruitment)
+                .BuildRecruitment(Owner, Tile, "unit-x");
+
+            var blocker = model.Blockers[model.Blockers.Count - 1];
+            Assert.AreEqual(GuidanceBlockerKind.UnitSource, blocker.Kind);
+            Assert.IsTrue(blocker.Resolved);
+            Assert.IsTrue(blocker.Options.Exists(
+                o => o.Kind == GuidanceOptionKind.FocusProducer
+                    && o.Position == new Vector2Int(7, 7)));
+            Assert.IsFalse(blocker.Options.Exists(
+                o => o.Kind == GuidanceOptionKind.BuildProducer));
+        }
+
+        [Test]
+        public void Recruitment_RecruiterUnderConstruction_ReportsConstructing()
+        {
+            var registry = new FakeRegistry(Recruiter("barracks", "unit-x"));
+            var portfolio = new FakePortfolio(
+                new ConstructionSavedPlacement(new Vector2Int(7, 7), "barracks", Owner));
+            var lifecycle = new FakeLifecycle();
+            lifecycle.NonOperational.Add(new Vector2Int(7, 7));
+            lifecycle.Progress[new Vector2Int(7, 7)] = (1, 4);
+            var recruitment = new FakeRecruitment
+            {
+                Shortages = new List<UnitRecruitmentShortage>(),
+                Reason = "recruiting building is still under construction.",
+            };
+
+            GuidanceModel model = Resolver(
+                registry, new FakeAvailability(),
+                new FakeConstructionCommands(), new FakeEconomy(),
+                portfolio, lifecycle, recruitment: recruitment)
+                .BuildRecruitment(Owner, Tile, "unit-x");
+
+            var blocker = model.Blockers[model.Blockers.Count - 1];
+            Assert.AreEqual(GuidanceBlockerKind.UnitSource, blocker.Kind);
+            Assert.IsFalse(blocker.Resolved);
+            Assert.IsTrue(blocker.Options.Exists(
+                o => o.Kind == GuidanceOptionKind.ProducerConstructing));
+        }
+
+        [Test]
+        public void Recruitment_NoRecruiterAnywhere_MarksUnobtainable()
+        {
+            var recruitment = new FakeRecruitment
+            {
+                Shortages = new List<UnitRecruitmentShortage>(),
+                Reason = "no recruiter",
+            };
+
+            GuidanceModel model = Resolver(
+                new FakeRegistry(), new FakeAvailability(),
+                new FakeConstructionCommands(), new FakeEconomy(),
+                recruitment: recruitment)
+                .BuildRecruitment(Owner, Tile, "unit-x");
+
+            var blocker = model.Blockers[model.Blockers.Count - 1];
+            Assert.AreEqual(GuidanceBlockerKind.UnitSource, blocker.Kind);
+            Assert.IsFalse(blocker.Resolved);
+            Assert.IsTrue(blocker.Options.Exists(
+                o => o.Kind == GuidanceOptionKind.Unobtainable));
         }
 
         // ---------- fakes ----------

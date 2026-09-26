@@ -399,6 +399,60 @@ namespace Kruty1918.Moyva.Economy.API
     }
 
     [Serializable]
+    public sealed class EconomyForagingYield
+    {
+        [Tooltip("ID ресурсу з реєстру (має збігатися з ResourceDefinition.Id).\nПриклад: \"walnut-wood-materials-resources\".")]
+        [SerializeField] private string _resourceId;
+        [Tooltip("Кожні N ходів жителі приносять цей ресурс.\nПриклад: 5 — деревина кожні 5 ходів, 20 — рідкісний ресурс.")]
+        [SerializeField] private int _intervalTurns = 10;
+        [Tooltip("Базова кількість ресурсу за спрацювання (незалежно від населення).")]
+        [SerializeField] private float _baseAmount = 1f;
+        [Tooltip("Додаткова кількість ресурсу на одного жителя за спрацювання.\n0 = фіксована кількість; 0.1 = +1 ресурс на кожні 10 жителів.")]
+        [SerializeField] private float _perResidentAmount;
+
+        public EconomyForagingYield()
+        {
+        }
+
+        public EconomyForagingYield(string resourceId, int intervalTurns, float baseAmount, float perResidentAmount = 0f)
+        {
+            _resourceId = resourceId;
+            _intervalTurns = intervalTurns;
+            _baseAmount = baseAmount;
+            _perResidentAmount = perResidentAmount;
+        }
+
+        public string ResourceId => _resourceId;
+        public int IntervalTurns => _intervalTurns;
+        public float BaseAmount => _baseAmount;
+        public float PerResidentAmount => _perResidentAmount;
+    }
+
+    [Serializable]
+    public sealed class EconomyForagingRules
+    {
+        [Tooltip("true = жителі періодично приносять базові ресурси з мапи (збір, полювання, рубка).\nГарантує, що гравець без ресурсів може відновити економіку і не застрягнути.")]
+        [SerializeField] private bool _enabled = true;
+        [Tooltip("Мінімальна кількість жителів у поселенні, за якої працює збір ресурсів.\nПриклад: 1 — поселення без жителів нічого не збирає.")]
+        [SerializeField] private int _minResidents = 1;
+        [Tooltip("Перелік ресурсів, які жителі можуть зібрати, з інтервалом та кількістю.\nДешеві ресурси — частіше; дорогі (залізо) — рідше.")]
+        [SerializeField] private List<EconomyForagingYield> _yields = new List<EconomyForagingYield>
+        {
+            new EconomyForagingYield("raspberries-food-resources", 3, 2f, 0.05f),
+            new EconomyForagingYield("mushroom-light-food-resources", 4, 1f, 0.05f),
+            new EconomyForagingYield("walnut-wood-materials-resources", 5, 2f, 0.05f),
+            new EconomyForagingYield("twigs-materials-resources", 5, 2f, 0.05f),
+            new EconomyForagingYield("stone-materials-resources", 10, 1f, 0.02f),
+            new EconomyForagingYield("hardwood-materials-resources", 15, 1f),
+            new EconomyForagingYield("iron-ore-materials-resources", 20, 1f),
+        };
+
+        public bool Enabled => _enabled;
+        public int MinResidents => _minResidents;
+        public IReadOnlyList<EconomyForagingYield> Yields => _yields;
+    }
+
+    [Serializable]
     public sealed class EconomyAiExtensibilityRules
     {
         [Tooltip("true = AI фракції мають власну автономну економіку (виробляють, споживають, торгують без гравця).\nЗараз вимкнено — увімкнення в наступних версіях.")]
@@ -437,6 +491,8 @@ public sealed class EconomyRulesConfigSO : JsonConfigObject
         [SerializeField] private EconomyBuildingRules _building = new EconomyBuildingRules();
         [Tooltip("Правила AI-розширюваності: автономна економіка ворогів, торгівля з гравцем, ескорт каравань.")]
         [SerializeField] private EconomyAiExtensibilityRules _aiExtensibility = new EconomyAiExtensibilityRules();
+        [Tooltip("Правила збору ресурсів жителями: гарантований мінімальний дохід без будівель (anti-softlock).")]
+        [SerializeField] private EconomyForagingRules _foraging = new EconomyForagingRules();
 
         public EconomySettlementRules Settlement => _settlement;
         public EconomyPopulationRules Population => _population;
@@ -449,5 +505,6 @@ public sealed class EconomyRulesConfigSO : JsonConfigObject
         public EconomyMortalityRules Mortality => _mortality;
         public EconomyBuildingRules Building => _building;
         public EconomyAiExtensibilityRules AiExtensibility => _aiExtensibility;
+        public EconomyForagingRules Foraging => _foraging;
     }
 }

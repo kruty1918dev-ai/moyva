@@ -208,7 +208,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             if (ShouldUseOwnerPoolConstructionFunding(normalizedOwnerId))
             {
-                var ownerPoolAvailable = _economyInfoMediator.GetOwnerPoolResourceTotals(normalizedOwnerId);
+                // Owner pool + settlement pools: pre-warehouse spending may draw
+                // from both (e.g. foraged goods), so affordability must reflect it.
+                var ownerPoolAvailable = _economyInfoMediator.GetOwnerResourceTotals(normalizedOwnerId);
                 var ownerPoolReserved = includePendingPlacements
                     ? BuildReservedOwnerPoolCosts(normalizedOwnerId, ignoredPendingPosition)
                     : new Dictionary<string, float>(StringComparer.Ordinal);

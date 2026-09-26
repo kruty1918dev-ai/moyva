@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace Kruty1918.Moyva.Economy.Runtime
 {
@@ -17,5 +18,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
         public int ProductionCyclesCompleted;
         public float TotalFoodConsumed;
         public float TotalWaterConsumed;
+        /// <summary>Resources granted by resident foraging this turn (resourceId → amount).</summary>
+        public List<KeyValuePair<string, float>> ForagedResources;
     }
 }

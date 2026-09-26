@@ -495,6 +495,17 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 model = _guidanceResolver.BuildPlacement(ownerId, pending);
             }
 
+            // The UnitSource blocker renders the goal unit's icon — register
+            // it like unit-group icons so the sprite resolves.
+            if (goal.Kind == GuidanceGoalKind.Recruitment
+                && !string.IsNullOrWhiteSpace(goal.UnitTypeId))
+            {
+                var unitIcon = _unitConfigs?.GetConfig(goal.UnitTypeId)
+                    ?.ResolveCustomSprite();
+                if (unitIcon != null)
+                    _icons[GameplayHtmlIconKeys.Unit(goal.UnitTypeId)] = unitIcon;
+            }
+
             var snapshot = new GameplayGuidanceViewSnapshot
             {
                 GoalKind = goal.Kind,
@@ -515,8 +526,11 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                         b.Kind,
                         b.Kind == GuidanceBlockerKind.Resource
                             ? ResolveResourceDisplayName(b.ResourceId)
-                            : b.Title,
-                        b.Detail, b.ResourceId,
+                            : b.Kind == GuidanceBlockerKind.UnitSource
+                                && !string.IsNullOrWhiteSpace(b.BuildingId)
+                                ? ResolveBuildingDisplayName(b.BuildingId)
+                                : b.Title,
+                        b.Detail, b.ResourceId, b.BuildingId,
                         b.Required, b.Available, b.Reserved, b.Resolved,
                         b.Options.Select(o => new GameplayGuidanceOptionSnapshot(
                             o.Kind, o.BuildingId, o.ResourceId, o.Detail,
@@ -1181,7 +1195,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     {
                         var residents = _population.GetRecruitmentPopulation(ownerId, _selectionPosition);
                         facts.Add(new GameplayFactSnapshot(T("Population"), residents.Total.ToString(),
-                            TF("{0} available · {1} training/ready · {2} military", residents.Available, residents.Training, residents.Military)));
+                            TF("{0} available · {1} training/ready · {2} military", residents.Available, residents.Training, residents.Military),
+                            GameplayHtmlIconKeys.Population));
                         facts.Add(new GameplayFactSnapshot(T("Construction workforce"), $"{residents.ConstructionSpeed:P0}",
                             T("Speed updates with available adult population")));
                     }

@@ -112,12 +112,12 @@ namespace Kruty1918.Moyva.MapChunks.Runtime
         {
             private readonly Renderer _renderer;
             private readonly List<MapChunkCoord> _chunks = new();
-            private readonly bool _originalEnabled;
+            private bool _hiddenByChunks;
+            private bool _enabledBeforeChunkHide;
 
             public RendererEntry(Renderer renderer)
             {
                 _renderer = renderer;
-                _originalEnabled = renderer.enabled;
             }
 
             public IReadOnlyList<MapChunkCoord> Chunks => _chunks;
@@ -129,16 +129,39 @@ namespace Kruty1918.Moyva.MapChunks.Runtime
                     _chunks.Add(chunks[i]);
             }
 
+            /*
+             * Chunk visibility тільки вимикає те, що вимкнула сама.
+             * Умова "visible" ніколи не вмикає renderer насильно —
+             * інакше реєстр знімав би fog-hide на межі туману,
+             * де чанк частково видимий, але конкретні клітини ще
+             * не Visible, і дві системи перезаписували б enabled.
+             */
             public void Apply(bool visible)
             {
-                if (_renderer != null)
-                    _renderer.enabled = _originalEnabled && visible;
+                if (_renderer == null)
+                    return;
+
+                if (!visible)
+                {
+                    if (_hiddenByChunks)
+                        return;
+
+                    _enabledBeforeChunkHide = _renderer.enabled;
+                    _hiddenByChunks = true;
+                    _renderer.enabled = false;
+                    return;
+                }
+
+                Restore();
             }
 
             public void Restore()
             {
-                if (_renderer != null)
-                    _renderer.enabled = _originalEnabled;
+                if (!_hiddenByChunks || _renderer == null)
+                    return;
+
+                _renderer.enabled = _enabledBeforeChunkHide;
+                _hiddenByChunks = false;
             }
         }
     }

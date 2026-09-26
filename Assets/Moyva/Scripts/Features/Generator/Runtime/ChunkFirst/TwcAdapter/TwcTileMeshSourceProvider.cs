@@ -12,6 +12,14 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         private const float FlatSurfaceBoundsHeightTolerance = 0.0001f;
         private const float WaterfallLipOverlap = 0.1f;
 
+        /// <summary>
+        /// How far the shore wash sheet may sit above the land surface before
+        /// it reads as a floating cyan plate on dry ground. Land intentionally
+        /// submerged by the shore planner (TerrainShoreConfig.SubmergedDepthMeters)
+        /// stays within this slack so the sheet covers the shallow shelf.
+        /// </summary>
+        private const float MaxSubmergedWashMeters = 1f;
+
         private static Mesh _waterfallStripMesh;
 
         private readonly ITileWorldCreatorBuildEnvironment _environment;
@@ -399,14 +407,20 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         {
             TileLayerSample waterSample = composition.WaterSurface;
             float landSurface = composition.MainTerrain.SurfaceHeight;
-            // A wash sheet above the land surface reads as a floating cyan
-            // plate on dry ground; it is only meant to wash the seam under
-            // the bank face, never to surface on top of it.
+            // A wash sheet far above the land surface reads as a floating
+            // cyan plate on dry ground; it is only meant to wash the seam
+            // under the bank face or to cover the deliberately submerged
+            // shore shelf, never to surface on top of genuinely dry land.
             if (IsFinite(landSurface)
-                && waterSample.SurfaceHeight > landSurface + 0.0001f)
+                && waterSample.SurfaceHeight > landSurface + MaxSubmergedWashMeters)
             {
                 return 0;
             }
+            // The wash sheet is one full quad at the neighbouring water
+            // level, so it only reads correctly as a continuation of the
+            // water body: emit it only where every open edge is contained.
+            if (!WashSheetIsContained(composition, waterSample.SurfaceHeight))
+                return 0;
             TilesBuildLayer buildLayer = ResolveBuildLayer(waterSample);
             TilePreset preset =
                 ResolvePreset(buildLayer, waterSample, composition.Cell, GlobalSeed.Current)
@@ -479,6 +493,62 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 results);
         }
 
+        /*
+         * A wash sheet is a flat quad floating at the waterline, so it is
+         * only emitted where it reads as part of the water body: the cell
+         * must share an edge with real water (a diagonal-only touch would
+         * draw an isolated corner puddle), and every other open edge must
+         * be held by water, by a bank at/above the sheet, or by a submerged
+         * neighbour that shares the waterline and emits its own sheet. A
+         * dry neighbour below the waterline — or the map border — would
+         * leave the quad hanging over a drop like a floating plate.
+         */
+        private bool WashSheetIsContained(ResolvedTileComposition composition, float waterHeight)
+        {
+            if (_hydrology == null)
+                return true;
+
+            bool touchesWater = false;
+            for (int i = 0; i < 4; i++)
+            {
+                Vector2Int d = WaterfallDirs[i];
+                var neighbor = new Vector2Int(
+                    composition.Cell.x + d.x, composition.Cell.y + d.y);
+                if (_hydrology.TryGetWaterSurface(neighbor, out _))
+                {
+                    touchesWater = true;
+                    continue;
+                }
+
+                float neighborSurface = ResolveNeighborSurfaceHeight(composition, d);
+                if (IsFinite(neighborSurface)
+                    && neighborSurface >= waterHeight - 0.0001f)
+                {
+                    continue;
+                }
+                if (IsFinite(neighborSurface)
+                    && neighborSurface >= waterHeight - MaxSubmergedWashMeters
+                    && OrthogonallyTouchesWater(neighbor))
+                {
+                    continue;
+                }
+                return false;
+            }
+            return touchesWater;
+        }
+
+        private bool OrthogonallyTouchesWater(Vector2Int cell)
+        {
+            for (int i = 0; i < 4; i++)
+            {
+                var neighbor = new Vector2Int(
+                    cell.x + WaterfallDirs[i].x, cell.y + WaterfallDirs[i].y);
+                if (_hydrology.TryGetWaterSurface(neighbor, out _))
+                    return true;
+            }
+            return false;
+        }
+
         private int CollectNormalGridSource(
             ResolvedTileComposition composition,
             TilesBuildLayer buildLayer,
@@ -513,6 +583,19 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             List<TileMeshSource> results)
         {
             int before = results.Count;
+            /*
+             * Atlas themes render each logical cell as one solid beveled tile
+             * instead of four half-offset dual fragments: the authored
+             * fragments carry a per-quadrant bevel that reads as a cross seam
+             * through the tile centre. The generated tile keeps only the
+             * perimeter bevel; the chunk pipeline extrudes its bottom ring
+             * down to each lower neighbour.
+             */
+            if (composition.MainTerrain.TileGeometryMode == TileGeometryMode.SolidTerrain
+                && TryAddSolidTileSource(composition, buildLayer, preset, results))
+            {
+                return results.Count - before;
+            }
             // TWC dual grid creates four half-offset fragments around a source cell.
             // This provider emits each physical fragment exactly once. The terrain
             // builder performs final chunk assignment from TileCenterXZ.
@@ -583,6 +666,73 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 true,
                 results);
             return results.Count - before;
+        }
+
+        /// <summary>
+        /// Emits one generated solid beveled tile centred on the cell. Only
+        /// applies to atlas themes (the theme fill prefab supplies the theme
+        /// and side materials); returns false so the caller falls back to the
+        /// dual-grid fragments when no atlas theme matches.
+        /// </summary>
+        private bool TryAddSolidTileSource(
+            ResolvedTileComposition composition,
+            TilesBuildLayer buildLayer,
+            TilePreset preset,
+            List<TileMeshSource> results)
+        {
+            if (_atlas == null
+                || !_atlas.IsLoaded
+                || !_atlas.TryGetByPreset(preset, out AtlasTileTheme theme))
+            {
+                return false;
+            }
+
+            GameObject fillPrefab = theme.ResolveForm(AtlasTileForm.Fill, lowVariant: false);
+            if (fillPrefab == null
+                || !TryGetMeshTemplates(fillPrefab, out PrefabMeshTemplate[] templates)
+                || templates.Length == 0)
+            {
+                return false;
+            }
+
+            Mesh mesh = SolidBeveledTileMeshUtility.GetOrCreate();
+            if (mesh == null)
+                return false;
+
+            var sample = composition.MainTerrain;
+            float cellSize = ResolveCellSize();
+            Vector3 scale = fillPrefab.transform.localScale;
+            if (buildLayer != null && buildLayer.scaleTileToCellSize)
+                scale *= cellSize;
+            Vector3 scaleOffset = buildLayer != null ? buildLayer.scaleOffset : Vector3.one;
+            scale = new Vector3(scale.x * scaleOffset.x, scale.y * scaleOffset.y, scale.z * scaleOffset.z);
+
+            var position = new Vector3(
+                composition.Cell.x * cellSize,
+                sample.SurfaceHeight,
+                composition.Cell.y * cellSize);
+            Matrix4x4 localMatrix = Matrix4x4.TRS(position, Quaternion.identity, scale);
+            Material materialOverride = preset != null ? preset.GetMaterialOverride() : null;
+
+            var meshSource = new TileMeshSource(
+                mesh,
+                templates[0].ResolveMaterials(materialOverride),
+                localMatrix,
+                sample.LayerId,
+                sample.LayerName,
+                visibleBottomY: ResolveVisibleBottomY(composition),
+                occludedSides: ResolveOccludedSides(composition),
+                tileCenterXZ: new Vector2(position.x, position.z),
+                tileHalfExtent: Mathf.Max(scale.x, scale.z) * 0.5f,
+                authoredClosurePolicy: AuthoredClosurePolicy.PreserveAuthored,
+                edgeBottoms: ResolveEdgeBottoms(composition),
+                tileGeometryMode: sample.TileGeometryMode,
+                generateMissingClosure: true);
+            if (!meshSource.IsValid)
+                return false;
+
+            results.Add(meshSource);
+            return true;
         }
 
         private void TryAddDualGridSource(

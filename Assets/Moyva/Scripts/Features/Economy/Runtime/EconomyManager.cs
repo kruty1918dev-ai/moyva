@@ -455,12 +455,114 @@ namespace Kruty1918.Moyva.Economy.Runtime
         /// <summary>Намагається споживання власника пула ресурсів.</summary>
         public bool TryConsumeOwnerPoolResources(string ownerId, IReadOnlyDictionary<string, float> resourceCosts, out string errorMessage)
         {
-            return _ownerResourcePoolService.TryConsumeOwnerPoolResources(
-                ownerId,
-                resourceCosts,
-                ResolveResourceDisplayName,
-                _signalBus,
-                out errorMessage);
+            if (_ownerResourcePoolService.TryConsumeOwnerPoolResources(
+                    ownerId,
+                    resourceCosts,
+                    ResolveResourceDisplayName,
+                    _signalBus,
+                    out errorMessage))
+            {
+                return true;
+            }
+
+            // Anti-softlock: до появи першого складу витрати можуть добиратися
+            // з пулів поселень власника (наприклад, ресурси збору жителів),
+            // щоб витрачений стартовий запас не був глухим кутом.
+            return TryConsumeOwnerPoolAndSettlementResources(ownerId, resourceCosts, out errorMessage);
+        }
+
+        private bool TryConsumeOwnerPoolAndSettlementResources(
+            string ownerId,
+            IReadOnlyDictionary<string, float> resourceCosts,
+            out string errorMessage)
+        {
+            errorMessage = null;
+            if (resourceCosts == null || resourceCosts.Count == 0)
+                return true;
+
+            string normalizedOwnerId = NormalizeOwnerId(ownerId);
+            var ownerPool = _ownerResourcePoolService.GetOwnerPoolResourceTotals(normalizedOwnerId);
+
+            var settlements = new List<EconomySettlementState>();
+            foreach (var state in _settlementRegistry.AllSettlements.Values)
+            {
+                if (state == null || !state.IsActive)
+                    continue;
+                if (string.Equals(NormalizeOwnerId(state.OwnerId), normalizedOwnerId, StringComparison.Ordinal))
+                    settlements.Add(state);
+            }
+
+            if (settlements.Count == 0)
+            {
+                errorMessage = $"У власника '{normalizedOwnerId}' немає ресурсів ні в стартовому запасі, ні в поселеннях.";
+                return false;
+            }
+
+            settlements.Sort((left, right) => string.CompareOrdinal(left.SettlementId, right.SettlementId));
+
+            foreach (var pair in resourceCosts)
+            {
+                if (string.IsNullOrWhiteSpace(pair.Key))
+                {
+                    errorMessage = "Спроба списати ресурс з порожнім ID.";
+                    return false;
+                }
+
+                if (pair.Value <= 0f)
+                    continue;
+
+                float available = ownerPool.TryGetValue(pair.Key, out var poolAmount) ? poolAmount : 0f;
+                for (int index = 0; index < settlements.Count; index++)
+                    available += settlements[index].GetAvailableResource(pair.Key);
+
+                if (available + 0.0001f < pair.Value)
+                {
+                    errorMessage = $"Недостатньо ресурсу '{ResolveResourceDisplayName(pair.Key)}' у власника '{normalizedOwnerId}': потрібно {pair.Value:0.#}, доступно {available:0.#}.";
+                    return false;
+                }
+            }
+
+            foreach (var pair in resourceCosts)
+            {
+                if (pair.Value <= 0f)
+                    continue;
+
+                float remaining = pair.Value;
+                float poolAmount = ownerPool.TryGetValue(pair.Key, out var poolValue) ? poolValue : 0f;
+                float fromPool = Math.Min(poolAmount, remaining);
+                if (fromPool > 0.0001f)
+                {
+                    var poolCost = new Dictionary<string, float>(StringComparer.Ordinal)
+                    {
+                        [pair.Key] = fromPool,
+                    };
+                    if (_ownerResourcePoolService.TryConsumeOwnerPoolResources(
+                            normalizedOwnerId, poolCost, ResolveResourceDisplayName, _signalBus, out _))
+                    {
+                        remaining -= fromPool;
+                    }
+                }
+
+                for (int index = 0; index < settlements.Count && remaining > 0.0001f; index++)
+                {
+                    var state = settlements[index];
+                    float take = Math.Min(state.GetAvailableResource(pair.Key), remaining);
+                    if (take <= 0.0001f || !state.ConsumeResource(pair.Key, take))
+                        continue;
+
+                    remaining -= take;
+                    _signalBus.Fire(new SettlementResourceChangedSignal
+                    {
+                        SettlementId = state.SettlementId,
+                        OwnerId = normalizedOwnerId,
+                        ResourceId = pair.Key,
+                        NewAmount = state.GetResource(pair.Key),
+                        Delta = -take,
+                    });
+                }
+            }
+
+            return true;
         }
 
         /// <summary>Повертає власника пула ресурсів.</summary>

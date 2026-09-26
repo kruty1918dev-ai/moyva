@@ -70,6 +70,43 @@ namespace Kruty1918.Moyva.Construction.API
             if (!disablesEconomyService && !string.IsNullOrWhiteSpace(industrialResourceId))
                 output.AppendLine(LF(loca, "Produces: {0}", ResolveResourceDisplayName(industrialResourceId, resourceDisplayNameResolver)));
 
+            if (!disablesEconomyService
+                && BuildingDefinitionCapabilities.TryGetEnabledModule(
+                    definition, out ProductionBuildingModule productionModule)
+                && productionModule.Recipes != null)
+            {
+                for (int i = 0; i < productionModule.Recipes.Count; i++)
+                {
+                    var recipe = productionModule.Recipes[i];
+                    if (recipe?.Outputs == null)
+                        continue;
+
+                    var outputs = new StringBuilder();
+                    for (int o = 0; o < recipe.Outputs.Count; o++)
+                    {
+                        var entry = recipe.Outputs[o];
+                        if (entry == null || string.IsNullOrWhiteSpace(entry.ResourceId))
+                            continue;
+                        if (outputs.Length > 0)
+                            outputs.Append(" + ");
+                        outputs.Append(
+                            ResolveResourceDisplayName(entry.ResourceId, resourceDisplayNameResolver));
+                        if (entry.Amount > 1)
+                            outputs.Append('x').Append(entry.Amount);
+                    }
+
+                    if (outputs.Length == 0)
+                        continue;
+
+                    int chancePercent = (int)Math.Round(
+                        Math.Max(0f, Math.Min(1f, recipe.SuccessChance)) * 100f);
+                    int turns = Math.Max(1, recipe.TurnsPerCycle);
+                    output.AppendLine(LF(loca,
+                        "- {0}: {1}% chance, every {2} turn(s)",
+                        outputs, chancePercent, turns));
+                }
+            }
+
             if (!disablesEconomyService)
             {
                 if (constructionCost != null && constructionCost.Count > 0)

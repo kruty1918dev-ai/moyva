@@ -196,6 +196,54 @@
     "enableAiTradeWithPlayer": false,
     "reserveHooksForCaravanEscort": true
   },
+  "foraging": {
+    "enabled": true,
+    "minResidents": 1,
+    "yields": [
+      {
+        "resourceId": "raspberries-food-resources",
+        "intervalTurns": 3,
+        "baseAmount": 2.0,
+        "perResidentAmount": 0.05
+      },
+      {
+        "resourceId": "mushroom-light-food-resources",
+        "intervalTurns": 4,
+        "baseAmount": 1.0,
+        "perResidentAmount": 0.05
+      },
+      {
+        "resourceId": "walnut-wood-materials-resources",
+        "intervalTurns": 5,
+        "baseAmount": 2.0,
+        "perResidentAmount": 0.05
+      },
+      {
+        "resourceId": "twigs-materials-resources",
+        "intervalTurns": 5,
+        "baseAmount": 2.0,
+        "perResidentAmount": 0.05
+      },
+      {
+        "resourceId": "stone-materials-resources",
+        "intervalTurns": 10,
+        "baseAmount": 1.0,
+        "perResidentAmount": 0.02
+      },
+      {
+        "resourceId": "hardwood-materials-resources",
+        "intervalTurns": 15,
+        "baseAmount": 1.0,
+        "perResidentAmount": 0.0
+      },
+      {
+        "resourceId": "iron-ore-materials-resources",
+        "intervalTurns": 20,
+        "baseAmount": 1.0,
+        "perResidentAmount": 0.0
+      }
+    ]
+  },
   "migration": {
     "sourceAssetGuid": "35071a3ae4fbc232a96169cc2e4e3e00",
     "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Economy/EconomyRulesConfig.asset",

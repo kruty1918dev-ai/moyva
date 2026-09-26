@@ -148,6 +148,9 @@ namespace Kruty1918.Moyva.Generator.API
         [Tooltip("Fraction of band cells converted to the shore tile; the rest stay their terrain but still grade toward the waterline. Below 1 the band reads as an irregular partial-tile strip instead of a uniform full-cell ring.")]
         [Range(0f, 1f)] public float BandCoverage = 1f;
 
+        [Tooltip("Depth below the adjacent water surface applied to converted shore cells; 0 keeps them ShoreLiftMeters above the waterline.")]
+        [Min(0f)] public float SubmergedDepthMeters = 0f;
+
         [Tooltip("Seed salt so the coverage gate does not correlate with relief or layer masks.")]
         public int SeedSalt = 947;
 

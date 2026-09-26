@@ -59,7 +59,8 @@ namespace Kruty1918.Moyva.Economy.Runtime
                         {
                             if (output == null || string.IsNullOrWhiteSpace(output.ResourceId) || output.Amount <= 0)
                                 continue;
-                            float rate = output.Amount / (float)turns;
+                            float rate = output.Amount / (float)turns
+                                * Math.Clamp(recipe.SuccessChance, 0f, 1f);
                             production[output.ResourceId] = production.TryGetValue(output.ResourceId, out var current)
                                 ? current + rate : rate;
                             buildingProduces = true;

@@ -1,0 +1,191 @@
+{
+  "$schema": "../Schemas/building.schema.json",
+  "schema": "moyva.building",
+  "version": 1,
+  "id": "hunter-lodge",
+  "model": "building-definition",
+  "placementModuleMigrationVersion": 1,
+  "identity": {
+    "id": "hunter-lodge",
+    "displayName": "Hunter's Lodge",
+    "category": "Civilian",
+    "role": "Food",
+    "description": "A hunting lodge. Every few turns the hunters return with meat, but each hunt has only a chance to succeed.",
+    "tags": [
+      "civilian",
+      "food",
+      "meat"
+    ]
+  },
+  "presentation": {
+    "prefab": {
+      "$asset": "asset.game-object.building-tent-blue.ba961fd2",
+      "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/blue/building_tent_blue.prefab",
+      "required": true
+    },
+    "icon": {
+      "$asset": "asset.sprite.house-01.f9cc986b",
+      "editorPath": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/house-01.png",
+      "required": true
+    },
+    "runtimePreview": {
+      "$asset": "asset.sprite.house-01.f9cc986b",
+      "editorPath": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/house-01.png",
+      "required": true
+    },
+    "variants": {
+      "constructionPrefab": {
+        "$asset": "asset.game-object.building-scaffolding.07c8416d",
+        "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/neutral/building_scaffolding.prefab",
+        "required": true
+      },
+      "prefabVariants": {
+        "blue": {
+          "$asset": "asset.game-object.building-tent-blue.ba961fd2",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/blue/building_tent_blue.prefab",
+          "required": true
+        },
+        "green": {
+          "$asset": "asset.game-object.building-tent-green.f4d51664",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/green/building_tent_green.prefab",
+          "required": true
+        },
+        "red": {
+          "$asset": "asset.game-object.building-tent-red.b14f267f",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/red/building_tent_red.prefab",
+          "required": true
+        },
+        "yellow": {
+          "$asset": "asset.game-object.building-tent-yellow.1e949b52",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/yellow/building_tent_yellow.prefab",
+          "required": true
+        }
+      }
+    },
+    "uiTint": {
+      "r": 1.0,
+      "g": 1.0,
+      "b": 1.0,
+      "a": 1.0
+    },
+    "visualYOffset": 0.0,
+    "previewSettings": {
+      "cameraOffset": {
+        "x": 4.0,
+        "y": 5.0,
+        "z": -6.0
+      },
+      "cameraEulerAngles": {
+        "x": 45.0,
+        "y": -35.0,
+        "z": 0.0
+      },
+      "orthographicSize": 4.0,
+      "backgroundColor": {
+        "r": 0.0,
+        "g": 0.0,
+        "b": 0.0,
+        "a": 0.0
+      }
+    }
+  },
+  "footprint": {
+    "size": {
+      "x": 1,
+      "y": 1
+    },
+    "anchor": "Center",
+    "customAnchor": {
+      "x": 0,
+      "y": 0
+    },
+    "blocksMovement": true,
+    "blocksConstruction": true,
+    "requiresFlatGround": true,
+    "occupiedCells": [
+      {
+        "x": 0,
+        "y": 0
+      }
+    ],
+    "entranceCells": [],
+    "roadConnectionCells": []
+  },
+  "placement": {
+    "canPlaceInFog": false,
+    "requiresSettlementInfluence": true,
+    "createsSettlementInfluence": false,
+    "blockIfSettlementCenterInRange": false,
+    "influenceRadius": 0,
+    "minDistanceFromSettlementCenters": 0,
+    "requiredTerrainIds": [],
+    "requiredNeighborOffsets": [],
+    "requiresWaterNearby": false,
+    "requiresForestNearby": false,
+    "requiresMountainNearby": false,
+    "requiresRoadNearby": false,
+    "nearbyTileRequirements": []
+  },
+  "construction": {
+    "cost": [
+      {
+        "resourceId": "walnut-wood-materials-resources",
+        "amount": 35
+      }
+    ],
+    "buildTurns": 2,
+    "requiresBuilder": true,
+    "workRequired": 0
+  },
+  "runtimeStats": {
+    "maxHp": 60,
+    "armor": 0,
+    "flags": "BlocksPath, Selectable, Damageable",
+    "runtimeTags": []
+  },
+  "modules": [
+    {
+      "$type": "workerless",
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    },
+    {
+      "$type": "production",
+      "resourceId": "steak-food-resources",
+      "workersRequired": 0,
+      "priority": 400,
+      "recipes": [
+        {
+          "recipeId": "hunter-lodge:hunt-meat",
+          "inputs": [],
+          "outputs": [
+            {
+              "resourceId": "steak-food-resources",
+              "amount": 3
+            }
+          ],
+          "turnsPerCycle": 3,
+          "requiresWorkers": false,
+          "requiresStorageSpace": false,
+          "successChance": 0.6
+        }
+      ],
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    },
+    {
+      "$type": "settlement-influence-requirement",
+      "mergeMode": "Override",
+      "requiresInfluence": true,
+      "blockOverlappingCenters": false,
+      "maximumDistanceToCenter": 0,
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    }
+  ],
+  "migration": {
+    "sourceAssetGuid": "",
+    "sourceAssetPath": "",
+    "sourceHash": "agent-added-hunter-lodge-2026-09"
+  }
+}

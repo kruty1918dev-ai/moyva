@@ -341,7 +341,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             for (int index = 0; index < snapshot.SelectionFacts.Length; index++)
             {
                 GameplayFactSnapshot fact = snapshot.SelectionFacts[index];
-                DataRow(html, state.T(fact.Label), state.T(fact.Value), state.T(fact.Context), key: $"fact-{fact.Label}");
+                string factIcon = string.Equals(fact.IconKey, GameplayHtmlIconKeys.Population, StringComparison.Ordinal)
+                    ? PopulationIconKey(snapshot)
+                    : fact.IconKey;
+                DataRow(html, state.T(fact.Label), state.T(fact.Value), state.T(fact.Context), factIcon, $"fact-{fact.Label}");
             }
             if (snapshot.SupportsRecruitment)
                 DataRow(html, state.T("Recruitment queue"), $"{snapshot.RecruitmentQueue.Length}/{snapshot.RecruitmentQueueCapacity}", state.T("Training capacity"));
@@ -356,12 +359,21 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 string trainingLabel = snapshot.TurnUiEnabled
                     ? state.TF("{0} {1}", recipe.TrainingTurns, state.TN("turn", "turns", recipe.TrainingTurns))
                     : GameplayProgressTimeText.Duration(recipe.TrainingSeconds);
-                string meta = $"{state.T(recipe.Role)} / {state.T(recipe.CombatType)} / {trainingLabel} / {state.TF("{0} residents", recipe.PopulationCost)} / {state.T("HP")} {recipe.HitPoints} / {state.T("Move")} {Amount(recipe.Movement)}";
+                string residentsLabel = state.TF("{0} residents", recipe.PopulationCost);
+                string populationIcon = PopulationIconKey(snapshot);
+                string meta = string.IsNullOrEmpty(populationIcon)
+                    ? $"{state.T(recipe.Role)} / {state.T(recipe.CombatType)} / {trainingLabel} / {residentsLabel} / {state.T("HP")} {recipe.HitPoints} / {state.T("Move")} {Amount(recipe.Movement)}"
+                    : $"{state.T(recipe.Role)} / {state.T(recipe.CombatType)} / {trainingLabel} / {state.T("HP")} {recipe.HitPoints} / {state.T("Move")} {Amount(recipe.Movement)}";
                 html.Append("<view className=\"recruit-row\" data-key=\"recruit-").Append(E(recipe.UnitTypeId)).Append("\">");
                 RowIcon(html, recipe.HasIcon, recipe.IconGlobalKey, IconForUnit(recipe.UnitTypeId), false);
                 html.Append("<view className=\"item-copy\"><text className=\"item-title\">")
                     .Append(E(state.T(recipe.Name))).Append("</text><text className=\"item-meta\">")
-                    .Append(E(meta)).Append("</text><text className=\"")
+                    .Append(E(meta)).Append("</text>");
+                if (!string.IsNullOrEmpty(populationIcon))
+                    html.Append("<view className=\"meta-inline\"><image className=\"inline-icon\" src=\"global:")
+                        .Append(populationIcon).Append("\" preserveAspect=\"true\"></image><text className=\"item-meta\">")
+                        .Append(E(residentsLabel)).Append("</text></view>");
+                html.Append("<text className=\"")
                     .Append(recipe.CanRecruit ? "muted" : "status-bad").Append("\">")
                     .Append(E(recipe.CanRecruit ? (string.IsNullOrWhiteSpace(recipe.Cost) ? state.T("No resource cost") : state.T(recipe.Cost)) : state.T(recipe.UnavailableReason)))
                     .Append("</text>");
@@ -397,6 +409,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     html.Append("</view>");
                 }
                 html.Append("</view>")
+                    .Append(Button("?", $"Globals.gameplay.RecruitHelp('{J(recipe.UnitTypeId)}')", "button small",
+                        state.T("Where this unit comes from and how to get it"),
+                        key: $"recruit-help-{recipe.UnitTypeId}"))
                     .Append(Button(state.T("RECRUIT"), $"Globals.gameplay.Recruit('{J(recipe.UnitTypeId)}')", "button primary",
                         recipe.CanRecruit
                             ? state.TF("Recruit {0}", state.T(recipe.Name))
@@ -543,7 +558,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         {
             html.Append("<view className=\"stats-grid\">");
             Stat(html, snapshot.SettlementCount, state.T("SETTLEMENTS"));
-            Stat(html, snapshot.Population, state.T("POPULATION"));
+            Stat(html, snapshot.Population, state.T("POPULATION"), PopulationIconKey(snapshot));
             Stat(html, snapshot.BuildingCount, state.T("BUILDINGS"));
             Stat(html, snapshot.UnitCount, state.T("UNITS"));
             if (snapshot.TurnUiEnabled)
@@ -585,7 +600,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                         settlement.Name,
                         string.IsNullOrWhiteSpace(totals) ? state.T("No stored resources") : totals,
                         state.TF("Population {0} / Buildings {1}", settlement.Population, settlement.BuildingCount),
-                        key: $"settlement-{settlement.Id}");
+                        PopulationIconKey(snapshot), $"settlement-{settlement.Id}");
                 }
                 html.Append("</view>");
             }
@@ -774,9 +789,13 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 .Append(E(value)).Append("</text><text className=\"turn-label\">").Append(E(label)).Append("</text></view>");
         }
 
-        private static void Stat(StringBuilder html, long value, string label)
+        private static void Stat(StringBuilder html, long value, string label, string iconKey = null)
         {
-            html.Append("<view className=\"stat-card\"><text className=\"stat-value\">").Append(value)
+            html.Append("<view className=\"stat-card\">");
+            if (!string.IsNullOrEmpty(iconKey))
+                html.Append("<image className=\"stat-icon sprite-icon\" src=\"global:").Append(E(iconKey))
+                    .Append("\" preserveAspect=\"true\"></image>");
+            html.Append("<text className=\"stat-value\">").Append(value)
                 .Append("</text><text className=\"stat-label\">").Append(E(label)).Append("</text></view>");
         }
 
@@ -842,6 +861,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             string keyAttr = string.IsNullOrEmpty(key) ? string.Empty : $" data-key=\"{E(key)}\"";
             return $"<button className=\"{classes}\"{keyAttr} data-tooltip=\"{E(tooltip)}\" {(disabled ? "disabled=\"true\"" : string.Empty)} onClick=\"{action}\"><text className=\"button-label\">{E(label)}</text></button>";
         }
+
+        private static string PopulationIconKey(GameplayHtmlSnapshot snapshot)
+            => snapshot != null && snapshot.HasPopulationIcon ? GameplayHtmlIconKeys.Population : null;
 
         private static string Amount(float value) => value.ToString("0.#", CultureInfo.InvariantCulture);
 

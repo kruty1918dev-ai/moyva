@@ -125,6 +125,7 @@
     "bandCells": 1,
     "blendCells": 1,
     "shoreLiftMeters": 0.04,
+    "submergedDepthMeters": 0.5,
     "risePerCellMeters": 0.2,
     "maxDropToWaterMeters": 0.9,
     "bandCoverage": 0.55,
