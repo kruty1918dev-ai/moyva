@@ -27,6 +27,7 @@ public static class WorldVisualSmoke
     static bool gameplayRan;
     static readonly List<Vector3> gameplayBuildingTargets = new List<Vector3>();
     static readonly List<Vector3> gameplayUnitTargets = new List<Vector3>();
+    static readonly List<Vector3> gameplayMoveTargets = new List<Vector3>();
 
     static WorldVisualSmoke()
     {
@@ -717,6 +718,23 @@ public static class WorldVisualSmoke
                     Quaternion.LookRotation(center - pos, Vector3.up), false, 0f, 55f);
             }
 
+            // Control render: authored square fill modules placed just south of
+            // the map border, rendered through the preview path together with
+            // the real terrain chunk meshes so a single frame compares the
+            // imported FBX shape against the generated border tiles behind it.
+            var control = SpawnControlFillRow(signal, cs,
+                out Vector3 controlAim, out List<MeshFilter> controlMfs);
+            if (controlMfs.Count > 0)
+            {
+                var ct = new List<MeshFilter>(controlMfs);
+                foreach (var mf in UnityEngine.Object.FindObjectsByType<MeshFilter>())
+                    if (mf != null && mf.gameObject.name == "TerrainMesh") ct.Add(mf);
+                ShotAt(ct, outDir, "control_fbx",
+                    controlAim + new Vector3(0f, 9f, -5f),
+                    Quaternion.Euler(62f, 0f, 0f));
+                foreach (var go in control) UnityEngine.Object.Destroy(go);
+            }
+
             Vector2Int shoreCell = new Vector2Int(-1, -1);
             for (int x = 0; x < signal.Width && shoreCell.x < 0; x++)
             for (int y = 0; y < signal.Height; y++)
@@ -747,6 +765,13 @@ public static class WorldVisualSmoke
                 ShotCam(gameCam, outDir, "game_unit_" + (ui++), p,
                     Quaternion.LookRotation(t - p, Vector3.up), false, 0f, 55f);
             }
+            int mi = 0;
+            foreach (Vector3 t in gameplayMoveTargets)
+            {
+                Vector3 p = t + new Vector3(4f, 5f, -4f);
+                ShotCam(gameCam, outDir, "game_move_" + (mi++), p,
+                    Quaternion.LookRotation(t - p, Vector3.up), false, 0f, 55f);
+            }
 
             gameCam.transform.position = origPos;
             gameCam.transform.rotation = origRot;
@@ -756,6 +781,57 @@ public static class WorldVisualSmoke
         }
         else note.AppendLine("gamecam=none");
         File.WriteAllText(Path.Combine(outDir, "gamecam.txt"), note.ToString());
+    }
+
+    // Spawns a short row of the authored square fill prefab just south of the
+    // map's minimum-Z border so a game-camera frame can compare the imported
+    // FBX module against generated terrain tiles. Returns the spawned objects
+    // so the caller can destroy them after the shot.
+    static List<GameObject> SpawnControlFillRow(
+        WorldGeneratedDataSignal signal, float cs,
+        out Vector3 aim, out List<MeshFilter> filters)
+    {
+        var list = new List<GameObject>();
+        filters = new List<MeshFilter>();
+        aim = Vector3.zero;
+        var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
+            "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Prefabs/grass_fill.prefab");
+        if (prefab == null)
+        {
+            File.AppendAllText("Library/ai/visual-smoke-errors.log",
+                "control: grass_fill prefab not found\n");
+            return list;
+        }
+
+        // Lowest land surface height near the south border, so the authored
+        // quads sit on roughly the same plane as flat generated tiles.
+        float southZ = signal.HasMapWorldBounds
+            ? signal.MapWorldBoundsCenter.z - signal.MapWorldBoundsSize.z * 0.5f
+            : 0f;
+        float baseY = 0f;
+        for (int x = 0; x < signal.Width; x++)
+        for (int y = 0; y < Mathf.Min(6, signal.Height); y++)
+        {
+            if (IsWaterId(signal.TileMap[x, y])) continue;
+            float sv = signal.SurfaceHeightMap != null ? signal.SurfaceHeightMap[x, y] : 0f;
+            baseY = sv; break;
+        }
+
+        float rowZ = southZ - 0.6f * cs;
+        float startX = (signal.HasMapWorldBounds
+            ? signal.MapWorldBoundsCenter.x : signal.Width * cs * 0.5f) - 1.5f * cs;
+        for (int i = 0; i < 4; i++)
+        {
+            var go = UnityEngine.Object.Instantiate(prefab,
+                new Vector3(startX + i * cs, baseY, rowZ),
+                Quaternion.Euler(0f, 90f * (i % 4), 0f));
+            go.transform.localScale = Vector3.one * cs;
+            var mf = go.GetComponentInChildren<MeshFilter>();
+            if (mf != null && mf.sharedMesh != null) filters.Add(mf);
+            list.Add(go);
+        }
+        aim = new Vector3(startX + 1.5f * cs, baseY, rowZ);
+        return list;
     }
 
     // Gameplay-level QA probe. Drives the canonical gameplay services (not a
@@ -769,6 +845,7 @@ public static class WorldVisualSmoke
         var rep = new StringBuilder();
         gameplayBuildingTargets.Clear();
         gameplayUnitTargets.Clear();
+        gameplayMoveTargets.Clear();
         try
         {
             if (lastContainer == null || signal.TileMap == null)
@@ -852,9 +929,14 @@ public static class WorldVisualSmoke
             Vector2Int barrackCell = new Vector2Int(-1, -1);
             if (applySetup != null && castleCell.x >= 0)
             {
-                for (int i = 0; i < flatCells.Count && barrackCell.x < 0; i++)
+                // Barrack must sit inside the castle's build radius, so rank
+                // candidates by distance to the placed castle, not the anchor.
+                var nearCastle = new List<Vector2Int>(flatCells);
+                nearCastle.Sort((a, b) =>
+                    (a - castleCell).sqrMagnitude.CompareTo((b - castleCell).sqrMagnitude));
+                for (int i = 0; i < nearCastle.Count && barrackCell.x < 0; i++)
                 {
-                    Vector2Int c = flatCells[i];
+                    Vector2Int c = nearCastle[i];
                     if (c == castleCell) continue;
                     bool ok = (bool)(applySetup.Invoke(session, new object[] { "barrack", c, ownerId }) ?? false);
                     if (ok) barrackCell = c;
@@ -929,6 +1011,8 @@ public static class WorldVisualSmoke
             }
 
             // 4) Direct unit factory spawn (visual proof) on a separate flat cell.
+            string spawnedUnitId = null;
+            Vector2Int spawnedUnitCell = new Vector2Int(-1, -1);
             if (unitFactory != null)
             {
                 Vector2Int unitCell = new Vector2Int(-1, -1);
@@ -938,12 +1022,16 @@ public static class WorldVisualSmoke
                 {
                     var create = unitFactory.GetType().GetMethod("CreateUnit",
                         new[] { typeof(string), typeof(Vector2Int), typeof(string) });
-                    object uid = create?.Invoke(unitFactory, new object[] { "warrior", unitCell, ownerId });
-                    rep.AppendLine($"unit warrior @{unitCell} id={uid}");
-                    if (uid != null) gameplayUnitTargets.Add(CellWorld(unitCell, signal, cs));
+                    spawnedUnitId = create?.Invoke(unitFactory, new object[] { "warrior", unitCell, ownerId }) as string;
+                    spawnedUnitCell = unitCell;
+                    rep.AppendLine($"unit warrior @{unitCell} id={spawnedUnitId}");
+                    if (spawnedUnitId != null) gameplayUnitTargets.Add(CellWorld(unitCell, signal, cs));
                 }
                 else rep.AppendLine("unit spawn: no free flat cell");
             }
+
+            RunTurnDeployProbe(rep, signal, cs, ownerId, barrackCell);
+            RunMovementProbe(rep, signal, cs, spawnedUnitId, spawnedUnitCell, waterCell);
         }
         catch (Exception e)
         {
@@ -951,6 +1039,197 @@ public static class WorldVisualSmoke
             File.AppendAllText("Library/ai/visual-smoke-errors.log", "RunGameplayProbe: " + e + "\n");
         }
         File.WriteAllText(Path.Combine(outDir, "gameplay.txt"), rep.ToString());
+    }
+
+    // Advances the canonical turn service so a queued recruitment job completes
+    // a training turn, then re-exercises the deployment surface end-to-end.
+    // Ends whichever faction is active each step so a full round can elapse.
+    static void RunTurnDeployProbe(StringBuilder rep, WorldGeneratedDataSignal signal,
+        float cs, string ownerId, Vector2Int barrackCell)
+    {
+        if (barrackCell.x < 0) { rep.AppendLine("turn/deploy: no barrack"); return; }
+        object turns = TryResolveByName("Kruty1918.Moyva.Turns.Runtime.TurnService");
+        object recruitment = TryResolveByName("Kruty1918.Moyva.Units.Runtime.UnitRecruitmentService");
+        rep.AppendLine($"turnsvc={(turns != null)}");
+        if (turns == null || recruitment == null) return;
+
+        var tt = turns.GetType();
+        var roundP = tt.GetProperty("Round");
+        var gturnP = tt.GetProperty("GlobalTurn");
+        var activeP = tt.GetProperty("ActiveOwnerId");
+        var tryEnd = tt.GetMethod("TryEndTurn",
+            new[] { typeof(string), typeof(string).MakeByRefType() });
+        var rt = recruitment.GetType();
+        var getQueue = rt.GetMethod("GetQueue");
+        var getTiles = rt.GetMethod("GetDeploymentTiles");
+        var tryDeploy = rt.GetMethod("TryDeployReady");
+
+        System.Collections.IList queue = getQueue?.Invoke(recruitment, new object[] { ownerId, barrackCell }) as System.Collections.IList;
+        long qid = 0;
+        if (queue != null && queue.Count > 0)
+        {
+            object item = queue[0];
+            object q = GetMember(item, "QueueId");
+            if (q != null) qid = System.Convert.ToInt64(q);
+            rep.AppendLine($"preTurn qid={qid} done={GetMember(item, "CompletedTurns")}/{GetMember(item, "TrainingTurns")} ready={GetMember(item, "IsReady")}");
+        }
+
+        bool ready = false;
+        for (int t = 0; t < 10 && qid > 0 && tryEnd != null; t++)
+        {
+            string requester = activeP?.GetValue(turns) as string;
+            if (string.IsNullOrWhiteSpace(requester)) requester = ownerId;
+            object[] eargs = { requester, null };
+            bool ok = (bool)(tryEnd.Invoke(turns, eargs) ?? false);
+            queue = getQueue?.Invoke(recruitment, new object[] { ownerId, barrackCell }) as System.Collections.IList;
+            object it = queue != null && queue.Count > 0 ? queue[0] : null;
+            ready = it != null && GetMember(it, "IsReady") is bool rb && rb;
+            rep.AppendLine($"endTurn#{t} req={requester} ok={ok} reason={eargs[1]} round={roundP?.GetValue(turns)} gturn={gturnP?.GetValue(turns)} active={activeP?.GetValue(turns)} done={(it != null ? GetMember(it, "CompletedTurns") : "-")} ready={ready}");
+            if (ready || !ok) break;
+        }
+
+        var tiles = getTiles?.Invoke(recruitment, new object[] { ownerId, barrackCell, qid }) as System.Collections.IList;
+        rep.AppendLine($"deploy tiles={(tiles != null ? tiles.Count : -1)} qid={qid} ready={ready}");
+        if (tryDeploy == null || qid <= 0) return;
+        Vector2Int deployCell = barrackCell;
+        if (tiles != null)
+            foreach (var tile in tiles)
+                if (GetMember(tile, "IsValid") is bool v && v) { deployCell = ToCell(tile); break; }
+        object[] dargs = { ownerId, barrackCell, qid, deployCell, null, null };
+        bool deployed = (bool)(tryDeploy.Invoke(recruitment, dargs) ?? false);
+        rep.AppendLine($"deploy ready qid={qid} @{deployCell} ok={deployed} unit={dargs[4]} reason={dargs[5]}");
+        if (deployed && dargs[4] is string du && !string.IsNullOrWhiteSpace(du))
+            gameplayUnitTargets.Add(CellWorld(deployCell, signal, cs));
+    }
+
+    // Exercises the canonical movement surface for a spawned unit: the reachable
+    // set (water must be excluded), per-step traversal validation (flat step
+    // allowed, water rejected) and terrain-transition classification, then kicks
+    // a real MoveUnitAsync to a reachable cell for visual proof.
+    static void RunMovementProbe(StringBuilder rep, WorldGeneratedDataSignal signal,
+        float cs, string unitId, Vector2Int unitCell, Vector2Int waterCell)
+    {
+        if (string.IsNullOrWhiteSpace(unitId)) { rep.AppendLine("movement: no unit"); return; }
+        object units = TryResolveByName("Kruty1918.Moyva.Units.Runtime.UnitService");
+        object traversal = TryResolveByName("Kruty1918.Moyva.Units.Runtime.UnitTraversalPolicy");
+        // The public movement surface is bound via its interfaces, not the
+        // concrete UnitTurnAuthorityMovementService, so resolve the contracts.
+        object moveQuery = TryResolveByName("Kruty1918.Moyva.Units.API.IUnitMovementQuery");
+        object movement = TryResolveByName("Kruty1918.Moyva.Units.API.IUnitMovementService");
+        rep.AppendLine($"move services units={(units != null)} traversal={(traversal != null)} moveQuery={(moveQuery != null)} movement={(movement != null)}");
+        Type modeType = FindType("Kruty1918.Moyva.Units.API.UnitTraversalMode");
+        object pathMode = modeType != null ? Enum.ToObject(modeType, 1) : 1;
+
+        Vector2Int from = unitCell;
+        if (units != null)
+        {
+            var getPos = units.GetType().GetMethod("TryGetUnitPosition");
+            if (getPos != null)
+            {
+                object[] pargs = { unitId, from };
+                if (getPos.Invoke(units, pargs) is bool gp && gp) from = (Vector2Int)pargs[1];
+            }
+        }
+        rep.AppendLine($"unit @{from}");
+
+        // Reachable set: every tile the movement query reports, with a count of
+        // reachable vs blocked and a water cell that must NOT be reachable.
+        if (moveQuery != null)
+        {
+            var getTiles = moveQuery.GetType().GetMethod("GetMovementTiles");
+            var tiles = getTiles?.Invoke(moveQuery, new object[] { unitId }) as System.Collections.IList;
+            int reachable = 0, blocked = 0;
+            Vector2Int moveTarget = new Vector2Int(-1, -1);
+            bool waterReachable = false, sawWater = false;
+            if (tiles != null)
+            {
+                foreach (var t in tiles)
+                {
+                    bool isR = GetMember(t, "IsReachable") is bool r && r;
+                    if (isR) reachable++; else blocked++;
+                    Vector2Int cell = ToCell(t);
+                    if (IsWaterId(signal.TileMap[cell.x, cell.y]))
+                    {
+                        sawWater = true;
+                        if (isR) waterReachable = true;
+                    }
+                    else if (isR && moveTarget.x < 0) moveTarget = cell;
+                }
+            }
+            rep.AppendLine($"moveTiles total={(tiles != null ? tiles.Count : -1)} reachable={reachable} blocked={blocked} waterInSet={sawWater} waterReachable={waterReachable}");
+
+            // Per-step validation: an orthogonal flat land step must pass, a
+            // water step must be refused with a reason.
+            if (traversal != null)
+            {
+                var tryStep = traversal.GetType().GetMethod("TryEvaluateStep");
+                var tryTrans = traversal.GetType().GetMethod("TryEvaluateTransition");
+                if (tryStep != null)
+                {
+                    foreach (var d in OrthoDirs())
+                    {
+                        Vector2Int to = from + d;
+                        if (to.x < 0 || to.y < 0 || to.x >= signal.Width || to.y >= signal.Height) continue;
+                        object[] sargs = { unitId, from, to, 8f, pathMode, null, null };
+                        bool sok = (bool)(tryStep.Invoke(traversal, sargs) ?? false);
+                        string kind = "";
+                        if (tryTrans != null)
+                        {
+                            object[] targs = { from, to, "ground-default", null };
+                            tryTrans.Invoke(traversal, targs);
+                            kind = GetMember(targs[3], "Kind")?.ToString() ?? "";
+                        }
+                        rep.AppendLine($"step {from}->{to} tile={signal.TileMap[to.x, to.y]} ok={sok} cost={sargs[5]} reason={sargs[6]} trans={kind}");
+                    }
+                    if (waterCell.x >= 0)
+                    {
+                        // Force a water evaluation regardless of adjacency by
+                        // stepping a neighbour of a water cell into it.
+                        Vector2Int adj = from;
+                        foreach (var d in OrthoDirs())
+                        {
+                            Vector2Int n = waterCell + d;
+                            if (n.x >= 0 && n.y >= 0 && n.x < signal.Width && n.y < signal.Height
+                                && !IsWaterId(signal.TileMap[n.x, n.y])) { adj = n; break; }
+                        }
+                        object[] sargs = { unitId, adj, waterCell, 8f, pathMode, null, null };
+                        bool sok = (bool)(tryStep.Invoke(traversal, sargs) ?? false);
+                        rep.AppendLine($"step water {adj}->{waterCell} ok={sok} cost={sargs[5]} reason={sargs[6]}");
+                    }
+                }
+            }
+
+            // Kick the real movement to a reachable cell for visual proof; the
+            // animation runs over the pre-capture window, so we record the
+            // destination for a dedicated shot rather than blocking.
+            if (moveTarget.x >= 0 && movement != null)
+            {
+                var moveAsync = movement.GetType().GetMethod("MoveUnitAsync");
+                moveAsync?.Invoke(movement, new object[] { unitId, moveTarget, System.Threading.CancellationToken.None });
+                rep.AppendLine($"move issued @{moveTarget}");
+                gameplayMoveTargets.Add(CellWorld(moveTarget, signal, cs));
+            }
+        }
+    }
+
+    static Vector2Int[] OrthoDirs()
+        => new[] { new Vector2Int(1, 0), new Vector2Int(-1, 0), new Vector2Int(0, 1), new Vector2Int(0, -1) };
+
+    static object GetMember(object o, string name)
+    {
+        if (o == null) return null;
+        var t = o.GetType();
+        var p = t.GetProperty(name);
+        if (p != null) return p.GetValue(o);
+        var f = t.GetField(name);
+        return f != null ? f.GetValue(o) : null;
+    }
+
+    static Vector2Int ToCell(object o)
+    {
+        if (o is Vector2Int v) return v;
+        object p = GetMember(o, "Position");
+        return p is Vector2Int c ? c : new Vector2Int(-1, -1);
     }
 
     static bool IsFlatCell(WorldGeneratedDataSignal signal, int x, int y)
