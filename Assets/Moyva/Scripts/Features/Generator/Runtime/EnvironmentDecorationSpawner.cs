@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.MapChunks.API;
+using Kruty1918.Moyva.Shared.Graphics;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.Runtime
@@ -18,6 +19,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
         private readonly IGeneratorTerrainLevelService _terrainLevels;
         private readonly IMapVisualChunkRegistry _chunkRegistry;
         private readonly EnvironmentObjectPlacementResolver _placementResolver;
+        private readonly IGraphicsSettingsService _graphicsSettings;
         private readonly bool _alignToSurface;
         private readonly float _footprintShrink;
         private readonly Dictionary<MapChunkCoord, Transform> _decorationRoots = new Dictionary<MapChunkCoord, Transform>();
@@ -30,7 +32,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
             [Zenject.InjectOptional] IGeneratorTerrainLevelService terrainLevels = null,
             [Zenject.InjectOptional] EnvironmentDecorationConfig config = null,
             [Zenject.InjectOptional] EnvironmentObjectPlacementResolver placementResolver = null,
-            [Zenject.InjectOptional] IMapVisualChunkRegistry chunkRegistry = null)
+            [Zenject.InjectOptional] IMapVisualChunkRegistry chunkRegistry = null,
+            [Zenject.InjectOptional] IGraphicsSettingsService graphicsSettings = null)
         {
             _objectRegistry = objectRegistry ?? throw new ArgumentNullException(nameof(objectRegistry));
             _layout = layout ?? throw new ArgumentNullException(nameof(layout));
@@ -38,6 +41,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             _terrainLevels = terrainLevels;
             _placementResolver = placementResolver;
             _chunkRegistry = chunkRegistry;
+            _graphicsSettings = graphicsSettings;
             _alignToSurface = config?.VisualVariation?.AlignToSurface ?? true;
             _footprintShrink = config?.Footprint?.FootprintShrink ?? 0.9f;
         }
@@ -86,6 +90,18 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
         private bool TrySpawnDecoration(DecorationPlacement placement)
         {
+            // Performance profile thins light ground cover only — trees,
+            // bushes, rocks and stumps keep the biome silhouette. The skip is
+            // a pure function of the placement hash, so quality switching
+            // never changes which heavy props appear.
+            if (_graphicsSettings != null
+                && _graphicsSettings.Settings.Profile == GraphicsQualityProfile.Performance
+                && IsLightweightDecor(placement.Type)
+                && (placement.Position.GetHashCode() & 1) == 1)
+            {
+                return false;
+            }
+
             if (!_objectRegistry.TryGetDefinition(placement.AssetId, out var definition))
                 return false;
 
@@ -111,7 +127,11 @@ namespace Kruty1918.Moyva.Generator.Runtime
             if (_terrainLevels != null
                 && _terrainLevels.TryGetSurfaceHeight(cell, out float surfaceY))
             {
+                // Only low ground-cover tilts with the surface — trunks,
+                // boulders and logs stay upright so trees never lie
+                // horizontally on slopes.
                 if (_alignToSurface
+                    && AlignsToSurface(placement.Type)
                     && _terrainLevels.TryGetSurfaceNormal(cell, cellSize, out Vector3 normal)
                     && normal.y < 0.9999f)
                 {
@@ -160,6 +180,43 @@ namespace Kruty1918.Moyva.Generator.Runtime
             }
 
             return true;
+        }
+
+        /// <summary>Structural props stay upright on slopes; ground cover
+        /// and unclassified types tilt with the surface.</summary>
+        private static bool AlignsToSurface(string type)
+        {
+            switch (type)
+            {
+                case "tree":
+                case "stump":
+                case "rock":
+                case "bush":
+                case "log":
+                case "sapling":
+                    return false;
+                default:
+                    return true;
+            }
+        }
+
+        /// <summary>Small cover props are the first thing the low-quality
+        /// profile sheds; structural props always spawn.</summary>
+        private static bool IsLightweightDecor(string type)
+        {
+            switch (type)
+            {
+                case "grass":
+                case "tallgrass":
+                case "fern":
+                case "flower":
+                case "litter":
+                case "pebble":
+                case "reed":
+                    return true;
+                default:
+                    return false;
+            }
         }
 
         private float SurfaceHeightOrNaN(Vector2Int cell)

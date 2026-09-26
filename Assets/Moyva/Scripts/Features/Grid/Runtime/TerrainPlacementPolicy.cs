@@ -5,16 +5,20 @@ namespace Kruty1918.Moyva.Grid.Runtime
 {
     /// <summary>
     /// Tile-tag driven placement policy. Tile JSON marks blocked terrain via
-    /// <c>"no-spawn"</c> (decorations, props, units, starting positions) and
-    /// <c>"no-build"</c> (construction). Unknown/unresolved tile ids stay
-    /// placeable so a missing repository never blocks unrelated systems;
-    /// a conservative name fallback still covers shore tiles in bootstrap
-    /// contexts where the repository is absent.
+    /// <c>"no-spawn"</c> (props, units, starting positions), <c>"no-build"</c>
+    /// (construction) and <c>"no-decor"</c> (visual decorations). Dry shore
+    /// keeps <c>no-spawn</c> for gameplay objects but deliberately allows
+    /// decorative cover, so the decoration operation consults the narrower
+    /// tag. Unknown/unresolved tile ids stay placeable so a missing
+    /// repository never blocks unrelated systems; a conservative name
+    /// fallback still covers shore tiles in bootstrap contexts where the
+    /// repository is absent.
     /// </summary>
     internal sealed class TerrainPlacementPolicy : ITerrainPlacementPolicy
     {
         public const string NoSpawnTag = "no-spawn";
         public const string NoBuildTag = "no-build";
+        public const string NoDecorTag = "no-decor";
 
         private readonly ITileTypeRepository _tileTypes;
 
@@ -31,7 +35,9 @@ namespace Kruty1918.Moyva.Grid.Runtime
 
             string blockingTag = operation == TerrainPlacementOperation.Building
                 ? NoBuildTag
-                : NoSpawnTag;
+                : operation == TerrainPlacementOperation.Decoration
+                    ? NoDecorTag
+                    : NoSpawnTag;
 
             if (_tileTypes != null
                 && _tileTypes.TryGet(tileTypeId, out TileTypeSnapshot tileType))
@@ -39,7 +45,11 @@ namespace Kruty1918.Moyva.Grid.Runtime
                 return !tileType.HasTag(blockingTag);
             }
 
-            return !LooksLikeBlockedShoreTile(tileTypeId);
+            // Without a repository the name fallback stays conservative for
+            // gameplay objects; decoration id resolution runs with the bound
+            // repository, and dry shore is a valid decor surface.
+            return operation == TerrainPlacementOperation.Decoration
+                   || !LooksLikeBlockedShoreTile(tileTypeId);
         }
 
         /// <summary>

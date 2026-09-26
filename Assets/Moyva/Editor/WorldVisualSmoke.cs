@@ -455,6 +455,7 @@ public static class WorldVisualSmoke
         DumpWaterfalls(outDir, signal, targets);
         DumpWaterMaterial(outDir, targets);
         DumpArtifacts(outDir, signal, targets);
+        DumpDecorations(outDir, signal);
 
         File.WriteAllText(Path.Combine(outDir, "manifest.txt"), manifest.ToString());
         return stats.ToString();
@@ -970,6 +971,103 @@ public static class WorldVisualSmoke
         catch (Exception e)
         {
             File.AppendAllText("Library/ai/visual-smoke-errors.log", "DumpArtifacts: " + e + "\n");
+        }
+    }
+
+    /// <summary>
+    /// Decoration density forensics: a per-seed candidate/reject/placed
+    /// table replayed through the canonical generator, plus a scene census
+    /// of actually-spawned objects by asset/type prefix.
+    /// </summary>
+    static void DumpDecorations(string outDir, WorldGeneratedDataSignal signal)
+    {
+        try
+        {
+            // Scene census: every spawned decoration object by asset prefix.
+            var census = new Dictionary<string, int>();
+            int spawned = 0;
+            foreach (var t in UnityEngine.Object.FindObjectsByType<Transform>(
+                FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                if (t.parent == null || !t.parent.name.StartsWith("EnvironmentDecorations"))
+                    continue;
+                string id = t.name;
+                int us = id.LastIndexOf('_');
+                if (us > 0) us = id.LastIndexOf('_', us - 1);
+                if (us > 0) id = id.Substring(0, us);
+                census[id] = census.TryGetValue(id, out int n) ? n + 1 : 1;
+                spawned++;
+            }
+            var csb = new StringBuilder("assetId;count\n");
+            foreach (var kv in census.OrderByDescending(k => k.Value))
+                csb.Append(kv.Key).Append(';').Append(kv.Value).Append('\n');
+            csb.Append("TOTAL;").Append(spawned).Append('\n');
+            File.WriteAllText(Path.Combine(outDir, "decorations.csv"), csb.ToString());
+
+            // Replay the placement stage for several seeds on the SAME map:
+            // candidate/reject/placed-by-type table per seed.
+            void Bail(string why)
+                => File.AppendAllText("Library/ai/visual-smoke-errors.log",
+                    "DumpDecorations bail: " + why + "\n");
+            if (lastContainer == null) { Bail("container"); return; }
+            var stateType = FindGeneratorType("Kruty1918.Moyva.Generator.Runtime.IMapVisualWorldState");
+            var genType = FindGeneratorType("Kruty1918.Moyva.Generator.Runtime.EnvironmentDecorationGenerator");
+            var statsType = FindGeneratorType("Kruty1918.Moyva.Generator.Runtime.DecorationPlacementStats");
+            if (stateType == null || genType == null || statsType == null)
+            {
+                Bail($"types s={stateType != null} g={genType != null} t={statsType != null}");
+                return;
+            }
+            object state = lastContainer.TryResolve(stateType);
+            object gen = lastContainer.TryResolve(genType);
+            if (state == null || gen == null)
+            {
+                Bail($"resolve s={state != null} g={gen != null}");
+                return;
+            }
+            object[] gargs = { null };
+            if (stateType.GetMethod("TryGetCurrentWorldData")?.Invoke(state, gargs) is not bool ok || !ok)
+            { Bail("noWorldData"); return; }
+            object worldData = gargs[0];
+            if (worldData == null) { Bail("worldData-null"); return; }
+            var seedField = worldData.GetType().GetField("Seed");
+            var generate = genType.GetMethod("Generate");
+            if (seedField == null || generate == null)
+            { Bail($"members sp={seedField != null} gen={generate != null}"); return; }
+
+            int[] seeds = { (int)seedField.GetValue(worldData), 6130, 777, 2024, 31337, 42 };
+            var sb = new StringBuilder();
+            var watch = new System.Diagnostics.Stopwatch();
+            int origSeed = (int)seedField.GetValue(worldData);
+            foreach (int s in seeds)
+            {
+                seedField.SetValue(worldData, s);
+                object stats = Activator.CreateInstance(statsType, nonPublic: true);
+                watch.Restart();
+                object result = generate.Invoke(gen, new[] { worldData, stats });
+                watch.Stop();
+                int placed = statsType.GetProperty("PlacedTotal")?.GetValue(stats) is int p ? p : -1;
+                int attempts = (int)GetMember(stats, "Attempts");
+                int water = (int)GetMember(stats, "WaterCells");
+                int sceneCount = result?.GetType().GetProperty("Count")?.GetValue(result) is int c ? c : -1;
+                sb.Append($"seed={s} placements={sceneCount} attempts={attempts} waterCells={water} genMs={watch.ElapsedMilliseconds}\n  placed: ");
+                var pbt = GetMember(stats, "PlacedByType") as System.Collections.IDictionary;
+                if (pbt != null)
+                    foreach (System.Collections.DictionaryEntry e in pbt)
+                        sb.Append(e.Key).Append('=').Append(e.Value).Append(' ');
+                sb.Append("\n  rejects: ");
+                var rej = GetMember(stats, "Rejects") as System.Collections.IDictionary;
+                if (rej != null)
+                    foreach (System.Collections.DictionaryEntry e in rej)
+                        sb.Append(e.Key).Append('=').Append(e.Value).Append(' ');
+                sb.Append('\n');
+            }
+            seedField.SetValue(worldData, origSeed);
+            File.WriteAllText(Path.Combine(outDir, "decoration-stats.txt"), sb.ToString());
+        }
+        catch (Exception e)
+        {
+            File.AppendAllText("Library/ai/visual-smoke-errors.log", "DumpDecorations: " + e + "\n");
         }
     }
 

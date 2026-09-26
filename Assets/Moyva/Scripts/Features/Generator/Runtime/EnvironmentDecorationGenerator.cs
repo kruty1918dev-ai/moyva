@@ -34,8 +34,12 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
         /// <summary>
         /// Generate decoration placement data for the given world.
+        /// When <paramref name="stats"/> is supplied it collects one-line
+        /// candidate/accepted/rejected-by-reason counters for the whole
+        /// generation — the density-debugging table, never per-cell spam.
         /// </summary>
-        public DecorationPlacementResult Generate(GeneratedWorldData worldData)
+        public DecorationPlacementResult Generate(
+            GeneratedWorldData worldData, DecorationPlacementStats stats = null)
         {
             if (!_config.Enabled || worldData == null)
                 return DecorationPlacementResult.Empty;
@@ -43,6 +47,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
             int width = worldData.Width;
             int height = worldData.Height;
             int seed = worldData.Seed + _config.SeedOffset;
+            if (stats != null)
+                stats.Seed = worldData.Seed;
 
             var placements = new List<DecorationPlacement>();
             var densityMap = GenerateDensityMap(worldData, seed);
@@ -57,35 +63,50 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 // land props never spawn on water regardless of flags.
                 if (waterCell)
                 {
-                    TryGenerateWaterFlora(x, y, seed, tileId, worldData, placements);
+                    TryGenerateWaterFlora(x, y, seed, tileId, worldData, placements, stats);
                     continue;
                 }
 
                 // Tile-tagged spawn blocks (shore sand) reject every land
                 // decoration regardless of configured densities.
                 if (!AllowsDecorationTile(tileId))
+                {
+                    stats?.Reject("tile-policy");
                     continue;
+                }
 
                 if (IsExcludedCell(x, y, worldData))
+                {
+                    stats?.Reject(IsRoadTile(tileId) ? "road" : "building-radius");
                     continue;
+                }
 
                 float cellDensity = densityMap[x, y];
                 if (cellDensity <= 0f)
+                {
+                    stats?.Reject("cluster-density-zero");
                     continue;
+                }
 
                 float biomeMultiplier = GetBiomeMultiplier(tileId);
                 float adjustedDensity = cellDensity * _config.GlobalDensity * biomeMultiplier;
 
                 int objectCount = CalculateObjectCount(adjustedDensity, seed, x, y, 0);
+                if (objectCount <= 0)
+                    stats?.Reject("count-roll-miss");
                 for (int i = 0; i < objectCount; i++)
                 {
-                    if (TryGenerateDecoration(x, y, seed, i, tileId, worldData, out var placement))
+                    stats?.Attempt();
+                    if (TryGenerateDecoration(x, y, seed, i, tileId, worldData, out var placement, stats))
+                    {
                         placements.Add(placement);
+                        stats?.Placed(placement.Type);
+                    }
                 }
             }
 
             if (_config.Layers != null && _config.Layers.Length > 0)
-                GenerateLayers(worldData, seed, placements);
+                GenerateLayers(worldData, seed, placements, stats);
 
             return new DecorationPlacementResult(placements);
         }
@@ -229,14 +250,18 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
         private bool TryGenerateDecoration(
             int x, int y, int seed, int index, string tileId,
-            GeneratedWorldData worldData, out DecorationPlacement placement)
+            GeneratedWorldData worldData, out DecorationPlacement placement,
+            DecorationPlacementStats stats = null)
         {
             placement = default;
 
             // Determine decoration type based on biome and random selection
             string decorationType = SelectDecorationType(tileId, seed, x, y, index);
             if (string.IsNullOrEmpty(decorationType))
+            {
+                stats?.Reject("type-select-miss");
                 return false;
+            }
 
             // Shoreline buffer: heavy props stay off the water edge while
             // grass and flowers may grow right up to it.
@@ -244,19 +269,26 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 && IsHeavyDecoration(decorationType)
                 && IsNearWater(x, y, worldData, _config.Exclusions.ShorelineExclusionCells))
             {
+                stats?.Reject("shoreline");
                 return false;
             }
 
             // Select specific asset variant
             if (!_config.AssetPools.TryGetValue(decorationType, out var assetPool) || assetPool.Length == 0)
+            {
+                stats?.Reject("pool-missing");
                 return false;
+            }
 
             uint variantHash = DeterministicHash.VariantHash(seed, x, y, index, decorationType);
             string assetId = assetPool[variantHash % assetPool.Length];
 
             // Verify asset exists in registry
             if (!_objectRegistry.TryGetDefinition(assetId, out var definition))
+            {
+                stats?.Reject("registry-missing");
                 return false;
+            }
 
             // Calculate visual variation
             Vector3 position = CalculatePosition(x, y, worldData, seed, index);
@@ -266,12 +298,26 @@ namespace Kruty1918.Moyva.Generator.Runtime
             // Oversized props must fit every cell under their footprint; the
             // resolver shifts them within a bounded radius or rejects the
             // spawn when no nearby position keeps the model on valid land.
-            if (RequiresFootprintValidation(decorationType)
-                && !TryResolveFootprint(
-                    definition.VisualPrefab, ref position, ref x, ref y,
-                    rotation, scale, worldData))
+            if (RequiresFootprintValidation(decorationType))
             {
-                return false;
+                bool ok = TryResolveFootprint(
+                    definition.VisualPrefab, ref position, ref x, ref y,
+                    rotation, scale, worldData);
+                if (!ok)
+                {
+                    // Bounded deterministic retry: shrink the prop and let
+                    // the resolver re-shift within its configured radius.
+                    ok = TryResolveFootprint(
+                        definition.VisualPrefab, ref position, ref x, ref y,
+                        rotation, scale * 0.75f, worldData);
+                    if (ok)
+                        scale *= 0.75f;
+                }
+                if (!ok)
+                {
+                    stats?.Reject("footprint");
+                    return false;
+                }
             }
 
             placement = new DecorationPlacement(
@@ -370,7 +416,9 @@ namespace Kruty1918.Moyva.Generator.Runtime
         /// with trees for the shared per-tile cap. Every decision is a pure
         /// function of (seed, world cell), independent of chunk load order.
         /// </summary>
-        private void GenerateLayers(GeneratedWorldData worldData, int seed, List<DecorationPlacement> placements)
+        private void GenerateLayers(
+            GeneratedWorldData worldData, int seed, List<DecorationPlacement> placements,
+            DecorationPlacementStats stats = null)
         {
             var rules = _config.Layers;
             int width = worldData.Width;
@@ -410,19 +458,32 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     if (!AllowsDecorationTile(tileId) || IsExcludedCell(x, y, worldData))
                         continue;
                     if (rule.SkipObjectCells && HasObjectCell(x, y, worldData))
+                    {
+                        stats?.Reject("layer-object-cell:" + rule.Type);
                         continue;
+                    }
                     if (!LayerWaterOk(rule, x, y, worldData, out bool nearWater))
+                    {
+                        stats?.Reject("layer-water-affinity:" + rule.Type);
                         continue;
+                    }
                     if (!LayerForestOk(rule, x, y, forestMap))
+                    {
+                        stats?.Reject("layer-forest-affinity:" + rule.Type);
                         continue;
+                    }
                     if (rule.ShorelineExclusion
                         && _config.Exclusions.ShorelineExclusionCells > 0
                         && IsNearWater(x, y, worldData, _config.Exclusions.ShorelineExclusionCells))
                     {
+                        stats?.Reject("layer-shoreline:" + rule.Type);
                         continue;
                     }
                     if (rule.MaxSlopeMeters > 0f && LocalSlope(worldData, x, y) > rule.MaxSlopeMeters)
+                    {
+                        stats?.Reject("layer-slope:" + rule.Type);
                         continue;
+                    }
 
                     float weight = rule.Weight
                                    * _config.GlobalDensity
@@ -437,16 +498,21 @@ namespace Kruty1918.Moyva.Generator.Runtime
                         weight += rule.NearTreeBoost * _config.GlobalDensity;
                     }
                     if (weight <= 0f)
+                    {
+                        stats?.Reject("layer-zero-weight:" + rule.Type);
                         continue;
+                    }
 
                     int salt = 1000 + li * 64;
                     int count = CalculateObjectCount(weight, seed, x, y, salt, rule.MaxPerTile);
                     for (int i = 0; i < count; i++)
                     {
                         int index = salt + i;
-                        if (!TryPlaceLayer(x, y, seed, index, rule, worldData, out var placement))
+                        stats?.Attempt();
+                        if (!TryPlaceLayer(x, y, seed, index, rule, worldData, out var placement, stats))
                             continue;
                         placements.Add(placement);
+                        stats?.Placed(placement.Type);
                         if (rule.FeedsTreeAffinity)
                             treeAnchors.Add(new Vector2Int(placement.TileX, placement.TileY));
                     }
@@ -456,14 +522,18 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
         private bool TryPlaceLayer(
             int x, int y, int seed, int index, DecorationLayerRule rule,
-            GeneratedWorldData worldData, out DecorationPlacement placement)
+            GeneratedWorldData worldData, out DecorationPlacement placement,
+            DecorationPlacementStats stats = null)
         {
             placement = default;
             var pool = _config.AssetPools[rule.Type];
             uint variantHash = DeterministicHash.VariantHash(seed, x, y, index, "layer:" + rule.Type);
             string assetId = pool[(int)(variantHash % pool.Length)];
             if (!_objectRegistry.TryGetDefinition(assetId, out var definition))
+            {
+                stats?.Reject("layer-registry-missing:" + rule.Type);
                 return false;
+            }
 
             Vector3 position = CalculatePosition(x, y, worldData, seed, index);
             Quaternion rotation = CalculateRotation(seed, x, y, index);
@@ -476,12 +546,24 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 scale = Vector3.one * Mathf.Lerp(lo, hi, t);
             }
 
-            if (rule.ValidateFootprint
-                && !TryResolveFootprint(
-                    definition.VisualPrefab, ref position, ref x, ref y,
-                    rotation, scale, worldData))
+            if (rule.ValidateFootprint)
             {
-                return false;
+                bool ok = TryResolveFootprint(
+                    definition.VisualPrefab, ref position, ref x, ref y,
+                    rotation, scale, worldData);
+                if (!ok)
+                {
+                    ok = TryResolveFootprint(
+                        definition.VisualPrefab, ref position, ref x, ref y,
+                        rotation, scale * 0.75f, worldData);
+                    if (ok)
+                        scale *= 0.75f;
+                }
+                if (!ok)
+                {
+                    stats?.Reject("layer-footprint:" + rule.Type);
+                    return false;
+                }
             }
 
             placement = new DecorationPlacement(
@@ -662,28 +744,38 @@ namespace Kruty1918.Moyva.Generator.Runtime
         /// </summary>
         private void TryGenerateWaterFlora(
             int x, int y, int seed, string tileId,
-            GeneratedWorldData worldData, List<DecorationPlacement> placements)
+            GeneratedWorldData worldData, List<DecorationPlacement> placements,
+            DecorationPlacementStats stats = null)
         {
             const string type = "waterplant";
             float density = _config.TypeDensities.WaterPlantDensity * _config.GlobalDensity;
             if (density <= 0f || !HasPool(type))
                 return;
 
+            stats?.WaterCell();
             if (_config.Exclusions.BuildingExclusionRadius > 0
                 && worldData.BuildingMap != null
                 && IsNearBuilding(x, y, worldData.BuildingMap, _config.Exclusions.BuildingExclusionRadius))
             {
+                stats?.Reject("water-flora-building");
                 return;
             }
 
             uint hash = DeterministicHash.CellHash(seed, x, y, 0);
             if ((hash % 10000) / 10000f >= density)
+            {
+                stats?.Reject("water-flora-density");
                 return;
+            }
 
+            stats?.Attempt();
             var pool = _config.AssetPools[type];
             string assetId = pool[DeterministicHash.VariantHash(seed, x, y, 0, type) % pool.Length];
             if (!_objectRegistry.TryGetDefinition(assetId, out _))
+            {
+                stats?.Reject("water-flora-registry");
                 return;
+            }
 
             placements.Add(new DecorationPlacement(
                 assetId,
@@ -694,6 +786,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 y,
                 WaterFloraSurfaceOffset,
                 type));
+            stats?.Placed(type);
         }
 
         private const float WaterFloraSurfaceOffset = 0.03f;
@@ -740,8 +833,10 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 resolved.x / cellSize,
                 position.y,
                 resolved.z / cellSize);
-            x = Mathf.Clamp(Mathf.FloorToInt(position.x), 0, worldData.Width - 1);
-            y = Mathf.Clamp(Mathf.FloorToInt(position.z), 0, worldData.Height - 1);
+            // Same centred lattice the resolver uses: cell i spans
+            // [i-0.5, i+0.5), so the anchor cell is floor(v + 0.5).
+            x = Mathf.Clamp(Mathf.FloorToInt(position.x + 0.5f), 0, worldData.Width - 1);
+            y = Mathf.Clamp(Mathf.FloorToInt(position.z + 0.5f), 0, worldData.Height - 1);
             return true;
         }
 
@@ -946,5 +1041,46 @@ namespace Kruty1918.Moyva.Generator.Runtime
         }
 
         public int Count => Placements.Length;
+    }
+
+    /// <summary>
+    /// One-generation placement statistics: how many cells were skipped by
+    /// which gate, how many placement attempts succeeded and the resulting
+    /// count per decoration type. Pure counters — populated only when the
+    /// caller supplies an instance, so the hot path stays allocation-free.
+    /// </summary>
+    internal sealed class DecorationPlacementStats
+    {
+        public int Seed;
+        public int Attempts;
+        public int WaterCells;
+        public readonly Dictionary<string, int> Rejects =
+            new Dictionary<string, int>(StringComparer.Ordinal);
+        public readonly Dictionary<string, int> PlacedByType =
+            new Dictionary<string, int>(StringComparer.Ordinal);
+
+        public void Attempt() => Attempts++;
+        public void WaterCell() => WaterCells++;
+
+        public void Reject(string reason)
+        {
+            Rejects[reason] = Rejects.TryGetValue(reason, out int n) ? n + 1 : 1;
+        }
+
+        public void Placed(string type)
+        {
+            PlacedByType[type ?? "?"] =
+                PlacedByType.TryGetValue(type ?? "?", out int n) ? n + 1 : 1;
+        }
+
+        public int PlacedTotal
+        {
+            get
+            {
+                int t = 0;
+                foreach (var kv in PlacedByType) t += kv.Value;
+                return t;
+            }
+        }
     }
 }

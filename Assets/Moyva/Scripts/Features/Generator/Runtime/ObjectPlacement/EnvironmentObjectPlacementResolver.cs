@@ -218,12 +218,16 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 world = new Bounds(c, e * 2f);
             }
 
-            // An edge exactly on a cell border does not claim the next cell.
+            // Cells are centered on integer lattice positions (cell i spans
+            // [i-0.5, i+0.5) in world units), so map by +0.5 — plain floor
+            // mis-labels a half-cell border overhang as the anchor cell and
+            // hides it from the in-bounds check. An edge exactly on a cell
+            // border does not claim the next cell.
             float epsilon = size * 0.001f;
-            int x0 = Mathf.FloorToInt(world.min.x / size);
-            int x1 = Mathf.FloorToInt((world.max.x - epsilon) / size);
-            int y0 = Mathf.FloorToInt(world.min.z / size);
-            int y1 = Mathf.FloorToInt((world.max.z - epsilon) / size);
+            int x0 = Mathf.FloorToInt(world.min.x / size + 0.5f);
+            int x1 = Mathf.FloorToInt((world.max.x - epsilon) / size + 0.5f);
+            int y0 = Mathf.FloorToInt(world.min.z / size + 0.5f);
+            int y1 = Mathf.FloorToInt((world.max.z - epsilon) / size + 0.5f);
 
             for (int x = x0; x <= x1; x++)
             for (int y = y0; y <= y1; y++)

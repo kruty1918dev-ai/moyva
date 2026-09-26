@@ -236,9 +236,11 @@ namespace Kruty1918.Moyva.Generator.Tests.Runtime
             repo.Add("grass", "land");
             var policy = new TerrainPlacementPolicy(repo);
 
+            // Gameplay objects stay off no-spawn sand; visual decorations
+            // only honour the narrower no-decor tag, so dry shore can grow
+            // props while units and resources remain excluded.
             foreach (var op in new[]
                      {
-                         TerrainPlacementOperation.Decoration,
                          TerrainPlacementOperation.ObjectSpawn,
                          TerrainPlacementOperation.UnitDeployment,
                          TerrainPlacementOperation.StartingPosition,
@@ -248,6 +250,12 @@ namespace Kruty1918.Moyva.Generator.Tests.Runtime
                 Assert.IsFalse(policy.AllowsPlacement("sand", op), op.ToString());
                 Assert.IsTrue(policy.AllowsPlacement("grass", op), op.ToString());
             }
+            Assert.IsTrue(policy.AllowsPlacement("sand", TerrainPlacementOperation.Decoration));
+            Assert.IsTrue(policy.AllowsPlacement("grass", TerrainPlacementOperation.Decoration));
+
+            repo.Add("garden-bed", "land", "no-decor");
+            Assert.IsFalse(policy.AllowsPlacement("garden-bed", TerrainPlacementOperation.Decoration));
+            Assert.IsTrue(policy.AllowsPlacement("garden-bed", TerrainPlacementOperation.ObjectSpawn));
         }
 
         [Test]
@@ -257,6 +265,7 @@ namespace Kruty1918.Moyva.Generator.Tests.Runtime
             Assert.IsFalse(policy.AllowsPlacement("sand", TerrainPlacementOperation.ObjectSpawn));
             Assert.IsTrue(policy.AllowsPlacement("grass", TerrainPlacementOperation.ObjectSpawn));
             Assert.IsTrue(policy.AllowsPlacement(null, TerrainPlacementOperation.ObjectSpawn));
+            Assert.IsTrue(policy.AllowsPlacement("sand", TerrainPlacementOperation.Decoration));
         }
 
         // ---------------- placement resolver ----------------

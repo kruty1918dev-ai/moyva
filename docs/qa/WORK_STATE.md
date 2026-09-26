@@ -1,6 +1,70 @@
-# Work State — 2026-09-26 (decor GUI + water artifacts + waterfalls + water depth + seabed + pit fix + FBX tiles)
+# Work State — 2026-09-26 (denser spawning + decor GUI + water artifacts + waterfalls + water depth + seabed + pit fix + FBX tiles)
 
 ## Current task
+
+**Denser object spawning (2026-09-26):**
+- Instrumented `EnvironmentDecorationGenerator` with optional
+  `DecorationPlacementStats` (per-reason reject counters, placed-by-type,
+  attempts) + `WorldVisualSmoke.DumpDecorations` (scene census CSV +
+  six-seed placement replay through the canonical generator on the same
+  map). Measured seed 6130 before/after on identical code+camera.
+- Proven sparse-map causes (before-stats): `biomeRules.coast=0` AND
+  `no-spawn` tag on sand → coast was doubly dead; `clusterStrength=0.7`
+  binarized the density map (~3300 `layer-zero-weight` rejects);
+  type-density weights summed 0.63 → ~600 `type-select-miss`;
+  `maxObjectsPerTile=3`; stump layer `nearTreeBoost=0.45` → 2.3 stumps
+  per standing tree ("many stumps" symptom = rule, not pool);
+  pebble `maxSlopeMeters=0.9` rejected every stepped edge (215).
+- Config rebalance (JSON source + generated mirror synced):
+  `globalDensity 1.0→1.35`, `maxObjectsPerTile 3→4`,
+  `clusterStrength .7→.55`, `coast 0→.35`, `rocky 1.5→1.3`,
+  `grassland 1.2→1.3`; type densities tree .15→.24, bush .10→.18,
+  grass .20→.32, flower 0→.05, rock .08→.14, waterplant .12→.16;
+  layer weights raised ~1.3–2×; stump `nearTreeBoost .45→.12`,
+  litter `.7→.5`; pebble `maxSlope .9→1.4`; log layer lost
+  `shorelineExclusion` (driftwood); stump layer gained
+  `validateFootprint`+`shorelineExclusion`.
+- `TerrainPlacementPolicy`: Decoration now consults a new `no-decor`
+  tile tag instead of `no-spawn` — sand keeps `no-spawn` for
+  units/props/starting positions but dry shore allows decor; name
+  fallback stays conservative for gameplay ops only.
+- Footprint lattice fix in `EnvironmentObjectPlacementResolver`:
+  `CoveredCells` mapped world→cell with `floor(v)`, but cells are
+  centred on integers (`mapRect −0.52..47.52`) → `floor(v+0.5)`;
+  border overhang up to half a cell (e.g. `trees-b-cut` spilling
+  169/430 verts off-map) was invisible to the in-bounds check.
+  Anchor-cell rewrite uses the same centred lattice.
+- Deterministic footprint retry: failed heavy props retry once at
+  0.75× scale inside the resolver's shift bound.
+- Slope tilt rule: only ground cover tilts to surface normal;
+  tree/stump/rock/bush/log/sapling stay upright (was: everything
+  tilted — trees could lie on slopes).
+- Low-quality thinning: `EnvironmentDecorationSpawner` skips ~50% of
+  light cover (grass/tallgrass/fern/flower/litter/pebble/reed) under
+  `GraphicsQualityProfile.Performance` via placement-hash parity —
+  deterministic, heavy props and biome silhouette preserved.
+- Results seed 6130: 2628→4685 placements (+78%), trees 70→154,
+  stumps 181→80, bushes 169→422, flowers 54→201, waterplants
+  107→188; `layer-zero-weight` rejects eliminated; placement stage
+  ~50–80 ms. worldHash identical across runs → same terrain, same
+  determinism; `Clear()` keeps rebuilds clean (census 4700 stable).
+- OOB overhang: 40→21 rows, all ≤8-vert hairline grass-card tips
+  except one `trees-a-large` 8/1836-vert sliver (0.03 cell).
+- EditMode: 158/159 pass — unrelated pre-existing
+  `MultiplayerConstructionPlacementTests` LogAssert + earlier
+  `GameplayHtmlClosePanelTests` failures; decoration/policy/resolver
+  tests all pass incl. updated `SandTag_*` semantics.
+- Limits: renderers are ~4.7k individual instances (chunk-culled,
+  shared decor materials — no GPU-instancing audit done in-editor);
+  no on-device frame-cost measurement (batch editor only);
+  `settlementExclusionRadius`/`suppressWaterDecorations` remain
+  declared-but-unused config fields (documented, not wired).
+- Evidence: `docs/qa/evidence/density-seed6130/{before,after}` —
+  `decoration-stats*.txt`, `decorations.csv`, `oob.txt`,
+  `edge_s`/`side_n`/`game_iso`/`topdown_persp`/`detail_shore`.
+- Report: `docs/qa/DENSER_SPAWNING_2026-09-26.md`.
+
+## Previous task
 
 **Decor material inspector (2026-09-26):**
 - Cause: `CustomEditor` on `DecorSharedStylized.shader` pointed at
