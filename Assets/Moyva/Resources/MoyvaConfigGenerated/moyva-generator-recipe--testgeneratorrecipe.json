@@ -76,6 +76,18 @@
     "waterSurfaceOffsetMeters": -0.03,
     "waterfallMinDropMeters": 0.5,
     "channelDepthMeters": 0.35,
+    "seabed": {
+      "enabled": true,
+      "shallowShelfMeters": 1.0,
+      "falloffMeters": 3.0,
+      "depthCurveExponent": 1.6,
+      "maxDepthSeaMeters": 2.0,
+      "maxDepthLakeMeters": 1.2,
+      "maxDepthRiverMeters": 0.5,
+      "riverFalloffScale": 0.4,
+      "shoreRecessMeters": 0.02,
+      "borderSkirtMeters": 0.4
+    },
     "seedSalt": 7331
   },
   "shore": {

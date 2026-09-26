@@ -1,9 +1,46 @@
-# Work State — 2026-09-26 (highland pit fix + square FBX tiles)
+# Work State — 2026-09-26 (seabed + highland pit fix + square FBX tiles)
 
 ## Current task
 
+**Continuous sloping seabed (2026-09-26):**
+- Replaced per-cell underwater "bed columns"
+  (`TwcTileMeshSourceProvider.CollectWaterBedSource`) with one
+  shared field + one triangle-fan mesh per chunk merged into the
+  existing combined chunk mesh — no new GameObjects/materials.
+- New `RecipeSeabedConfig` under `hydrology.seabed` (recipe + mirror +
+  regenerated schema): shelf 1 m, falloff 3 m, exponent 1.6, max depth
+  sea 2 / lake 1.2 / river 0.5 m, river falloff scale 0.4, shore recess
+  0.02, border skirt 0.4.
+- `SeabedFieldPlanner` (pure C#): multi-source Dijkstra over water →
+  distance to land per cell (cannot cross land); shared `(w+1)×(h+1)`
+  corner lattice → identical chunk-border heights; shore vertices
+  anchor `min(land, waterline−recess)`; border skirts close map edges.
+- `SeabedChunkMeshService` bound in `ChunkFirstFeatureBindings`;
+  `ChunkTerrainMeshBuilder.Build` calls `Prepare` before the source
+  plan; provider drops bed columns only when `IsActive && HasField`.
+- Water mask = rendered-sheet criterion (`MainTerrain.SurfaceOnly &&
+  Height < SurfaceHeight`) — same gate the columns used; 95 flush
+  `water` tiles correctly carry no bed.
+- Ordering fix: field heights come from `resolvedCells` at Build time;
+  the level service only publishes `SurfaceHeightMap` post-Build on
+  this path (was why the field never built in the first run).
+- Verified seed 6130 same world `87D5247B44DA008A`: `fieldBuilt=True`,
+  `beddedCells=914`, `uncoveredWaterTiles=95` (flush only),
+  `nanVerts=0`, verts −26.7 % (703 344 → 515 861), gen 5.0 → 4.2 s,
+  meshes/GOs/renderers unchanged. A/B shows uniform sandy bed vs
+  divided blue plates; skirts render at map border.
+- `maxAdjacentBedStep=3.22` only at legit waterfall walls; smoke PASS,
+  error log empty. Full EditMode **891/891** (8 new planner tests).
+- Report: `docs/qa/SEABED_2026-09-26.md`. Evidence:
+  `docs/qa/evidence/seabed-seed6130/` (isolated topdown/iso/section
+  renders + `seabedmap.csv` + water-on shots).
+
+## Previous task
+
 **Highland pits: no random base-level shafts inside mountains
-(2026-09-26):**
+
+**Highland pits: no random base-level shafts inside mountains
+(2026-09-26) — committed `14976b65`:**
 - Root cause NOT relief/planner: `SeaMask = invert(_baseLayer)` is pure
   perlin/CA noise independent of the relief field. Small isolated `false`
   holes inside `_baseLayer` land on relief 2.5–4.5 m, invert into `SeaMask`

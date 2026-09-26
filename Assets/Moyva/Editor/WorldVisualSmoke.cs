@@ -450,6 +450,7 @@ public static class WorldVisualSmoke
         File.WriteAllText(Path.Combine(outDir, "terrainlevelmap.csv"), lDump.ToString());
         DumpLogicalMap(outDir, signal);
         DumpHydrology(outDir, signal);
+        DumpSeabed(outDir, signal, targets);
 
         File.WriteAllText(Path.Combine(outDir, "manifest.txt"), manifest.ToString());
         return stats.ToString();
@@ -506,6 +507,146 @@ public static class WorldVisualSmoke
         catch (Exception e)
         {
             File.AppendAllText("Library/ai/visual-smoke-errors.log", "DumpHydrology: " + e + "\n");
+        }
+    }
+
+    // Reflection-only access to the internal seabed service: dumps the shared
+    // bed field as CSV and renders the chunk-built seabed mesh alone (water
+    // sheet off) so the sloping bottom is inspectable from top and section.
+    static void DumpSeabed(string outDir, WorldGeneratedDataSignal signal, List<MeshFilter> targets)
+    {
+        GameObject probe = null;
+        Mesh seabedMesh = null;
+        try
+        {
+            float cs = signal.CellSize <= 0.0001f ? 1f : signal.CellSize;
+            var svcType = FindGeneratorType("Kruty1918.Moyva.Generator.Runtime.ChunkFirst.SeabedChunkMeshService");
+            if (svcType == null || lastContainer == null) return;
+            object svc = lastContainer.TryResolve(svcType);
+            if (svc == null) return;
+            var tryGetBed = svcType.GetMethod("TryGetBedY");
+            var tryGetDist = svcType.GetMethod("TryGetShoreDistance");
+            var tryBuild = svcType.GetMethod("TryBuildChunkMesh");
+            var isActiveProp = svcType.GetProperty("IsActive");
+            bool active = isActiveProp != null && (bool)isActiveProp.GetValue(svc);
+            object field = svcType.GetField("_field",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.GetValue(svc);
+            File.WriteAllText(Path.Combine(outDir, "seabed-active.txt"),
+                $"seabedActive={active} fieldBuilt={(field != null)}\n");
+            if (!active || tryGetBed == null) return;
+
+            var sb = new StringBuilder();
+            var beds = new float[signal.Width, signal.Height];
+            Vector2Int deepest = new Vector2Int(-1, -1);
+            float deepestDist = -1f;
+            int waterCells = 0, beddedCells = 0;
+            for (int y = 0; y < signal.Height; y++)
+            {
+                for (int x = 0; x < signal.Width; x++)
+                {
+                    if (x > 0) sb.Append(';');
+                    beds[x, y] = float.NaN;
+                    object[] args = { new Vector2Int(x, y), 0f };
+                    bool hasBed = (bool)tryGetBed.Invoke(svc, args);
+                    float bed = (float)args[1];
+                    object[] dargs = { new Vector2Int(x, y), 0f };
+                    bool hasDist = tryGetDist != null && (bool)tryGetDist.Invoke(svc, dargs);
+                    float dist = hasDist ? (float)dargs[1] : float.NaN;
+                    if (hasBed)
+                    {
+                        beds[x, y] = bed;
+                        beddedCells++;
+                        if (hasDist && dist > deepestDist)
+                        {
+                            deepestDist = dist;
+                            deepest = new Vector2Int(x, y);
+                        }
+                    }
+                    if (IsWaterId(signal.TileMap != null ? signal.TileMap[x, y] : null)
+                        || hasBed)
+                    {
+                        waterCells++;
+                    }
+                    sb.Append(hasBed
+                        ? bed.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)
+                        : "")
+                      .Append('|')
+                      .Append(hasDist
+                          ? dist.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)
+                          : "");
+                }
+                sb.Append('\n');
+            }
+            File.WriteAllText(Path.Combine(outDir, "seabedmap.csv"), sb.ToString());
+
+            // Bed-step audit: no two adjacent water cells may jump by more
+            // than a chunk-worthy seam; the shared lattice must keep borders
+            // smooth, and every water sheet must have a bed under it.
+            float maxStep = 0f;
+            int uncovered = 0;
+            for (int y = 0; y < signal.Height; y++)
+            for (int x = 0; x < signal.Width; x++)
+            {
+                bool waterTile = IsWaterId(signal.TileMap != null ? signal.TileMap[x, y] : null);
+                if (waterTile && float.IsNaN(beds[x, y])) uncovered++;
+                if (x + 1 < signal.Width && !float.IsNaN(beds[x, y]) && !float.IsNaN(beds[x + 1, y]))
+                    maxStep = Mathf.Max(maxStep, Mathf.Abs(beds[x + 1, y] - beds[x, y]));
+                if (y + 1 < signal.Height && !float.IsNaN(beds[x, y]) && !float.IsNaN(beds[x, y + 1]))
+                    maxStep = Mathf.Max(maxStep, Mathf.Abs(beds[x, y + 1] - beds[x, y]));
+            }
+            File.AppendAllText(Path.Combine(outDir, "seabed-active.txt"),
+                $"waterCells={waterCells} beddedCells={beddedCells} uncoveredWaterTiles={uncovered} maxAdjacentBedStep={maxStep:F3} deepest={deepest}@{deepestDist:F2}m\n");
+
+            if (tryBuild != null)
+            {
+                object[] bargs = { new RectInt(0, 0, signal.Width, signal.Height), null, null };
+                if ((bool)tryBuild.Invoke(svc, bargs) && bargs[1] is Mesh mesh && bargs[2] is Material mat)
+                {
+                    seabedMesh = mesh;
+                    probe = new GameObject("__seabed_probe");
+                    var mf = probe.AddComponent<MeshFilter>();
+                    var mr = probe.AddComponent<MeshRenderer>();
+                    mf.sharedMesh = mesh;
+                    mr.sharedMaterial = mat;
+                    var alone = new List<MeshFilter> { mf };
+                    Vector3 center = signal.HasMapWorldBounds
+                        ? signal.MapWorldBoundsCenter
+                        : new Vector3(signal.Width * cs * 0.5f, 0f, signal.Height * cs * 0.5f);
+                    Vector3 size = signal.HasMapWorldBounds
+                        ? signal.MapWorldBoundsSize
+                        : new Vector3(signal.Width * cs, 8f, signal.Height * cs);
+                    float R = Mathf.Max(size.x, size.z);
+                    ShotAt(alone, outDir, "seabed_topdown",
+                        center + Vector3.up * (size.y + R + 60f),
+                        Quaternion.Euler(90f, 0f, 0f), ortho: true, orthoSize: R * 0.55f);
+                    ShotAt(alone, outDir, "seabed_iso",
+                        center + new Vector3(0f, R * 0.6f, -R * 0.6f),
+                        Quaternion.LookRotation(center - (center + new Vector3(0f, R * 0.6f, -R * 0.6f)), Vector3.up));
+                    if (deepest.x >= 0)
+                    {
+                        Vector3 t = CellWorld(deepest, signal, cs);
+                        ShotAt(alone, outDir, "seabed_detail_deep",
+                            t + Vector3.up * 10f, Quaternion.Euler(90f, 0f, 0f), ortho: true, orthoSize: 8f);
+                        ShotAt(alone, outDir, "seabed_section",
+                            t + new Vector3(0f, 2.5f, -14f),
+                            Quaternion.LookRotation(new Vector3(t.x, t.y - 1.5f, t.z) - (t + new Vector3(0f, 2.5f, -14f)), Vector3.up));
+                    }
+                    // Context: the same bed inside the real terrain scene.
+                    var withTerrain = new List<MeshFilter>(targets) { mf };
+                    ShotAt(withTerrain, outDir, "seabed_with_terrain_iso",
+                        center + new Vector3(0f, R * 0.6f, -R * 0.6f),
+                        Quaternion.LookRotation(center - (center + new Vector3(0f, R * 0.6f, -R * 0.6f)), Vector3.up));
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            File.AppendAllText("Library/ai/visual-smoke-errors.log", "DumpSeabed: " + e + "\n");
+        }
+        finally
+        {
+            if (probe != null) UnityEngine.Object.Destroy(probe);
+            if (seabedMesh != null) UnityEngine.Object.Destroy(seabedMesh);
         }
     }
 

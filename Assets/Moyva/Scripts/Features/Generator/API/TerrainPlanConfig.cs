@@ -196,7 +196,50 @@ namespace Kruty1918.Moyva.Generator.API
         [Tooltip("Rendered channel depth in meters: river bed sits this far below the water surface.")]
         [Min(0.05f)] public float ChannelDepthMeters = 0.35f;
 
+        [Tooltip("Continuous sloping seabed under water bodies; replaces per-cell bed columns.")]
+        public RecipeSeabedConfig Seabed = new();
+
         [Tooltip("Seed salt so hydrology does not correlate with relief or layer masks.")]
         public int SeedSalt = 7331;
+    }
+
+    /// <summary>
+    /// Visual seabed profile: one continuous low-poly surface under every
+    /// water body that drops from the waterline at the shore to a per-kind
+    /// maximum depth. Depth grows with world-space distance to the nearest
+    /// land cell, computed inside each water body so it cannot jump across
+    /// land into a different body.
+    /// </summary>
+    [System.Serializable]
+    public sealed class RecipeSeabedConfig
+    {
+        public bool Enabled = true;
+
+        [Tooltip("Shallow shelf width in meters from the shoreline where the bed stays near the surface.")]
+        [Min(0f)] public float ShallowShelfMeters = 1f;
+
+        [Tooltip("Meters of additional shore distance over which the bed falls to its maximum depth.")]
+        [Min(0.1f)] public float FalloffMeters = 3f;
+
+        [Tooltip("Depth ramp exponent: >1 keeps more shallow water, <1 deepens sooner.")]
+        [Range(0.25f, 4f)] public float DepthCurveExponent = 1.6f;
+
+        [Tooltip("Maximum seabed depth below the local water surface for open water/sea cells.")]
+        [Min(0.05f)] public float MaxDepthSeaMeters = 2f;
+
+        [Tooltip("Maximum seabed depth below the local water surface for lake cells.")]
+        [Min(0.05f)] public float MaxDepthLakeMeters = 1.2f;
+
+        [Tooltip("Maximum seabed depth below the local water surface for river cells.")]
+        [Min(0.05f)] public float MaxDepthRiverMeters = 0.5f;
+
+        [Tooltip("Additional falloff scale for rivers so narrow channels reach depth sooner.")]
+        [Range(0.1f, 1f)] public float RiverFalloffScale = 0.4f;
+
+        [Tooltip("Small recess below the waterline at shore vertices to avoid z-fighting the water sheet edge.")]
+        [Range(0f, 0.2f)] public float ShoreRecessMeters = 0.02f;
+
+        [Tooltip("Vertical drop of the skirt at water cells on the map border so the bed edge never opens to void.")]
+        [Min(0f)] public float BorderSkirtMeters = 0.4f;
     }
 }

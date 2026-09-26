@@ -16,6 +16,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             container.Bind<ITileNeighborhoodFactory>().To<TileNeighborhoodFactory>().AsSingle();
             container.Bind<ICompositionRuleTable>().To<DefaultCompositionRuleTable>().AsSingle();
             container.Bind<IResolvedTileCompositionResolver>().To<ResolvedTileCompositionResolver>().AsSingle();
+            container.Bind<SeabedChunkMeshService>().AsSingle();
             container.Bind<IResolvedTileMeshSource>().To<TwcTileMeshSourceProvider>().AsSingle();
             container.Bind<IChunkFirstTwcVisualCleanupService>().To<ChunkFirstTwcVisualCleanupService>().AsSingle();
             container.Bind<IChunkTerrainMeshBuilder>().To<ChunkTerrainMeshBuilder>().AsSingle();

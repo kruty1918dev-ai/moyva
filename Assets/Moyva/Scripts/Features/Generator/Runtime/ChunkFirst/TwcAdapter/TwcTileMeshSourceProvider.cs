@@ -18,6 +18,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         private readonly IAtlasTileSetCatalog _atlas;
         private readonly ITerrainPassageMap _passages;
         private readonly IRecipeHydrologyMap _hydrology;
+        private readonly SeabedChunkMeshService _seabed;
         private readonly Dictionary<string, TilesBuildLayer> _buildLayerByGuid = new Dictionary<string, TilesBuildLayer>(System.StringComparer.Ordinal);
         private readonly Dictionary<GameObject, PrefabMeshTemplate[]> _meshTemplatesByPrefab =
             new Dictionary<GameObject, PrefabMeshTemplate[]>();
@@ -26,12 +27,14 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             ITileWorldCreatorBuildEnvironment environment,
             [InjectOptional] IAtlasTileSetCatalog atlas = null,
             [InjectOptional] ITerrainPassageMap passages = null,
-            [InjectOptional] IRecipeHydrologyMap hydrology = null)
+            [InjectOptional] IRecipeHydrologyMap hydrology = null,
+            [InjectOptional] SeabedChunkMeshService seabed = null)
         {
             _environment = environment;
             _atlas = atlas;
             _passages = passages;
             _hydrology = hydrology;
+            _seabed = seabed;
         }
 
         public int CollectMeshSources(ResolvedTileComposition composition, List<TileMeshSource> results)
@@ -63,7 +66,11 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             if (sample.TileGeometryMode == TileGeometryMode.SurfaceOnly)
             {
                 added += CollectWaterfallSource(composition, buildLayer, preset, results);
-                added += CollectWaterBedSource(composition, sample, buildLayer, results);
+                // The chunked seabed owns the underwater volume when its
+                // field built; per-cell sand columns would coplanar-fight
+                // its surface. Without a field the columns stay as fallback.
+                if (_seabed == null || !_seabed.IsActive || !_seabed.HasField)
+                    added += CollectWaterBedSource(composition, sample, buildLayer, results);
             }
             return added;
         }

@@ -26,6 +26,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
         public float[,] Accumulation;
         /// <summary>Drop threshold for waterfall edges (meters).</summary>
         public float WaterfallMinDropMeters;
+        /// <summary>Seabed profile config snapshot from the recipe; null when disabled.</summary>
+        public RecipeSeabedConfig Seabed;
         public int RiverCellCount;
         public int LakeCellCount;
     }
@@ -94,6 +96,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 FlowParent = parent,
                 Accumulation = accumulation,
                 WaterfallMinDropMeters = config.WaterfallMinDropMeters,
+                Seabed = config.Seabed,
                 RiverCellCount = riverCells,
                 LakeCellCount = lakeCells,
             };
@@ -157,6 +160,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             }
             if (target.WaterfallMinDropMeters <= 0f)
                 target.WaterfallMinDropMeters = source.WaterfallMinDropMeters;
+            target.Seabed ??= source.Seabed;
         }
 
         private static RecipeHydrologyPlan EmptyPlan(int w, int h)

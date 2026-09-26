@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Kruty1918.Moyva.Generator.API;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.Runtime
@@ -43,6 +44,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
         /// </summary>
         bool TryGetWaterfall(Vector2Int cell, out Vector2Int downstream,
             out float upperY, out float lowerY);
+        /// <summary>Seabed profile config from the active plan; null when absent.</summary>
+        RecipeSeabedConfig Seabed { get; }
     }
 
     /// <summary>
@@ -64,6 +67,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 ? _plan.WaterfallMinDropMeters
                 : 0.5f;
         public RecipeHydrologyPlan Plan => _plan;
+        public RecipeSeabedConfig Seabed => _plan?.Seabed;
 
         public void Clear()
         {

@@ -4,6 +4,7 @@ using Kruty1918.Moyva.MapChunks.API;
 using Unity.Collections;
 using UnityEngine;
 using UnityEngine.Rendering;
+using Zenject;
 
 namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
 {
@@ -60,9 +61,14 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         private readonly HashSet<TileSurfaceOnlyMeshKey>
             _surfaceOnlyFailureCache =
                 new HashSet<TileSurfaceOnlyMeshKey>();
-        public ChunkTerrainMeshBuilder(ChunkFirstRuntimeMeshRegistry meshRegistry)
+        private readonly SeabedChunkMeshService _seabed;
+
+        public ChunkTerrainMeshBuilder(
+            ChunkFirstRuntimeMeshRegistry meshRegistry,
+            [InjectOptional] SeabedChunkMeshService seabed = null)
         {
             _meshRegistry = meshRegistry;
+            _seabed = seabed;
         }
 
         public int Build(
@@ -79,6 +85,26 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             RecycleCombineLists();
             _finalCombine.Clear();
             _materials.Clear();
+
+            /*
+             * The seabed field is shared for the whole map and must be
+             * prepared before the canonical source plan, because the mesh
+             * provider checks IsActive to decide whether per-cell water-bed
+             * columns still need to render.
+             */
+            if (_seabed != null)
+            {
+                ResolveMapDimensions(
+                    resolvedCells,
+                    out int seabedMapWidth,
+                    out int seabedMapHeight);
+                _seabed.Prepare(
+                    resolvedCells,
+                    seabedMapWidth,
+                    seabedMapHeight,
+                    area.CellSize);
+            }
+
             EnsureCanonicalSourcePlan(
                 area,
                 resolvedCells,
@@ -89,7 +115,25 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                     area,
                     resolvedCells,
                     meshSource);
-            if (fragmentCount == 0)
+
+            bool seabedAdded = false;
+            if (_seabed != null
+                && _seabed.IsActive
+                && _seabed.TryBuildChunkMesh(
+                    area.CoreRect,
+                    out Mesh seabedMesh,
+                    out Material seabedMaterial))
+            {
+                _meshRegistry.Register(seabedMesh);
+                AddSource(new TileMeshSource(
+                    seabedMesh,
+                    new[] { seabedMaterial },
+                    Matrix4x4.identity,
+                    tileGeometryMode: TileGeometryMode.SolidTerrain));
+                seabedAdded = true;
+            }
+
+            if (fragmentCount == 0 && !seabedAdded)
                 return 0;
 
             Mesh combined = CombineByMaterial(terrainRoot.name, area);

@@ -1841,9 +1841,100 @@
         "waterfallMinDropMeters": {
           "type": "number",
           "title": "Waterfall Min Drop Meters",
-          "description": "Drop between a river cell and its downstream cell that marks a waterfall.",
+          "description": "Drop between a water cell and its downstream cell that marks a waterfall.",
           "minimum": 0.01,
           "x-moyva-editorMinimum": 0.01
+        },
+        "channelDepthMeters": {
+          "type": "number",
+          "title": "Channel Depth Meters",
+          "description": "Rendered channel depth in meters: river bed sits this far below the water surface.",
+          "minimum": 0.05,
+          "x-moyva-editorMinimum": 0.05
+        },
+        "seabed": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "title": "Enabled"
+            },
+            "shallowShelfMeters": {
+              "type": "number",
+              "title": "Shallow Shelf Meters",
+              "description": "Shallow shelf width in meters from the shoreline where the bed stays near the surface.",
+              "minimum": 0.0,
+              "x-moyva-editorMinimum": 0.0
+            },
+            "falloffMeters": {
+              "type": "number",
+              "title": "Falloff Meters",
+              "description": "Meters of additional shore distance over which the bed falls to its maximum depth.",
+              "minimum": 0.1,
+              "x-moyva-editorMinimum": 0.1
+            },
+            "depthCurveExponent": {
+              "type": "number",
+              "title": "Depth Curve Exponent",
+              "description": "Depth ramp exponent: >1 keeps more shallow water, <1 deepens sooner.",
+              "minimum": 0.25,
+              "maximum": 4.0,
+              "x-moyva-editorMinimum": 0.25,
+              "x-moyva-editorMaximum": 4.0
+            },
+            "maxDepthSeaMeters": {
+              "type": "number",
+              "title": "Max Depth Sea Meters",
+              "description": "Maximum seabed depth below the local water surface for open water/sea cells.",
+              "minimum": 0.05,
+              "x-moyva-editorMinimum": 0.05
+            },
+            "maxDepthLakeMeters": {
+              "type": "number",
+              "title": "Max Depth Lake Meters",
+              "description": "Maximum seabed depth below the local water surface for lake cells.",
+              "minimum": 0.05,
+              "x-moyva-editorMinimum": 0.05
+            },
+            "maxDepthRiverMeters": {
+              "type": "number",
+              "title": "Max Depth River Meters",
+              "description": "Maximum seabed depth below the local water surface for river cells.",
+              "minimum": 0.05,
+              "x-moyva-editorMinimum": 0.05
+            },
+            "riverFalloffScale": {
+              "type": "number",
+              "title": "River Falloff Scale",
+              "description": "Additional falloff scale for rivers so narrow channels reach depth sooner.",
+              "minimum": 0.1,
+              "maximum": 1.0,
+              "x-moyva-editorMinimum": 0.1,
+              "x-moyva-editorMaximum": 1.0
+            },
+            "shoreRecessMeters": {
+              "type": "number",
+              "title": "Shore Recess Meters",
+              "description": "Small recess below the waterline at shore vertices to avoid z-fighting the water sheet edge.",
+              "minimum": 0.0,
+              "maximum": 0.2,
+              "x-moyva-editorMinimum": 0.0,
+              "x-moyva-editorMaximum": 0.2
+            },
+            "borderSkirtMeters": {
+              "type": "number",
+              "title": "Border Skirt Meters",
+              "description": "Vertical drop of the skirt at water cells on the map border so the bed edge never opens to void.",
+              "minimum": 0.0,
+              "x-moyva-editorMinimum": 0.0
+            }
+          },
+          "additionalProperties": false,
+          "title": "Seabed",
+          "description": "Continuous sloping seabed under water bodies; replaces per-cell bed columns."
         },
         "seedSalt": {
           "type": "integer",
@@ -1921,7 +2012,7 @@
         "bandCoverage": {
           "type": "number",
           "title": "Band Coverage",
-          "description": "Fraction of band cells converted to the shore tile; the rest keep their terrain but still grade toward the waterline. Below 1 the band reads as an irregular partial-tile strip.",
+          "description": "Fraction of band cells converted to the shore tile; the rest stay their terrain but still grade toward the waterline. Below 1 the band reads as an irregular partial-tile strip instead of a uniform full-cell ring.",
           "minimum": 0.0,
           "maximum": 1.0,
           "x-moyva-editorMinimum": 0.0,
@@ -1937,16 +2028,19 @@
             "array",
             "null"
           ],
-          "title": "Water Tile Ids",
-          "description": "Extra winner tile ids counted as water for shore detection (e.g. 'swamp' tiles that render water but are not in shared WaterLikeTileIds). Shore-only: not skipped by relief/carve passes.",
           "items": {
-            "type": "string"
-          }
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "title": "Water Tile Ids",
+          "description": "Extra winner tile ids counted as water for shore detection (e.g. 'swamp' tiles that render water but are not in shared WaterLikeTileIds). Shore-only: these ids are not skipped by relief/carve passes."
         }
       },
       "additionalProperties": false,
       "title": "Shore",
-      "description": "Recipe-authored shoreline planning. After relief is applied, land cells close to actual water are re-typed to the shore tile and graded down toward the neighbouring water surface so the waterline reads as a smooth continuous beach."
+      "description": "Shoreline band: re-type water-adjacent land to the shore tile and grade heights toward the waterline."
     }
   }
 }

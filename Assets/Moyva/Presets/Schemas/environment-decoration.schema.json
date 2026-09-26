@@ -112,17 +112,17 @@
           "x-moyva-editorMinimum": 0.0,
           "x-moyva-editorMaximum": 1.0
         },
-        "waterPlantDensity": {
+        "rockDensity": {
           "type": "number",
-          "title": "Water Plant Density",
+          "title": "Rock Density",
           "minimum": 0.0,
           "maximum": 1.0,
           "x-moyva-editorMinimum": 0.0,
           "x-moyva-editorMaximum": 1.0
         },
-        "rockDensity": {
+        "waterPlantDensity": {
           "type": "number",
-          "title": "Rock Density",
+          "title": "Water Plant Density",
           "minimum": 0.0,
           "maximum": 1.0,
           "x-moyva-editorMinimum": 0.0,
@@ -268,27 +268,23 @@
       "properties": {
         "validateHeavyFootprints": {
           "type": "boolean",
-          "title": "Validate Heavy Footprints",
-          "description": "Validate the full top-down renderer bounds of heavy props; every cell under the footprint must stay placeable."
+          "title": "Validate Heavy Footprints"
         },
         "maxShiftCells": {
           "type": "number",
           "title": "Max Shift Cells",
-          "description": "Bounded shift radius in cells when a footprint does not fit; beyond it the prop is skipped.",
           "minimum": 0.0,
           "x-moyva-editorMinimum": 0.0
         },
         "maxGroundDeltaMeters": {
           "type": "number",
           "title": "Max Ground Delta Meters",
-          "description": "Maximum surface-height delta tolerated under a footprint before the prop is shifted or skipped.",
           "minimum": 0.01,
           "x-moyva-editorMinimum": 0.01
         },
         "footprintShrink": {
           "type": "number",
           "title": "Footprint Shrink",
-          "description": "Fraction of the XZ renderer bounds used as the footprint. 1 = full bounds.",
           "minimum": 0.3,
           "maximum": 1.0,
           "x-moyva-editorMinimum": 0.3,
@@ -297,113 +293,6 @@
       },
       "additionalProperties": false,
       "title": "Footprint"
-    },
-    "layers": {
-      "type": [
-        "array",
-        "null"
-      ],
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "type"
-        ],
-        "properties": {
-          "type": {
-            "type": "string",
-            "minLength": 1
-          },
-          "weight": {
-            "type": "number",
-            "minimum": 0.0,
-            "maximum": 2.0
-          },
-          "maxPerTile": {
-            "type": "integer",
-            "minimum": 1.0
-          },
-          "biomeBoost": {
-            "type": [
-              "object",
-              "null"
-            ],
-            "additionalProperties": {
-              "type": "number"
-            }
-          },
-          "waterAffinity": {
-            "type": "string",
-            "enum": [
-              "any",
-              "avoid",
-              "prefer",
-              "require"
-            ]
-          },
-          "waterRadius": {
-            "type": "integer",
-            "minimum": 1.0
-          },
-          "waterBoost": {
-            "type": "number",
-            "minimum": 0.0,
-            "maximum": 5.0
-          },
-          "forestAffinity": {
-            "type": "string",
-            "enum": [
-              "any",
-              "interior",
-              "edge",
-              "avoid"
-            ]
-          },
-          "forestEdgeRadius": {
-            "type": "integer",
-            "minimum": 1.0
-          },
-          "nearTreeBoost": {
-            "type": "number",
-            "minimum": 0.0,
-            "maximum": 2.0
-          },
-          "nearTreeRadius": {
-            "type": "integer",
-            "minimum": 1.0
-          },
-          "skipObjectCells": {
-            "type": "boolean"
-          },
-          "shorelineExclusion": {
-            "type": "boolean"
-          },
-          "validateFootprint": {
-            "type": "boolean"
-          },
-          "feedsTreeAffinity": {
-            "type": "boolean"
-          },
-          "maxSlopeMeters": {
-            "type": "number",
-            "minimum": 0.0
-          },
-          "minScale": {
-            "type": "number",
-            "minimum": 0.0,
-            "maximum": 3.0
-          },
-          "maxScale": {
-            "type": "number",
-            "minimum": 0.0,
-            "maximum": 3.0
-          },
-          "yOffset": {
-            "type": "number"
-          }
-        }
-      },
-      "title": "Decoration Layers"
     },
     "assetPools": {
       "type": [
@@ -423,6 +312,153 @@
         }
       },
       "title": "Asset Pools"
+    },
+    "layers": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "type": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "title": "Type"
+          },
+          "weight": {
+            "type": "number",
+            "title": "Weight",
+            "minimum": 0.0,
+            "maximum": 2.0,
+            "x-moyva-editorMinimum": 0.0,
+            "x-moyva-editorMaximum": 2.0
+          },
+          "maxPerTile": {
+            "type": "integer",
+            "title": "Max Per Tile",
+            "minimum": 1.0,
+            "x-moyva-editorMinimum": 1.0
+          },
+          "biomeBoost": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": {
+              "type": "number"
+            },
+            "title": "Biome Boost"
+          },
+          "waterAffinity": {
+            "type": "string",
+            "pattern": "^(?:-?\\d+|(?:Any|Avoid|Prefer|Require))$",
+            "x-enumNames": [
+              "Any",
+              "Avoid",
+              "Prefer",
+              "Require"
+            ],
+            "x-flags": false,
+            "title": "Water Affinity"
+          },
+          "waterRadius": {
+            "type": "integer",
+            "title": "Water Radius",
+            "minimum": 1.0,
+            "x-moyva-editorMinimum": 1.0
+          },
+          "waterBoost": {
+            "type": "number",
+            "title": "Water Boost",
+            "minimum": 0.0,
+            "maximum": 5.0,
+            "x-moyva-editorMinimum": 0.0,
+            "x-moyva-editorMaximum": 5.0
+          },
+          "forestAffinity": {
+            "type": "string",
+            "pattern": "^(?:-?\\d+|(?:Any|Interior|Edge|Avoid))$",
+            "x-enumNames": [
+              "Any",
+              "Interior",
+              "Edge",
+              "Avoid"
+            ],
+            "x-flags": false,
+            "title": "Forest Affinity"
+          },
+          "forestEdgeRadius": {
+            "type": "integer",
+            "title": "Forest Edge Radius",
+            "minimum": 1.0,
+            "x-moyva-editorMinimum": 1.0
+          },
+          "nearTreeBoost": {
+            "type": "number",
+            "title": "Near Tree Boost",
+            "minimum": 0.0,
+            "maximum": 2.0,
+            "x-moyva-editorMinimum": 0.0,
+            "x-moyva-editorMaximum": 2.0
+          },
+          "nearTreeRadius": {
+            "type": "integer",
+            "title": "Near Tree Radius",
+            "minimum": 1.0,
+            "x-moyva-editorMinimum": 1.0
+          },
+          "skipObjectCells": {
+            "type": "boolean",
+            "title": "Skip Object Cells"
+          },
+          "shorelineExclusion": {
+            "type": "boolean",
+            "title": "Shoreline Exclusion"
+          },
+          "validateFootprint": {
+            "type": "boolean",
+            "title": "Validate Footprint"
+          },
+          "feedsTreeAffinity": {
+            "type": "boolean",
+            "title": "Feeds Tree Affinity"
+          },
+          "maxSlopeMeters": {
+            "type": "number",
+            "title": "Max Slope Meters",
+            "minimum": 0.0,
+            "x-moyva-editorMinimum": 0.0
+          },
+          "minScale": {
+            "type": "number",
+            "title": "Min Scale",
+            "minimum": 0.0,
+            "maximum": 3.0,
+            "x-moyva-editorMinimum": 0.0,
+            "x-moyva-editorMaximum": 3.0
+          },
+          "maxScale": {
+            "type": "number",
+            "title": "Max Scale",
+            "minimum": 0.0,
+            "maximum": 3.0,
+            "x-moyva-editorMinimum": 0.0,
+            "x-moyva-editorMaximum": 3.0
+          },
+          "yOffset": {
+            "type": "number",
+            "title": "Y Offset"
+          }
+        },
+        "additionalProperties": false
+      },
+      "title": "Layers"
     }
   }
 }
