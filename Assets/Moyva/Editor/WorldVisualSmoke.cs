@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using Kruty1918.Moyva.Signals;
 using Kruty1918.SaveSystem;
@@ -451,6 +452,7 @@ public static class WorldVisualSmoke
         DumpLogicalMap(outDir, signal);
         DumpHydrology(outDir, signal);
         DumpSeabed(outDir, signal, targets);
+        DumpWaterMaterial(outDir, targets);
 
         File.WriteAllText(Path.Combine(outDir, "manifest.txt"), manifest.ToString());
         return stats.ToString();
@@ -636,6 +638,44 @@ public static class WorldVisualSmoke
                     ShotAt(withTerrain, outDir, "seabed_with_terrain_iso",
                         center + new Vector3(0f, R * 0.6f, -R * 0.6f),
                         Quaternion.LookRotation(center - (center + new Vector3(0f, R * 0.6f, -R * 0.6f)), Vector3.up));
+
+                    // Acceptance strip: water ON, camera sliding along the
+                    // shore->deep gradient so the visibility fade reads in
+                    // one frame. Ortho top-down over the deepest body.
+                    if (deepest.x >= 0)
+                    {
+                        Vector3 deepWs = CellWorld(deepest, signal, cs);
+                        // Find a shore cell inside the same body: scan a
+                        // straight line from the map edge toward deepest.
+                        Vector2Int shore = deepest;
+                        float best = float.MaxValue;
+                        for (int yy = 0; yy < signal.Height; yy++)
+                        for (int xx = 0; xx < signal.Width; xx++)
+                        {
+                            object[] dargs2 = { new Vector2Int(xx, yy), 0f };
+                            if (tryGetDist != null
+                                && (bool)tryGetDist.Invoke(svc, dargs2)
+                                && (float)dargs2[1] < 0.5f)
+                            {
+                                float dd = (new Vector2(xx - deepest.x, yy - deepest.y)).sqrMagnitude;
+                                if (dd < best) { best = dd; shore = new Vector2Int(xx, yy); }
+                            }
+                        }
+                        Vector3 shoreWs = CellWorld(shore, signal, cs);
+                        Vector3 mid = (shoreWs + deepWs) * 0.5f;
+                        Vector3 dir = (deepWs - shoreWs); dir.y = 0f;
+                        float len = Mathf.Max(4f, dir.magnitude);
+                        ShotAt(targets, outDir, "water_transect_top",
+                            mid + Vector3.up * (len + 14f),
+                            Quaternion.Euler(90f, 0f, 0f), ortho: true,
+                            orthoSize: len * 0.62f + 2f);
+                        ShotAt(targets, outDir, "water_transect_low",
+                            shoreWs + new Vector3(0f, 7f, -len * 0.9f),
+                            Quaternion.LookRotation(
+                                deepWs + Vector3.down * 2f
+                                - (shoreWs + new Vector3(0f, 7f, -len * 0.9f)),
+                                Vector3.up));
+                    }
                 }
             }
         }
@@ -647,6 +687,78 @@ public static class WorldVisualSmoke
         {
             if (probe != null) UnityEngine.Object.Destroy(probe);
             if (seabedMesh != null) UnityEngine.Object.Destroy(seabedMesh);
+        }
+    }
+
+    // Dumps the ACTUAL water material state of a rendered chunk: effective
+    // shader, keywords and the depth-shading parameters that drive the
+    // shore->deep gradient. Answers "which material is really on the water".
+    static void DumpWaterMaterial(string outDir, List<MeshFilter> targets)
+    {
+        try
+        {
+            var sb = new StringBuilder();
+            Material water = null;
+            int matCount = 0;
+            var matNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var mf in targets)
+            {
+                if (mf == null) continue;
+                var r = mf.GetComponent<MeshRenderer>();
+                if (r == null) continue;
+                foreach (var m in r.sharedMaterials)
+                {
+                    if (m == null) continue;
+                    matCount++;
+                    matNames.Add(m.name);
+                    string sn = m.shader != null ? m.shader.name : "";
+                    if (water == null && (m.name.ToLowerInvariant().Contains("water")
+                        || sn.ToLowerInvariant().Contains("water")))
+                        water = m;
+                }
+            }
+            sb.AppendLine($"materials={matCount} names=[{string.Join(", ", matNames)}]");
+            if (water == null)
+            {
+                sb.AppendLine("waterMaterial=NONE");
+            }
+            else
+            {
+                sb.AppendLine($"waterMaterial={water.name} shader={water.shader.name}");
+                sb.AppendLine($"keywords=[{string.Join(", ", water.enabledKeywords.Select(k => k.name))}]");
+                string[] props =
+                {
+                    "_FogSource", "_DisableDepthTexture", "_DepthHorizontal",
+                    "_DepthVertical", "_ShallowColor", "_BaseColor",
+                    "_WaterColor", "_WaterShallowColor", "_HorizonColor",
+                    "_IntersectionColor", "_IntersectionLength", "_FoamColor",
+                    "_RefractionStrength", "_Direction", "_Speed", "_ColorAbsorption",
+                    "_WaveTint", "_TranslucencyStrength", "_SunReflectionSize"
+                };
+                foreach (string p in props)
+                {
+                    if (!water.HasProperty(p)) continue;
+                    var prop = p;
+                    object val = null;
+                    int idx = water.shader.FindPropertyIndex(prop);
+                    var pt = water.shader.GetPropertyType(idx);
+                    if (pt == UnityEngine.Rendering.ShaderPropertyType.Color
+                        || pt == UnityEngine.Rendering.ShaderPropertyType.Vector)
+                        val = water.GetVector(prop);
+                    else if (pt == UnityEngine.Rendering.ShaderPropertyType.Float
+                        || pt == UnityEngine.Rendering.ShaderPropertyType.Range)
+                        val = water.GetFloat(prop);
+                    sb.AppendLine($"{prop}={val}");
+                }
+                var depthTex = Shader.GetGlobalTexture("_CameraDepthTexture");
+                sb.AppendLine($"globalDepthTextureBound={(depthTex != null)}");
+                sb.AppendLine($"renderQueue={water.renderQueue}");
+            }
+            File.WriteAllText(Path.Combine(outDir, "watermat.txt"), sb.ToString());
+        }
+        catch (Exception e)
+        {
+            File.AppendAllText("Library/ai/visual-smoke-errors.log", "DumpWaterMaterial: " + e + "\n");
         }
     }
 

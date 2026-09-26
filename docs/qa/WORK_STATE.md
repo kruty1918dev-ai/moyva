@@ -1,8 +1,33 @@
-# Work State — 2026-09-26 (seabed + highland pit fix + square FBX tiles)
+# Work State — 2026-09-26 (water depth + seabed + pit fix + FBX tiles)
 
 ## Current task
 
-**Continuous sloping seabed (2026-09-26):**
+**Water depth visibility (2026-09-26):**
+- Runtime water was `StylizedWater3_NintendoStyle` via
+  `TileWater.asset` `materialOverride`, with `_DepthHorizontal=0.01`
+  → column-depth shading effectively off. `WaterLayerMaterialApplier`
+  is dormant legacy (injected, never applied).
+- Fix: `TileWater.asset` now overrides to Moyva-owned
+  `WaterMaterial.mat` (same SW3 Standard shader; scene +
+  `PlanarReflectionRenderer` already used it); retuned
+  `_DepthHorizontal` 6.12→1.0, `_DepthVertical` 9.1→4.0 so fog spans
+  the real 0.05–2 m seabed column.
+- SW3 stock depth path (`_FogSource=0`, `_DisableDepthTexture=0`,
+  URP Depth Texture + `StylizedWaterRenderFeature` on both assets)
+  computes per-pixel world-space column → chunk-independent,
+  camera-stable shore→deep gradient; no new shader/map.
+- `WorldVisualSmoke` +`DumpWaterMaterial` (effective runtime material
+  state) + `water_transect_top/low` shore→deep strip shots.
+- Verified seed 6130 same world: sand readable at shallows, smooth
+  fade, deep invisible; smoke PASS, 0 errors, no perf delta.
+- Report: `docs/qa/WATER_DEPTH_2026-09-26.md`. Evidence:
+  `docs/qa/evidence/waterdepth-seed6130/`.
+- Note: user editor session opened the project mid-task — smoke
+  requests must be cleaned if a second instance holds the lock.
+
+## Previous task
+
+**Continuous sloping seabed (2026-09-26) — committed `c3a14b9a`:**
 - Replaced per-cell underwater "bed columns"
   (`TwcTileMeshSourceProvider.CollectWaterBedSource`) with one
   shared field + one triangle-fan mesh per chunk merged into the
