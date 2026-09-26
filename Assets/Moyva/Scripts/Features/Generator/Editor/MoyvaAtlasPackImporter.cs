@@ -28,6 +28,8 @@ namespace Kruty1918.Moyva.Generator.Editor
         public const string PresetsFolder = OutputRoot + "/Presets";
         public const string MaterialsFolder = OutputRoot + "/Materials";
         public const string MaterialPath = MaterialsFolder + "/Moyva_Atlas.mat";
+        public const string CliffMeshesFolder = MeshesFolder + "/Cliff";
+        public const string CliffMaterialsFolder = MaterialsFolder + "/Cliff";
 
         /// <summary>Theme ids in pack order; also the semantic tile ids they render.</summary>
         public static readonly string[] Themes =
@@ -95,11 +97,11 @@ namespace Kruty1918.Moyva.Generator.Editor
             EnsureFolder(PrefabsFolder);
             EnsureFolder(PresetsFolder);
             EnsureFolder(MaterialsFolder);
+            EnsureFolder(CliffMeshesFolder);
+            EnsureFolder(CliffMaterialsFolder);
 
             Texture2D albedo = PrepareTexture(PackRoot + "/Textures/Moyva_AlbedoAtlas.png", isNormal: false, srgb: true);
-            Texture2D normal = PrepareTexture(PackRoot + "/Textures/Moyva_NormalAtlas.png", isNormal: true, srgb: false);
-            Texture2D packed = PrepareTexture(PackRoot + "/Textures/Moyva_MetallicSmoothnessAtlas.png", isNormal: false, srgb: false);
-            Material material = CreateOrUpdateMaterial(albedo, normal, packed);
+            Material material = CreateOrUpdateMaterial(albedo);
 
             var prefabs = new Dictionary<string, GameObject>(StringComparer.Ordinal);
             foreach (MeshRecord record in data.meshes)
@@ -113,6 +115,13 @@ namespace Kruty1918.Moyva.Generator.Editor
 
             AssetDatabase.SaveAssets();
             NormalizeDeterministicGuids();
+
+            // The shared Cliff tile set replaces the per-theme meshes inside the
+            // generated prefabs; runs on the same deterministic-guid pass.
+            int cliffMeshes = MoyvaCliffTileAssetBuilder.Build();
+            if (cliffMeshes > 0)
+                Debug.Log($"[MoyvaAtlasImporter] Cliff tile set applied: {cliffMeshes} shared meshes.");
+
             AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
             ValidateAssetKeys();
             return data.meshes.Length;
@@ -199,7 +208,7 @@ namespace Kruty1918.Moyva.Generator.Editor
         /// references stay intact. Runs after all assets exist; a following
         /// Refresh makes the new identities authoritative.
         /// </summary>
-        private static void NormalizeDeterministicGuids()
+        internal static void NormalizeDeterministicGuids()
         {
             var files = new List<string>();
             CollectGeneratedFiles(OutputRoot, files);
@@ -269,7 +278,7 @@ namespace Kruty1918.Moyva.Generator.Editor
                 CollectGeneratedFiles(dir.Replace('\\', '/'), results);
         }
 
-        private static void EnsureFolder(string path)
+        internal static void EnsureFolder(string path)
         {
             if (AssetDatabase.IsValidFolder(path))
                 return;
@@ -296,7 +305,7 @@ namespace Kruty1918.Moyva.Generator.Editor
             return AssetDatabase.LoadAssetAtPath<Texture2D>(path);
         }
 
-        private static Material CreateOrUpdateMaterial(Texture2D albedo, Texture2D normal, Texture2D packed)
+        private static Material CreateOrUpdateMaterial(Texture2D albedo)
         {
             Shader shader = Shader.Find("Universal Render Pipeline/Lit");
             if (shader == null)
@@ -314,14 +323,12 @@ namespace Kruty1918.Moyva.Generator.Editor
             material.enableInstancing = true;
             SetTexture(material, "_BaseMap", albedo);
             SetTexture(material, "_MainTex", albedo);
-            SetTexture(material, "_BumpMap", normal);
-            SetTexture(material, "_MetallicGlossMap", packed);
-            material.EnableKeyword("_NORMALMAP");
-            material.EnableKeyword("_METALLICGLOSSMAP");
-            material.EnableKeyword("_METALLICSPECGLOSSMAP");
-            if (material.HasProperty("_BumpScale")) material.SetFloat("_BumpScale", 0.35f);
-            if (material.HasProperty("_Smoothness")) material.SetFloat("_Smoothness", 1f);
-            if (material.HasProperty("_GlossMapScale")) material.SetFloat("_GlossMapScale", 1f);
+            SetTexture(material, "_BumpMap", null);
+            SetTexture(material, "_MetallicGlossMap", null);
+            material.DisableKeyword("_NORMALMAP");
+            material.DisableKeyword("_METALLICGLOSSMAP");
+            material.DisableKeyword("_METALLICSPECGLOSSMAP");
+            if (material.HasProperty("_Smoothness")) material.SetFloat("_Smoothness", 0.12f);
             if (material.HasProperty("_Metallic")) material.SetFloat("_Metallic", 0f);
 
             // CreateAsset reimports and destroys the in-memory object; only set
