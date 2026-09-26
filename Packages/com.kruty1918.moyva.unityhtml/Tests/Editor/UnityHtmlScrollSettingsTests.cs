@@ -80,6 +80,36 @@ namespace UnityHTML.Tests
         }
 
         [Test]
+        public void WheelSensitivity_ReapplyScalesFromBaselineWithoutCompounding()
+        {
+            Mount(ScrollMarkup);
+            MoyvaSmoothScrollRect scroll = FindScroll("list");
+
+            _host.ScrollSettings = _host.ScrollSettings.WithWheelSensitivity(0.5f);
+            Assert.That(scroll.scrollSensitivity, Is.EqualTo(25f).Within(0.01f));
+
+            _host.ScrollSettings = _host.ScrollSettings.WithWheelSensitivity(1.5f);
+            Assert.That(scroll.scrollSensitivity, Is.EqualTo(75f).Within(0.01f));
+        }
+
+        [Test]
+        public void ScrollSettings_PlainScrollRectsScaleFromTheirBaseline()
+        {
+            Mount(ScrollMarkup);
+
+            var plain = new GameObject("plain-scroll", typeof(RectTransform));
+            plain.transform.SetParent(_root.transform, false);
+            var rect = plain.AddComponent<ScrollRect>();
+            rect.scrollSensitivity = 28f;
+
+            _host.ScrollSettings = _host.ScrollSettings.WithWheelSensitivity(0.5f);
+            Assert.That(rect.scrollSensitivity, Is.EqualTo(14f).Within(0.01f));
+
+            _host.ScrollSettings = _host.ScrollSettings.WithWheelSensitivity(1.5f);
+            Assert.That(rect.scrollSensitivity, Is.EqualTo(42f).Within(0.01f));
+        }
+
+        [Test]
         public void ReducedMotion_ScrollSnapsInstantlyAndReversesWithoutDrift()
         {
             _host.ScrollSettings = _host.ScrollSettings.WithReducedMotion(true);

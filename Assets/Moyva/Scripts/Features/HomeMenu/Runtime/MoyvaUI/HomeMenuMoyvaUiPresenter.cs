@@ -102,6 +102,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _navigation.OnMenuChanged += HandleMenuChanged;
             if (_localization != null)
                 _localization.LanguageChanged += HandleLanguageChanged;
+            if (_view != null)
+                _view.OnScrollSensitivityChanged += HandleScrollSensitivityChanged;
 
             RenderIfNeeded();
         }
@@ -141,6 +143,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public void Dispose()
         {
             _view.Controls.CancelCapture();
+
+            if (_view != null)
+                _view.OnScrollSensitivityChanged -= HandleScrollSensitivityChanged;
 
             if (_navigation != null)
                 _navigation.OnMenuChanged -= HandleMenuChanged;
@@ -230,8 +235,16 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _mountedAnchor.SetMoyvaUiVisible(true);
             _mountedAnchor.SetLegacyUiVisible(false);
             if (_host != null)
-                _host.ScrollSettings = _host.ScrollSettings.WithReducedMotion(_state.ReducedMotion);
+                _host.ScrollSettings = _host.ScrollSettings
+                    .WithReducedMotion(_state.ReducedMotion)
+                    .WithWheelSensitivity(_view?.ScrollSensitivity ?? 0.5f);
             PlayRouteEnter(previousRoute, desired.Route, routeExitPlayed);
+        }
+
+        private void HandleScrollSensitivityChanged(float value)
+        {
+            if (_host != null)
+                _host.ScrollSettings = _host.ScrollSettings.WithWheelSensitivity(value);
         }
 
         private void PlayRouteEnter(string previousRoute, string currentRoute, bool routeExitPlayed)

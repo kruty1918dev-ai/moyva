@@ -79,6 +79,17 @@ namespace Kruty1918.Moyva.Tests.HomeMenu.PlayMode
             yield return WaitRealtime(0.45f);
             yield return Capture("portrait480-settings-controls");
 
+            // Bottom of the wide Controls page: the list-scroll sensitivity
+            // slider lives below the fold inside the settings scroll.
+            yield return SetViewport(1366, 768);
+            foreach (var scroll in Anchor.MountRoot.GetComponentsInChildren<UnityEngine.UI.ScrollRect>(true))
+            {
+                if (scroll.vertical)
+                    scroll.verticalNormalizedPosition = 0f;
+            }
+            yield return WaitRealtime(0.45f);
+            yield return Capture("settings-Controls-bottom");
+
             ReportLogSummary();
             AssertNoFatalLogs();
         }

@@ -49,6 +49,8 @@ namespace Kruty1918.Moyva.Shared.Controls
         public bool ZoomTowardFingers;
         /// <summary>показувати журнал клавіатури у кутку екрана — bool.</summary>
         public bool InputLogEnabled;
+        /// <summary>чутливість прокручування ігрових списків — float.</summary>
+        public float ScrollSensitivity;
         public Dictionary<PlayerControlAction, string> Bindings;
         public ProfileDocument Devices;
 
@@ -71,6 +73,7 @@ namespace Kruty1918.Moyva.Shared.Controls
                 ReduceMotion = false,
                 ZoomTowardFingers = true,
                 InputLogEnabled = true,
+                ScrollSensitivity = 0.5f,
                 Bindings = new Dictionary<PlayerControlAction, string>
                 {
                     { PlayerControlAction.MoveForward, "<Keyboard>/w" },
@@ -109,6 +112,9 @@ namespace Kruty1918.Moyva.Shared.Controls
                 ReduceMotion = ReduceMotion,
                 ZoomTowardFingers = ZoomTowardFingers,
                 InputLogEnabled = InputLogEnabled,
+                ScrollSensitivity = float.IsNaN(ScrollSensitivity) || float.IsInfinity(ScrollSensitivity)
+                    ? defaults.ScrollSensitivity
+                    : Mathf.Clamp(ScrollSensitivity, 0.25f, 3f),
                 Bindings = NormalizeBindings(Bindings, defaults.Bindings),
                 Devices = NormalizeDevices(Devices, Bindings)
             };
@@ -214,6 +220,8 @@ namespace Kruty1918.Moyva.Shared.Controls
         void SetZoomTowardFingers(bool value);
         /// <summary>Вмикає/вимикає журнал клавіатури у кутку екрана.</summary>
         void SetInputLogEnabled(bool value);
+        /// <summary>Встановлює чутливість прокручування ігрових списків.</summary>
+        void SetScrollSensitivity(float value);
         void ResetToDefaults();
         void ConfigureDevices(ControlProfile selection, PointerInterpretation pointerMode);
         bool TrySetProfileBinding(ControlProfile profile, PlayerControlAction action, string path, out PlayerControlAction conflict);
@@ -223,7 +231,7 @@ namespace Kruty1918.Moyva.Shared.Controls
 
     internal sealed class PlayerControlSettingsService : IPlayerControlSettingsService, IInitializable
     {
-        private const int Version = 3;
+        private const int Version = 4;
         private readonly IInputDeviceContext _devices;
         private readonly string _filePath;
         private bool _sprintMaskDirty = true;
@@ -372,6 +380,14 @@ namespace Kruty1918.Moyva.Shared.Controls
             Update(next);
         }
 
+        /// <summary>Встановлює чутливість прокручування ігрових списків.</summary>
+        public void SetScrollSensitivity(float value)
+        {
+            var next = Clone(Settings);
+            next.ScrollSensitivity = value;
+            Update(next);
+        }
+
         public void ResetToDefaults() => Update(PlayerControlSettingsData.CreateDefault());
 
         private void ApplyDeviceSelection()
@@ -466,6 +482,7 @@ namespace Kruty1918.Moyva.Shared.Controls
                     ReduceCameraMotion = defaults.ReduceCameraMotion,
                     ZoomTowardFingers = defaults.ZoomTowardFingers,
                     InputLogEnabled = defaults.InputLogEnabled,
+                    ScrollSensitivity = defaults.ScrollSensitivity,
                     Bindings = new Dictionary<PlayerControlAction, string>()
                 };
 
@@ -493,6 +510,7 @@ namespace Kruty1918.Moyva.Shared.Controls
                     // Bit 64 stores InputLog *disabled* so older files read enabled.
                     settings.InputLogEnabled = (flags & 64) == 0;
                     settings.CameraShakeIntensity = reader.ReadSingle();
+                    if (version >= 4) settings.ScrollSensitivity = reader.ReadSingle();
                 }
                 return settings.Normalized();
             }
@@ -536,6 +554,7 @@ namespace Kruty1918.Moyva.Shared.Controls
                 if (!data.InputLogEnabled) flags |= 64;
                 writer.Write(flags);
                 writer.Write(data.CameraShakeIntensity);
+                writer.Write(data.ScrollSensitivity);
                 }
                 if (File.Exists(_filePath)) File.Replace(temporaryPath, _filePath, _filePath + ".bak");
                 else File.Move(temporaryPath, _filePath);
@@ -563,6 +582,7 @@ namespace Kruty1918.Moyva.Shared.Controls
                 ReduceMotion = source.ReduceMotion,
                 ZoomTowardFingers = source.ZoomTowardFingers,
                 InputLogEnabled = source.InputLogEnabled,
+                ScrollSensitivity = source.ScrollSensitivity,
                 Bindings = new Dictionary<PlayerControlAction, string>(
                     source.Bindings ?? PlayerControlSettingsData.CreateDefault().Bindings)
             };
@@ -582,7 +602,8 @@ namespace Kruty1918.Moyva.Shared.Controls
                 first.ReduceCameraMotion != second.ReduceCameraMotion ||
                 first.ReduceMotion != second.ReduceMotion ||
                 first.ZoomTowardFingers != second.ZoomTowardFingers ||
-                first.InputLogEnabled != second.InputLogEnabled)
+                first.InputLogEnabled != second.InputLogEnabled ||
+                !Mathf.Approximately(first.ScrollSensitivity, second.ScrollSensitivity))
                 return false;
 
             foreach (PlayerControlAction action in Enum.GetValues(typeof(PlayerControlAction)))

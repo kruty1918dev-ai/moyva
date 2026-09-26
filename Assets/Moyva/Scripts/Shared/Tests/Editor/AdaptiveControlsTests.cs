@@ -524,6 +524,158 @@ namespace Kruty1918.Moyva.Tests.Controls
             }
         }
 
+        [Test]
+        public void ScrollSensitivityDefaultsToHalfAndPersists()
+        {
+            var scope = new TestScope();
+
+            string file = Path.Combine(
+                Application.persistentDataPath,
+                scope.BuildScopedFileName("player_controls.dat"));
+
+            try
+            {
+                var service = CreateService(scope);
+
+                Assert.That(
+                    service.Settings.ScrollSensitivity,
+                    Is.EqualTo(0.5f).Within(0.001f));
+
+                service.SetScrollSensitivity(0.75f);
+
+                var reloaded = CreateService(scope);
+
+                Assert.That(
+                    reloaded.Settings.ScrollSensitivity,
+                    Is.EqualTo(0.75f).Within(0.001f));
+            }
+            finally
+            {
+                foreach (var suffix in new[] { "", ".tmp", ".bak", ".v1.bak" })
+                {
+                    string path = file + suffix;
+                    if (File.Exists(path)) File.Delete(path);
+                }
+            }
+        }
+
+        [Test]
+        public void ScrollSensitivityClampsAndNaNFallsBackToDefault()
+        {
+            var scope = new TestScope();
+
+            string file = Path.Combine(
+                Application.persistentDataPath,
+                scope.BuildScopedFileName("player_controls.dat"));
+
+            try
+            {
+                var service = CreateService(scope);
+
+                service.SetScrollSensitivity(100f);
+                Assert.That(
+                    service.Settings.ScrollSensitivity,
+                    Is.EqualTo(3f).Within(0.001f));
+
+                service.SetScrollSensitivity(0.01f);
+                Assert.That(
+                    service.Settings.ScrollSensitivity,
+                    Is.EqualTo(0.25f).Within(0.001f));
+
+                service.SetScrollSensitivity(float.NaN);
+                Assert.That(
+                    service.Settings.ScrollSensitivity,
+                    Is.EqualTo(0.5f).Within(0.001f));
+            }
+            finally
+            {
+                foreach (var suffix in new[] { "", ".tmp", ".bak", ".v1.bak" })
+                {
+                    string path = file + suffix;
+                    if (File.Exists(path)) File.Delete(path);
+                }
+            }
+        }
+
+        [Test]
+        public void ResetToDefaultsRestoresScrollSensitivity()
+        {
+            var scope = new TestScope();
+
+            string file = Path.Combine(
+                Application.persistentDataPath,
+                scope.BuildScopedFileName("player_controls.dat"));
+
+            try
+            {
+                var service = CreateService(scope);
+                service.SetScrollSensitivity(2f);
+                service.ResetToDefaults();
+
+                Assert.That(
+                    service.Settings.ScrollSensitivity,
+                    Is.EqualTo(0.5f).Within(0.001f));
+            }
+            finally
+            {
+                foreach (var suffix in new[] { "", ".tmp", ".bak", ".v1.bak" })
+                {
+                    string path = file + suffix;
+                    if (File.Exists(path)) File.Delete(path);
+                }
+            }
+        }
+
+        [Test]
+        public void V3FileLoadsWithDefaultScrollSensitivity()
+        {
+            var scope = new TestScope();
+
+            string file = Path.Combine(
+                Application.persistentDataPath,
+                scope.BuildScopedFileName("player_controls.dat"));
+
+            try
+            {
+                var legacy = PlayerControlSettingsData.CreateDefault();
+
+                using (var writer = new BinaryWriter(File.Create(file)))
+                {
+                    writer.Write(3);
+
+                    writer.Write(1f);
+                    writer.Write(1f);
+                    writer.Write(1f);
+                    writer.Write(1f);
+
+                    writer.Write(legacy.Bindings.Count);
+                    foreach (var pair in legacy.Bindings)
+                    {
+                        writer.Write((int)pair.Key);
+                        writer.Write(pair.Value);
+                    }
+
+                    writer.Write("{}");
+                    writer.Write((byte)0);
+                    writer.Write(0.5f);
+                }
+
+                var service = CreateService(scope);
+
+                Assert.That(
+                    service.Settings.ScrollSensitivity,
+                    Is.EqualTo(0.5f).Within(0.001f));
+            }
+            finally
+            {
+                foreach (var suffix in new[] { "", ".tmp", ".bak", ".v1.bak" })
+                {
+                    string path = file + suffix;
+                    if (File.Exists(path)) File.Delete(path);
+                }
+            }
+        }
+
         private static IPlayerControlSettingsService CreateService(
             IClientInstanceScope scope)
         {

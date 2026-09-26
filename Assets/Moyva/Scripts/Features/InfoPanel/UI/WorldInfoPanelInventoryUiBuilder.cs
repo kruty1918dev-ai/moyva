@@ -8,6 +8,10 @@ namespace Kruty1918.Moyva.InfoPanel.UI
     {
         private const string InventoryRootName = "ResourceInventory";
 
+        // Wheel step for a standard mouse notch at 100% player scroll sensitivity;
+        // WorldInfoPanelInventoryController multiplies it by the persisted setting.
+        public const float ScrollSensitivityBaseline = 34f;
+
         public static void Ensure(
             GameObject panelRoot,
             TMP_Text descriptionText,
@@ -60,7 +64,7 @@ namespace Kruty1918.Moyva.InfoPanel.UI
             scrollRect.elasticity = 0.08f;
             scrollRect.inertia = true;
             scrollRect.decelerationRate = 0.135f;
-            scrollRect.scrollSensitivity = 34f;
+            scrollRect.scrollSensitivity = ScrollSensitivityBaseline;
 
             var viewport = CreateRect("Viewport", scrollRoot);
             Stretch(viewport, 0f, 0f, 0f, 0f);

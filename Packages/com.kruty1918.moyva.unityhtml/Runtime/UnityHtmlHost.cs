@@ -413,11 +413,22 @@ namespace UnityHTML.Runtime
         {
             if (_root == null)
                 return;
-            var scrollRects = _root.GetComponentsInChildren<MoyvaSmoothScrollRect>(true);
+            var scrollRects = _root.GetComponentsInChildren<ScrollRect>(true);
             for (var i = 0; i < scrollRects.Length; i++)
             {
-                if (scrollRects[i] != null)
-                    scrollRects[i].ApplySettings(_scrollSettings);
+                var scrollRect = scrollRects[i];
+                if (scrollRect == null)
+                    continue;
+
+                if (scrollRect is MoyvaSmoothScrollRect smooth)
+                    smooth.ApplySettings(_scrollSettings);
+                else
+                {
+                    var binding = scrollRect.GetComponent<MoyvaScrollSensitivity>();
+                    if (binding == null)
+                        binding = scrollRect.gameObject.AddComponent<MoyvaScrollSensitivity>();
+                    binding.Apply(_scrollSettings.WheelSensitivity);
+                }
             }
         }
 

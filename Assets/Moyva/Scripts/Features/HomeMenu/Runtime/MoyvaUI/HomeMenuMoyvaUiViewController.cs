@@ -254,6 +254,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public bool AutomaticCameraFocus { get; private set; }
         /// <summary>Reduce камери руху — bool.</summary>
         public bool ReduceCameraMotion { get; private set; }
+        /// <summary>чутливість прокручування ігрових списків — float.</summary>
+        public float ScrollSensitivity { get; private set; } = 0.5f;
         /// <summary>зум Toward пальців — bool.</summary>
         public bool ZoomTowardFingers { get; private set; } = true;
         /// <summary>показ журналу введення у кутку екрана — bool.</summary>
@@ -363,6 +365,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public event Action<bool> OnZoomTowardFingersChanged;
         /// <summary>On журналу введення Changed.</summary>
         public event Action<bool> OnInputLogEnabledChanged;
+        /// <summary>On чутливості прокручування списків Changed.</summary>
+        public event Action<float> OnScrollSensitivityChanged;
         /// <summary>гравця керування Action.</summary>
         public event Action<PlayerControlAction, string> OnControlBindingChanged;
         /// <summary>On скидання Controls натискання.</summary>
@@ -622,6 +626,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             ReduceCameraMotion = normalized.ReduceCameraMotion;
             ZoomTowardFingers = normalized.ZoomTowardFingers;
             InputLogEnabled = normalized.InputLogEnabled;
+            ScrollSensitivity = normalized.ScrollSensitivity;
             _controlBindings.Clear();
             foreach (var pair in normalized.Bindings)
                 _controlBindings[pair.Key] = pair.Value;
@@ -1297,6 +1302,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public void SetZoomTowardFingers(bool value) { ZoomTowardFingers = value; OnZoomTowardFingersChanged?.Invoke(value); _state.MarkDirty(); }
         /// <summary>Вмикає/вимикає журнал введення.</summary>
         public void SetInputLogEnabled(bool value) { InputLogEnabled = value; OnInputLogEnabledChanged?.Invoke(value); _state.MarkDirty(); }
+        /// <summary>Встановлює чутливість прокручування списків.</summary>
+        public void SetScrollSensitivity(float value) { ScrollSensitivity = Mathf.Clamp(value, 0.25f, 3f); OnScrollSensitivityChanged?.Invoke(ScrollSensitivity); _state.MarkDirty(); }
         /// <summary>Встановлює керування привʼязки.</summary>
         public void SetControlBinding(PlayerControlAction action, string controlPath) { OnControlBindingChanged?.Invoke(action, controlPath); _state.MarkDirty(); }
         /// <summary>Скидає Controls.</summary>

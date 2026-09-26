@@ -248,6 +248,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public void CommitMovementSpeedValue(object value) => Commit(() => _view?.SetMovementSpeed(ToFloat(value, _view.MovementSpeed)));
         public void CommitOrbitSpeedValue(object value) => Commit(() => _view?.SetOrbitSpeed(ToFloat(value, _view.OrbitSpeed)));
         public void CommitZoomSpeedValue(object value) => Commit(() => _view?.SetZoomSpeed(ToFloat(value, _view.ZoomSpeed)));
+        /// <summary>Фіксує чутливість прокручування списків.</summary>
+        public void CommitScrollSensitivityValue(object value) => Commit(() => _view?.SetScrollSensitivity(ToFloat(value, _view.ScrollSensitivity)));
         /// <summary>Встановлює камери ефектів.</summary>
         public void SetCameraEffects(object value) => _view?.SetCameraEffects(ToBool(value));
         /// <summary>Фіксує камери тряски значення.</summary>

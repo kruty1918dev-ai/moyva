@@ -24,7 +24,7 @@ namespace Kruty1918.Moyva.Tests.HomeMenu.PlayMode
     {
         private const string MenuSceneName = "HomeMenu";
         protected static readonly string ScreenshotDir =
-            Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Temp", "ai", "smoke"));
+            Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Library", "ai", "smoke"));
 
         protected readonly List<string> Errors = new();
         protected readonly List<string> FatalErrors = new();

@@ -78,6 +78,29 @@ namespace Kruty1918.Moyva.Tests.HomeMenu
         }
 
         [Test]
+        public void ControlsSection_ContainsScrollSensitivitySlider()
+        {
+            _state.Open("SettingsPanel");
+            _state.SetSettingsSection(HomeMenuSettingsSection.Controls);
+
+            var markup = HomeMenuMoyvaUiMarkup.Build(_state, _view, "vp-wide");
+
+            Assert.That(markup, Does.Contain("CommitScrollSensitivityValue"));
+        }
+
+        [Test]
+        public void ControlsSection_ScrollSensitivityReflectsViewValue()
+        {
+            _state.Open("SettingsPanel");
+            _state.SetSettingsSection(HomeMenuSettingsSection.Controls);
+            _view.SetScrollSensitivity(1.25f);
+
+            var markup = HomeMenuMoyvaUiMarkup.Build(_state, _view, "vp-wide");
+
+            Assert.That(markup, Does.Contain("value=\"1.25\""));
+        }
+
+        [Test]
         public void SettingsToggles_PairLabelForWithToggleId()
         {
             _state.Open("SettingsPanel");

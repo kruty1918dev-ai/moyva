@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.Economy.API;
 using Kruty1918.Moyva.Economy.Runtime;
+using Kruty1918.Moyva.Shared.Controls;
 using Kruty1918.Moyva.Signals;
 using TMPro;
 using UnityEngine;
@@ -29,6 +30,7 @@ namespace Kruty1918.Moyva.InfoPanel.UI
         private readonly TMP_Text _descriptionText;
         private readonly EconomyDatabaseSO _economyDatabase;
         private readonly EconomyManager _economyManager;
+        private readonly IPlayerControlSettingsService _controlSettings;
 
         private GameObject _inventoryRoot;
         private Transform _content;
@@ -51,18 +53,26 @@ namespace Kruty1918.Moyva.InfoPanel.UI
             [Inject(Id = "BuildingInfoPanelRoot")] GameObject panelRoot,
             [Inject(Id = "BuildingInfoResourcesText")] TMP_Text descriptionText,
             [InjectOptional] EconomyDatabaseSO economyDatabase,
-            [InjectOptional] EconomyManager economyManager)
+            [InjectOptional] EconomyManager economyManager,
+            [InjectOptional] IPlayerControlSettingsService controlSettings = null)
         {
             _signalBus = signalBus;
             _panelRoot = panelRoot;
             _descriptionText = descriptionText;
             _economyDatabase = economyDatabase;
             _economyManager = economyManager;
+            _controlSettings = controlSettings;
         }
 
         public void Initialize()
         {
             ResolveUiReferences();
+
+            if (_controlSettings != null)
+            {
+                _controlSettings.OnSettingsChanged += OnControlSettingsChanged;
+                ApplyScrollSensitivity(_controlSettings.Settings.ScrollSensitivity);
+            }
 
             if (_signalBus != null)
             {
@@ -85,6 +95,9 @@ namespace Kruty1918.Moyva.InfoPanel.UI
 
         public void Dispose()
         {
+            if (_controlSettings != null)
+                _controlSettings.OnSettingsChanged -= OnControlSettingsChanged;
+
             if (_signalBus != null)
             {
                 _signalBus.TryUnsubscribe<WorldInfoSelectionChangedSignal>(OnSelectionChanged);
@@ -115,6 +128,15 @@ namespace Kruty1918.Moyva.InfoPanel.UI
             _scrollRect = root?.Find("ResourceScroll")?.GetComponent<ScrollRect>();
             _content = root?.Find("ResourceScroll/Viewport/Content");
             _emptyState = root?.Find("ResourceScroll/Viewport/EmptyState")?.GetComponent<TMP_Text>();
+        }
+
+        private void OnControlSettingsChanged(PlayerControlSettingsData data)
+            => ApplyScrollSensitivity(data.ScrollSensitivity);
+
+        private void ApplyScrollSensitivity(float sensitivity)
+        {
+            if (_scrollRect != null)
+                _scrollRect.scrollSensitivity = WorldInfoPanelInventoryUiBuilder.ScrollSensitivityBaseline * sensitivity;
         }
 
         private void OnSelectionChanged(WorldInfoSelectionChangedSignal signal)

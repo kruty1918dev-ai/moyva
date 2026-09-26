@@ -108,6 +108,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 _moyvaUiViewController.OnZoomTowardFingersChanged += OnZoomTowardFingersChanged;
                 _moyvaUiViewController.OnInputLogEnabledChanged -= OnInputLogEnabledChanged;
                 _moyvaUiViewController.OnInputLogEnabledChanged += OnInputLogEnabledChanged;
+                _moyvaUiViewController.OnScrollSensitivityChanged -= OnScrollSensitivityChanged;
+                _moyvaUiViewController.OnScrollSensitivityChanged += OnScrollSensitivityChanged;
                 _moyvaUiViewController.OnControlBindingChanged -= OnControlBindingChanged;
                 _moyvaUiViewController.OnControlBindingChanged += OnControlBindingChanged;
                 _moyvaUiViewController.OnResetControlsClicked -= OnResetControlsClicked;
@@ -165,6 +167,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 _moyvaUiViewController.OnReduceCameraMotionChanged -= OnReduceCameraMotionChanged;
                 _moyvaUiViewController.OnZoomTowardFingersChanged -= OnZoomTowardFingersChanged;
                 _moyvaUiViewController.OnInputLogEnabledChanged -= OnInputLogEnabledChanged;
+                _moyvaUiViewController.OnScrollSensitivityChanged -= OnScrollSensitivityChanged;
                 _moyvaUiViewController.OnControlBindingChanged -= OnControlBindingChanged;
                 _moyvaUiViewController.OnResetControlsClicked -= OnResetControlsClicked;
             }
@@ -300,6 +303,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         private void OnReduceCameraMotionChanged(bool value) => _controlSettingsService?.SetReduceCameraMotion(value);
         private void OnZoomTowardFingersChanged(bool value) => _controlSettingsService?.SetZoomTowardFingers(value);
         private void OnInputLogEnabledChanged(bool value) => _controlSettingsService?.SetInputLogEnabled(value);
+
+        private void OnScrollSensitivityChanged(float value) => _controlSettingsService?.SetScrollSensitivity(value);
 
         private void OnControlBindingChanged(PlayerControlAction action, string controlPath)
         {

@@ -37,5 +37,12 @@ namespace UnityHTML.Runtime
             copy.ReducedMotion = reduced;
             return copy;
         }
+
+        public UnityHtmlScrollSettings WithWheelSensitivity(float sensitivity)
+        {
+            UnityHtmlScrollSettings copy = this;
+            copy.WheelSensitivity = sensitivity;
+            return copy;
+        }
     }
 }
