@@ -13,8 +13,8 @@
     "variants": [
       {
         "preset": {
-          "$asset": "asset.tile-preset.clifftilespreset-a.e6decb8e",
-          "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/CliffTilesPreset_A.asset",
+          "$asset": "asset.tile-preset.atlas-stone.211f9b2e",
+          "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Presets/atlas-stone.asset",
           "required": true
         },
         "slot": "Top",
@@ -22,11 +22,6 @@
         "tileHeight": 0.0
       }
     ],
-    "representativePrefab": {
-      "$asset": "asset.game-object.cliff-fill.6242e01f",
-      "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/Prefabs/Cliff_Fill.prefab",
-      "required": true
-    },
     "scaleToCellSize": true,
     "layerYOffset": 0.0
   }

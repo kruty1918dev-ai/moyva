@@ -13,8 +13,8 @@
     "variants": [
       {
         "preset": {
-          "$asset": "asset.tile-preset.grasstobeach.ea0b1522",
-          "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/GrassToBeach.asset",
+          "$asset": "asset.tile-preset.atlas-grass.d71ffbf3",
+          "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Presets/atlas-grass.asset",
           "required": true
         },
         "slot": "Top",
@@ -22,11 +22,6 @@
         "tileHeight": 0.0
       }
     ],
-    "representativePrefab": {
-      "$asset": "asset.game-object.fill-tile.4b3b1230",
-      "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/Prefabs/GrassToBeach/Fill_Tile.prefab",
-      "required": true
-    },
     "scaleToCellSize": true,
     "layerYOffset": 0.0
   }

@@ -13,8 +13,8 @@
     "variants": [
       {
         "preset": {
-          "$asset": "asset.tile-preset.baseblockpresetgreenramp.53689e49",
-          "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/BaseBlockPresetGreenRamp.asset",
+          "$asset": "asset.tile-preset.atlas-rock-cliff.93a9c57c",
+          "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Presets/atlas-rock_cliff.asset",
           "required": true
         },
         "slot": "Top",
@@ -22,11 +22,6 @@
         "tileHeight": 0.0
       }
     ],
-    "representativePrefab": {
-      "$asset": "asset.game-object.baseblock-fill.9d579ac9",
-      "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/Prefabs/Green/BaseBlock_Fill.prefab",
-      "required": true
-    },
     "scaleToCellSize": true,
     "layerYOffset": 0.0
   }
