@@ -361,6 +361,15 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 if (hasIsOpen)
                     animator.SetBool("IsOpen", isOpen);
             }
+
+            GateVisualStateView[] views =
+                visual.GetComponentsInChildren<GateVisualStateView>(true);
+            for (int viewIndex = 0;
+                 viewIndex < views.Length;
+                 viewIndex++)
+            {
+                views[viewIndex]?.SetOpen(isOpen);
+            }
         }
 
         private bool TryGetPlacedGate(

@@ -1547,7 +1547,7 @@ public static class WorldVisualSmoke
                     Vector2Int c = flatCells[i];
                     bool ok = (bool)(applySetup.Invoke(session, new object[] { "castle-01", c, ownerId }) ?? false);
                     if (ok) castleCell = c;
-                    else if (i < 4) rep.AppendLine($"castle place try@{c} -> {InvokeMsg(lastMsg, session)}");
+                    else if (i < 4) rep.AppendLine($"castle place try@{c} -> {InvokeMsg(lastMsg, session)} {EvaluateReason(session, "castle-01", c, ownerId)}");
                 }
             }
             if (castleCell.x >= 0)
@@ -1663,6 +1663,7 @@ public static class WorldVisualSmoke
 
             RunTurnDeployProbe(rep, signal, cs, ownerId, barrackCell);
             RunMovementProbe(rep, signal, cs, spawnedUnitId, spawnedUnitCell, waterCell);
+            RunWallProbe(rep, signal, cs, ownerId, castleCell);
         }
         catch (Exception e)
         {
@@ -1670,6 +1671,286 @@ public static class WorldVisualSmoke
             File.AppendAllText("Library/ai/visual-smoke-errors.log", "RunGameplayProbe: " + e + "\n");
         }
         File.WriteAllText(Path.Combine(outDir, "gameplay.txt"), rep.ToString());
+    }
+
+    // Wall/gate probe: lays a 6x6 wall perimeter with a replaced-in gate on
+    // flat land plus a short run on uneven cells, exercises the canonical
+    // gate-state service (closed/open/passability) and renders proof shots of
+    // both gate visual states through the preview path.
+    static void RunWallProbe(StringBuilder rep, WorldGeneratedDataSignal signal,
+        float cs, string ownerId, Vector2Int castleCell)
+    {
+        string outDir = SessionState.GetString(Key + ".out", "Library/ai/shots");
+        Vector2Int anchor = castleCell.x >= 0
+            ? castleCell
+            : new Vector2Int(signal.Width / 2, signal.Height / 2);
+        object session = TryResolveByName("Kruty1918.Moyva.Construction.Runtime.ConstructionService");
+        object topo = TryResolveByName("Kruty1918.Moyva.Construction.Runtime.WallTopologyService");
+        object units = TryResolveByName("Kruty1918.Moyva.Units.Runtime.UnitService");
+        rep.AppendLine($"wallprobe session={(session != null)} topo={(topo != null)} units={(units != null)}");
+        if (session == null || topo == null) return;
+
+        var applySetup = session.GetType().GetMethod("TryApplySetupPlacement",
+            new[] { typeof(string), typeof(Vector2Int), typeof(string) });
+        var isOpen = topo.GetType().GetMethod("IsGateOpen");
+        var setOpen = topo.GetType().GetMethod("TrySetGateOpen");
+        var canPass = topo.GetType().GetMethod("CanUnitPassGate");
+        var canTraverse = units?.GetType().GetMethod("CanTraverseOccupiedConstructionCell");
+        var lastMsg = session.GetType().GetMethod("GetLastActionMessage");
+        if (applySetup == null || isOpen == null || setOpen == null)
+        {
+            rep.AppendLine("wallprobe: missing methods");
+            return;
+        }
+
+        // Best 6x6 window inside the castle's Chebyshev-5 influence square:
+        // walls require settlement influence, so the search is bounded to
+        // windows fully inside it. Score prefers free dry flat border cells.
+        int x0 = -1, y0 = -1, bestScore = -1;
+        int ya = Mathf.Max(2, anchor.y - 5), yb = Mathf.Min(anchor.y, signal.Height - 8);
+        int xa = Mathf.Max(2, anchor.x - 5), xb = Mathf.Min(anchor.x, signal.Width - 8);
+        for (int y = ya; y <= yb; y++)
+        for (int x = xa; x <= xb; x++)
+        {
+            int free = 0, flat = 0;
+            for (int bx = x; bx < x + 6; bx++)
+            for (int by = y; by < y + 6; by++)
+            {
+                bool border = bx == x || bx == x + 5 || by == y || by == y + 5;
+                if (!border) continue;
+                if (IsWaterId(signal.TileMap[bx, by])) continue;
+                if (signal.ObjectMap != null && !string.IsNullOrEmpty(signal.ObjectMap[bx, by])) continue;
+                free++;
+                if (IsFlatCell(signal, bx, by)) flat++;
+            }
+            int score = free * 100 + flat
+                - (new Vector2Int(x + 2, y + 2) - anchor).sqrMagnitude;
+            if (score > bestScore) { bestScore = score; x0 = x; y0 = y; }
+        }
+        rep.AppendLine($"wallprobe window=({x0},{y0}) score={bestScore}");
+
+        var placed = new List<Vector2Int>();
+        Vector2Int gateCell = new Vector2Int(-1, -1);
+        if (x0 >= 0)
+        {
+            // Placement requires visible tiles: reveal the window area through
+            // the canonical fog service, then ensure an influence center exists
+            // inside the perimeter (castle doubles as the test anchor).
+            object fog = TryResolveByName("Kruty1918.Moyva.FogOfWar.Runtime.FogOfWarService");
+            var revealArea = fog?.GetType().GetMethod("RevealArea",
+                new[] { typeof(Vector2Int), typeof(int),
+                    typeof(Kruty1918.Moyva.FogOfWar.API.FogRevealShape),
+                    typeof(bool), typeof(string) });
+            revealArea?.Invoke(fog, new object[] {
+                new Vector2Int(x0 + 2, y0 + 2), 10,
+                Kruty1918.Moyva.FogOfWar.API.FogRevealShape.PixelCircle,
+                true, "wall-smoke" });
+            rep.AppendLine($"wallprobe fogReveal={(revealArea != null)}");
+
+            // No castle placed by the earlier probe → anchor one inside the
+            // window interior so wall cells fall inside its influence.
+            if (castleCell.x < 0)
+            {
+                for (int bx = x0 + 1; bx < x0 + 5; bx++)
+                for (int by = y0 + 1; by < y0 + 5; by++)
+                {
+                    var c = new Vector2Int(bx, by);
+                    if (castleCell.x >= 0) break;
+                    if (IsWaterId(signal.TileMap[bx, by])) continue;
+                    if (signal.ObjectMap != null && !string.IsNullOrEmpty(signal.ObjectMap[bx, by])) continue;
+                    if ((bool)(applySetup.Invoke(session,
+                            new object[] { "castle-01", c, ownerId }) ?? false))
+                    {
+                        castleCell = c;
+                        rep.AppendLine($"wallprobe castle placed @{c}");
+                    }
+                }
+            }
+
+            gateCell = new Vector2Int(x0 + 2, y0);
+            int okCount = 0, failCount = 0;
+            for (int bx = x0; bx < x0 + 6; bx++)
+            for (int by = y0; by < y0 + 6; by++)
+            {
+                bool border = bx == x0 || bx == x0 + 5 || by == y0 || by == y0 + 5;
+                if (!border) continue;
+                var cell = new Vector2Int(bx, by);
+                bool ok = (bool)(applySetup.Invoke(session,
+                    new object[] { "stone-wall", cell, ownerId }) ?? false);
+                if (ok) { okCount++; placed.Add(cell); }
+                else
+                {
+                    failCount++;
+                    string reason = InvokeMsg(lastMsg, session);
+                    if (string.IsNullOrEmpty(reason))
+                        reason = EvaluateReason(session, "stone-wall", cell, ownerId);
+                    rep.AppendLine($"wall @{cell} FAILED {reason}");
+                }
+            }
+            rep.AppendLine($"wallprobe walls placed={okCount} failed={failCount}");
+
+            // Gate replaces a south-edge wall segment (canonical replacement);
+            // fall back to any placed segment if the preferred cell failed.
+            if (!placed.Contains(gateCell))
+            {
+                gateCell = new Vector2Int(-1, -1);
+                foreach (var c in placed)
+                    if (c.y == y0) { gateCell = c; break; }
+                if (gateCell.x < 0 && placed.Count > 0)
+                    gateCell = placed[placed.Count / 2];
+            }
+            bool gok = gateCell.x >= 0 && (bool)(applySetup.Invoke(session,
+                new object[] { "stone-gate", gateCell, ownerId }) ?? false);
+            rep.AppendLine($"wallprobe gate @{gateCell} ok={gok} {InvokeMsg(lastMsg, session)}");
+            if (gok && !placed.Contains(gateCell)) placed.Add(gateCell);
+        }
+
+        // Uneven-terrain rejection probe: stone-wall requires flat ground, so
+        // sloped cells must fail with the canonical buildability rejection.
+        if (signal.TerrainLevelMap != null)
+        {
+            int tested = 0, okCount = 0;
+            for (int y = 2; y < signal.Height - 3 && tested < 4; y++)
+            for (int x = 2; x < signal.Width - 2 && tested < 4; x++)
+            {
+                if (IsWaterId(signal.TileMap[x, y])) continue;
+                if (signal.ObjectMap != null && !string.IsNullOrEmpty(signal.ObjectMap[x, y])) continue;
+                if (IsFlatCell(signal, x, y)) continue;
+                var cell = new Vector2Int(x, y);
+                bool ok = (bool)(applySetup.Invoke(session,
+                    new object[] { "stone-wall", cell, ownerId }) ?? false);
+                rep.AppendLine($"wall uneven @{cell} ok={ok} {EvaluateReason(session, "stone-wall", cell, ownerId)}");
+                tested++;
+                if (ok) { okCount++; placed.Add(cell); }
+            }
+            rep.AppendLine($"wallprobe uneven placed={okCount}/tested={tested}");
+        }
+
+        // Fresh placements render as construction scaffolding; fast-forward to
+        // operational via the canonical lifecycle restore so the real wall
+        // meshes appear.
+        object lifecycle = TryResolveByName("Kruty1918.Moyva.Construction.Runtime.ConstructionLifecycleService");
+        var restore = lifecycle?.GetType().GetMethod("TryRestoreOperational");
+        if (restore != null)
+        {
+            int restored = 0;
+            foreach (var c in placed)
+                if ((bool)(restore.Invoke(lifecycle, new object[] { c }) ?? false))
+                    restored++;
+            rep.AppendLine($"wallprobe restored={restored}/{placed.Count}");
+        }
+
+        // Gate state + traversal through the canonical services.
+        if (gateCell.x >= 0)
+        {
+            rep.AppendLine($"gate IsGateOpen={(bool)isOpen.Invoke(topo, new object[] { gateCell })}");
+            object[] passArgs = { gateCell, ownerId, null };
+            rep.AppendLine($"gate CanUnitPassGate(owner)={(bool)canPass.Invoke(topo, passArgs)} reason={passArgs[2]}");
+            object[] foeArgs = { gateCell, "enemy_9", null };
+            rep.AppendLine($"gate CanUnitPassGate(enemy)={(bool)canPass.Invoke(topo, foeArgs)} reason={foeArgs[2]}");
+            if (canTraverse != null && placed.Count > 1)
+            {
+                object[] tArgs = { "probe-unit", placed[0], false, null };
+                rep.AppendLine($"wall traverse={(bool)canTraverse.Invoke(units, tArgs)} reason={tArgs[3]}");
+            }
+        }
+
+        // Proof shots: wall MeshFilters (active children only — the inactive
+        // gate state mesh must not render) plus terrain for context.
+        var wallMfs = CollectWallMeshFilters();
+        var targets = new List<MeshFilter>(wallMfs);
+        foreach (var mf in UnityEngine.Object.FindObjectsByType<MeshFilter>())
+            if (mf != null && mf.gameObject.name == "TerrainMesh") targets.Add(mf);
+        rep.AppendLine($"wallprobe meshfilters walls={wallMfs.Count} total={targets.Count}");
+
+        if (placed.Count > 0)
+        {
+            Vector3 aim = gateCell.x >= 0
+                ? CellWorld(gateCell, signal, cs)
+                : CellWorld(placed[placed.Count / 2], signal, cs);
+            aim += new Vector3(0.5f * cs, 0f, 0.5f * cs);
+            Vector3 center = CellWorld(placed[0], signal, cs);
+            if (x0 >= 0)
+                center = CellWorld(new Vector2Int(x0 + 2, y0 + 2), signal, cs) + new Vector3(0.5f * cs, 0f, 0.5f * cs);
+
+            ShotAt(targets, outDir, "wall_topdown",
+                center + Vector3.up * 26f, Quaternion.Euler(90f, 0f, 0f),
+                ortho: true, orthoSize: 6.5f * cs);
+            ShotAt(targets, outDir, "wall_iso",
+                center + new Vector3(9f, 10f, -9f),
+                Quaternion.LookRotation(center - (center + new Vector3(9f, 10f, -9f)), Vector3.up));
+            ShotAt(targets, outDir, "wall_gate_closed",
+                aim + new Vector3(4.5f, 4f, -5.5f),
+                Quaternion.LookRotation(aim + Vector3.up * 0.8f - (aim + new Vector3(4.5f, 4f, -5.5f)), Vector3.up));
+            ShotAt(targets, outDir, "wall_side_south",
+                center + new Vector3(0f, 4.5f, -11f),
+                Quaternion.LookRotation(new Vector3(center.x, center.y + 0.8f, center.z) - (center + new Vector3(0f, 4.5f, -11f)), Vector3.up));
+
+            // Open the gate through the canonical service and reshoot.
+            if (gateCell.x >= 0)
+            {
+                object[] oArgs = { gateCell, true, 0f, null };
+                bool opened = (bool)setOpen.Invoke(topo, oArgs);
+                rep.AppendLine($"gate TrySetOpen={opened} IsOpen={(bool)isOpen.Invoke(topo, new object[] { gateCell })} reason={oArgs[3]}");
+                var openTargets = new List<MeshFilter>(CollectWallMeshFilters());
+                foreach (var mf in UnityEngine.Object.FindObjectsByType<MeshFilter>())
+                    if (mf != null && mf.gameObject.name == "TerrainMesh") openTargets.Add(mf);
+                ShotAt(openTargets, outDir, "wall_gate_open",
+                    aim + new Vector3(4.5f, 4f, -5.5f),
+                    Quaternion.LookRotation(aim + Vector3.up * 0.8f - (aim + new Vector3(4.5f, 4f, -5.5f)), Vector3.up));
+                if (canTraverse != null)
+                {
+                    object[] tArgs = { "probe-unit", gateCell, false, null };
+                    rep.AppendLine($"gate traverse open={(bool)canTraverse.Invoke(units, tArgs)} reason={tArgs[3]}");
+                }
+                object[] cArgs = { gateCell, false, 0f, null };
+                setOpen.Invoke(topo, cArgs);
+            }
+        }
+    }
+
+    // Diagnostic: re-runs the canonical placement query to recover the
+    // rejection reason code when a wall placement fails silently.
+    static string EvaluateReason(object session, string buildingId,
+        Vector2Int cell, string ownerId)
+    {
+        try
+        {
+            var req = new Kruty1918.Moyva.Construction.API.ConstructionPlacementQueryRequest(
+                buildingId, cell, includeDetails: true, ownerId: ownerId);
+            object res = session.GetType().GetMethod("EvaluatePlacement")
+                ?.Invoke(session, new object[] { req });
+            if (res == null) return "eval=null";
+            var t = res.GetType();
+            var sb = new StringBuilder("eval");
+            foreach (string p in new[] { "CanCommit", "AvailabilityValid",
+                "SpatialValid", "ResourcesValid", "AuthorityValid",
+                "Reason", "ReasonCode", "IsGateReplacement" })
+            {
+                object v = t.GetProperty(p)?.GetValue(res);
+                if (v != null) sb.Append(' ').Append(p).Append('=').Append(v);
+            }
+            return sb.ToString();
+        }
+        catch (Exception e) { return "eval-ex " + e.Message; }
+    }
+
+    // Active-in-hierarchy MeshFilters under every placed wall/gate visual
+    // (placed visuals are named Building_{buildingId}_{x}_{y}).
+    static List<MeshFilter> CollectWallMeshFilters()
+    {
+        var list = new List<MeshFilter>();
+        foreach (var t in UnityEngine.Object.FindObjectsByType<Transform>())
+        {
+            if (t == null
+                || (!t.name.StartsWith("Building_stone-wall_", StringComparison.Ordinal)
+                    && !t.name.StartsWith("Building_stone-gate_", StringComparison.Ordinal)))
+                continue;
+            foreach (var mf in t.GetComponentsInChildren<MeshFilter>())
+                if (mf != null && mf.gameObject.activeInHierarchy && mf.sharedMesh != null)
+                    list.Add(mf);
+        }
+        return list;
     }
 
     // Advances the canonical turn service so a queued recruitment job completes

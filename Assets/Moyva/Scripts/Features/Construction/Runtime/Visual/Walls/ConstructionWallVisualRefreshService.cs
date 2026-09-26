@@ -13,6 +13,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly ConstructionPlacedVisualService _placedVisuals;
         private readonly ConstructionPreviewVisualService _previewVisuals;
         private readonly IConstructionLifecycle _constructionLifecycle;
+        private readonly IConstructionGateStateService _gateStateService;
 
         [Inject]
         public ConstructionWallVisualRefreshService(
@@ -22,7 +23,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             IWallVisualResolver wallVisualResolver,
             ConstructionPlacedVisualService placedVisuals,
             ConstructionPreviewVisualService previewVisuals,
-            [InjectOptional] IConstructionLifecycle constructionLifecycle = null)
+            [InjectOptional] IConstructionLifecycle constructionLifecycle = null,
+            [InjectOptional] IConstructionGateStateService gateStateService = null)
         {
             _objectsMapService = objectsMapService;
             _buildingRegistry = buildingRegistry;
@@ -31,6 +33,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _placedVisuals = placedVisuals;
             _previewVisuals = previewVisuals;
             _constructionLifecycle = constructionLifecycle;
+            _gateStateService = gateStateService;
         }
 
         public void RefreshPlacedNeighborhood(Vector2Int center)
@@ -86,6 +89,14 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             if (showConstructionVisual)
                 _placedVisuals.MarkUnderConstruction(position);
+
+            // A respawned gate visual always starts closed; re-drive the stored
+            // state so restored/opened gates render correctly after any refresh.
+            if (_gateStateService != null
+                && _gateStateService.IsGateOpen(position))
+            {
+                _gateStateService.TrySetGateOpen(position, true, out _, out _);
+            }
         }
 
         private void RefreshPreviewAt(Vector2Int position, string fallbackBuildingId)
