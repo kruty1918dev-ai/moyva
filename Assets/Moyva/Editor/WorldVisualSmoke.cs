@@ -24,6 +24,9 @@ public static class WorldVisualSmoke
     static WorldGeneratedDataSignal lastSignal;
     static object lastLogicalMap;
     static DiContainer lastContainer;
+    static bool gameplayRan;
+    static readonly List<Vector3> gameplayBuildingTargets = new List<Vector3>();
+    static readonly List<Vector3> gameplayUnitTargets = new List<Vector3>();
 
     static WorldVisualSmoke()
     {
@@ -82,6 +85,10 @@ public static class WorldVisualSmoke
             if (EditorApplication.timeSinceStartup - began > 300) { Finish("FAIL timeout"); return; }
             if (captured)
             {
+                // Run the gameplay probe as soon as the world is captured so the
+                // spawned buildings/units have the full pre-capture window to
+                // materialize before the game-camera shots are taken.
+                if (!gameplayRan) { gameplayRan = true; RunGameplayProbe(lastSignal); }
                 if (gameCaptured || EditorApplication.timeSinceStartup < gameShotAt) return;
                 gameCaptured = true;
                 CaptureGameShots(lastSignal);
@@ -724,6 +731,23 @@ public static class WorldVisualSmoke
                     false, 0f, 55f);
             }
 
+            // Proof shots for the gameplay probe: a close orbit on each placed
+            // building and spawned unit recorded by RunGameplayProbe.
+            int bi = 0;
+            foreach (Vector3 t in gameplayBuildingTargets)
+            {
+                Vector3 p = t + new Vector3(7f, 8f, -7f);
+                ShotCam(gameCam, outDir, "game_building_" + (bi++), p,
+                    Quaternion.LookRotation(t - p, Vector3.up), false, 0f, 55f);
+            }
+            int ui = 0;
+            foreach (Vector3 t in gameplayUnitTargets)
+            {
+                Vector3 p = t + new Vector3(4f, 5f, -4f);
+                ShotCam(gameCam, outDir, "game_unit_" + (ui++), p,
+                    Quaternion.LookRotation(t - p, Vector3.up), false, 0f, 55f);
+            }
+
             gameCam.transform.position = origPos;
             gameCam.transform.rotation = origRot;
             gameCam.orthographic = origOrtho;
@@ -732,6 +756,264 @@ public static class WorldVisualSmoke
         }
         else note.AppendLine("gamecam=none");
         File.WriteAllText(Path.Combine(outDir, "gamecam.txt"), note.ToString());
+    }
+
+    // Gameplay-level QA probe. Drives the canonical gameplay services (not a
+    // parallel authority): authoritative setup placement, direct-place
+    // validation rejections, recruitment eligibility/enqueue and the unit
+    // factory. Results are written to gameplay.txt and the spawned entity world
+    // positions are queued for dedicated proof shots in CaptureGameShots.
+    static void RunGameplayProbe(WorldGeneratedDataSignal signal)
+    {
+        string outDir = SessionState.GetString(Key + ".out", "Library/ai/shots");
+        var rep = new StringBuilder();
+        gameplayBuildingTargets.Clear();
+        gameplayUnitTargets.Clear();
+        try
+        {
+            if (lastContainer == null || signal.TileMap == null)
+            {
+                rep.AppendLine("no-container-or-signal");
+                File.WriteAllText(Path.Combine(outDir, "gameplay.txt"), rep.ToString());
+                return;
+            }
+            float cs = signal.CellSize <= 0.0001f ? 1f : signal.CellSize;
+
+            // Resolve the concrete canonical services (interfaces are not in
+            // TypeCache.GetTypesDerivedFrom<object>; the concrete types are).
+            object session = TryResolveByName("Kruty1918.Moyva.Construction.Runtime.ConstructionService");
+            object recruitment = TryResolveByName("Kruty1918.Moyva.Units.Runtime.UnitRecruitmentService");
+            object unitFactory = TryResolveByName("Kruty1918.Moyva.Units.API.IUnitFactory");
+            rep.AppendLine($"services session={(session != null)} recruitment={(recruitment != null)} unitFactory={(unitFactory != null)}");
+
+            string ownerId = "player_0";
+            if (session != null)
+            {
+                object o = session.GetType().GetMethod("GetActiveOwner")?.Invoke(session, null);
+                if (o is string s && !string.IsNullOrWhiteSpace(s)) ownerId = s.Trim();
+            }
+            rep.AppendLine($"ownerId={ownerId}");
+
+            var applySetup = session?.GetType().GetMethod("TryApplySetupPlacement",
+                new[] { typeof(string), typeof(Vector2Int), typeof(string) });
+            var directPlace = session?.GetType().GetMethod("TryDirectPlace",
+                new[] { typeof(string), typeof(Vector2Int), typeof(string) });
+            var lastMsg = session?.GetType().GetMethod("GetLastActionMessage");
+
+            // Candidate cells: interior flat, dry, unoccupied land; plus one
+            // water cell and the occupied cell for rejection probes.
+            Vector2Int waterCell = new Vector2Int(-1, -1);
+            var flatCells = new List<Vector2Int>();
+            for (int x = 2; x < signal.Width - 2; x++)
+            for (int y = 2; y < signal.Height - 2; y++)
+            {
+                if (IsWaterId(signal.TileMap[x, y]))
+                {
+                    if (waterCell.x < 0) waterCell = new Vector2Int(x, y);
+                    continue;
+                }
+                if (signal.ObjectMap != null && !string.IsNullOrEmpty(signal.ObjectMap[x, y])) continue;
+                if (!IsFlatCell(signal, x, y)) continue;
+                flatCells.Add(new Vector2Int(x, y));
+            }
+            rep.AppendLine($"cells flat={flatCells.Count} waterCell={waterCell}");
+
+            // Authoritative placement requires the cell inside owned/buildable
+            // territory, so prefer flat land nearest the local player's spawn
+            // hint rather than the geometric map centre.
+            Vector2Int cx = new Vector2Int(signal.Width / 2, signal.Height / 2);
+            if (signal.SpawnHints != null && signal.SpawnHints.Length > 0)
+                cx = signal.SpawnHints[0];
+            rep.AppendLine($"anchor={cx} spawnHints={(signal.SpawnHints?.Length ?? 0)}");
+            flatCells.Sort((a, b) =>
+                (a - cx).sqrMagnitude.CompareTo((b - cx).sqrMagnitude));
+
+            // 1) Authoritative setup placement: the bootstrap rule requires the
+            //    castle before any other building, so place castle-01 first,
+            //    then a recruiting barrack inside its build radius.
+            Vector2Int castleCell = new Vector2Int(-1, -1);
+            if (applySetup != null)
+            {
+                for (int i = 0; i < flatCells.Count && castleCell.x < 0; i++)
+                {
+                    Vector2Int c = flatCells[i];
+                    bool ok = (bool)(applySetup.Invoke(session, new object[] { "castle-01", c, ownerId }) ?? false);
+                    if (ok) castleCell = c;
+                    else if (i < 4) rep.AppendLine($"castle place try@{c} -> {InvokeMsg(lastMsg, session)}");
+                }
+            }
+            if (castleCell.x >= 0)
+            {
+                rep.AppendLine($"castle placed @{castleCell}");
+                gameplayBuildingTargets.Add(CellWorld(castleCell, signal, cs));
+            }
+            else rep.AppendLine("castle placement FAILED");
+
+            Vector2Int barrackCell = new Vector2Int(-1, -1);
+            if (applySetup != null && castleCell.x >= 0)
+            {
+                for (int i = 0; i < flatCells.Count && barrackCell.x < 0; i++)
+                {
+                    Vector2Int c = flatCells[i];
+                    if (c == castleCell) continue;
+                    bool ok = (bool)(applySetup.Invoke(session, new object[] { "barrack", c, ownerId }) ?? false);
+                    if (ok) barrackCell = c;
+                }
+            }
+            if (barrackCell.x >= 0)
+            {
+                rep.AppendLine($"barrack placed @{barrackCell} castle@{castleCell}");
+                gameplayBuildingTargets.Add(CellWorld(barrackCell, signal, cs));
+            }
+            else rep.AppendLine("barrack placement FAILED");
+
+            // 2) Rejection probes: water + occupied cell must be refused.
+            if (directPlace != null && waterCell.x >= 0)
+            {
+                bool ok = (bool)(directPlace.Invoke(session, new object[] { "farm", waterCell, ownerId }) ?? false);
+                rep.AppendLine($"reject water farm @{waterCell} ok={ok} msg={InvokeMsg(lastMsg, session)}");
+            }
+            if (directPlace != null && barrackCell.x >= 0)
+            {
+                bool ok = (bool)(directPlace.Invoke(session, new object[] { "farm", barrackCell, ownerId }) ?? false);
+                rep.AppendLine($"reject occupied farm @{barrackCell} ok={ok} msg={InvokeMsg(lastMsg, session)}");
+            }
+
+            // 3) Fast-forward the barrack to operational via the canonical
+            //    save-restore path, then drive recruitment eligibility + enqueue.
+            if (barrackCell.x >= 0)
+            {
+                object lifecycle = TryResolveByName("Kruty1918.Moyva.Construction.Runtime.ConstructionLifecycleService");
+                var restore = lifecycle?.GetType().GetMethod("TryRestoreOperational");
+                object ro = restore?.Invoke(lifecycle, new object[] { barrackCell });
+                rep.AppendLine($"barrack operational restore={ro}");
+            }
+
+            if (recruitment != null && barrackCell.x >= 0)
+            {
+                var getOptions = recruitment.GetType().GetMethod("GetOptions");
+                var opts = getOptions?.Invoke(recruitment, new object[] { ownerId }) as System.Collections.IList;
+                rep.AppendLine($"recruit options={(opts != null ? opts.Count : -1)}");
+                var tryEnqueue = recruitment.GetType().GetMethod("TryEnqueue");
+                if (tryEnqueue != null)
+                {
+                    object[] args = { ownerId, barrackCell, "warrior", null };
+                    bool ok = (bool)(tryEnqueue.Invoke(recruitment, args) ?? false);
+                    rep.AppendLine($"enqueue warrior @{barrackCell} ok={ok} reason={args[3]}");
+                }
+
+                // Inspect the resulting queue + deployment surface. The unit
+                // will not be ready inside the smoke window, but querying the
+                // canonical queue/deploy APIs exercises the rest of the path.
+                var getQueue = recruitment.GetType().GetMethod("GetQueue");
+                var queue = getQueue?.Invoke(recruitment, new object[] { ownerId, barrackCell }) as System.Collections.IList;
+                rep.AppendLine($"queue count={(queue != null ? queue.Count : -1)}");
+                long qid = 0;
+                if (queue != null && queue.Count > 0)
+                {
+                    object item = queue[0];
+                    object q = item?.GetType().GetProperty("QueueId")?.GetValue(item)
+                               ?? item?.GetType().GetField("QueueId")?.GetValue(item);
+                    if (q != null) qid = System.Convert.ToInt64(q);
+                }
+                var getTiles = recruitment.GetType().GetMethod("GetDeploymentTiles");
+                var tiles = getTiles?.Invoke(recruitment, new object[] { ownerId, barrackCell, qid }) as System.Collections.IList;
+                rep.AppendLine($"deploy tiles={(tiles != null ? tiles.Count : -1)} qid={qid}");
+                var tryDeploy = recruitment.GetType().GetMethod("TryDeployReady");
+                if (tryDeploy != null && qid > 0)
+                {
+                    object[] dargs = { ownerId, barrackCell, qid, barrackCell, null, null };
+                    bool ok = (bool)(tryDeploy.Invoke(recruitment, dargs) ?? false);
+                    rep.AppendLine($"deploy ready qid={qid} ok={ok} unit={dargs[4]} reason={dargs[5]}");
+                }
+            }
+
+            // 4) Direct unit factory spawn (visual proof) on a separate flat cell.
+            if (unitFactory != null)
+            {
+                Vector2Int unitCell = new Vector2Int(-1, -1);
+                foreach (Vector2Int c in flatCells)
+                    if (c != barrackCell && c != castleCell) { unitCell = c; break; }
+                if (unitCell.x >= 0)
+                {
+                    var create = unitFactory.GetType().GetMethod("CreateUnit",
+                        new[] { typeof(string), typeof(Vector2Int), typeof(string) });
+                    object uid = create?.Invoke(unitFactory, new object[] { "warrior", unitCell, ownerId });
+                    rep.AppendLine($"unit warrior @{unitCell} id={uid}");
+                    if (uid != null) gameplayUnitTargets.Add(CellWorld(unitCell, signal, cs));
+                }
+                else rep.AppendLine("unit spawn: no free flat cell");
+            }
+        }
+        catch (Exception e)
+        {
+            rep.AppendLine("EX " + e);
+            File.AppendAllText("Library/ai/visual-smoke-errors.log", "RunGameplayProbe: " + e + "\n");
+        }
+        File.WriteAllText(Path.Combine(outDir, "gameplay.txt"), rep.ToString());
+    }
+
+    static bool IsFlatCell(WorldGeneratedDataSignal signal, int x, int y)
+    {
+        if (signal.TerrainLevelMap == null) return true;
+        int lv = signal.TerrainLevelMap[x, y];
+        for (int dx = -1; dx <= 1; dx++)
+        for (int dy = -1; dy <= 1; dy++)
+        {
+            int nx = x + dx, ny = y + dy;
+            if (nx < 0 || ny < 0 || nx >= signal.Width || ny >= signal.Height) continue;
+            if (signal.TerrainLevelMap[nx, ny] != lv) return false;
+        }
+        return true;
+    }
+
+    static string InvokeMsg(System.Reflection.MethodInfo m, object target)
+        => m?.Invoke(target, null) as string ?? "";
+
+    // Cross-assembly type lookup: the gameplay services live in feature
+    // assemblies the editor assembly cannot name directly. Uses the editor-safe
+    // loaded-assembly list rather than AppDomain.GetAssemblies (UAC0005).
+    static Type FindType(string fullName)
+    {
+        var assemblies = new HashSet<System.Reflection.Assembly>();
+        foreach (var t in UnityEditor.TypeCache.GetTypesDerivedFrom<object>())
+        {
+            if (t.FullName == fullName) return t;
+            if (t.Assembly != null) assemblies.Add(t.Assembly);
+        }
+        // Interfaces are absent from GetTypesDerivedFrom<object>; find them by
+        // scanning the assemblies of the cached types instead of AppDomain.
+        foreach (var a in assemblies)
+        {
+            var t = a.GetType(fullName);
+            if (t != null) return t;
+        }
+        return null;
+    }
+
+    // Zenject bindings for construction/units may live in a sibling context
+    // rather than the world-generation SceneContext, so resolve across every
+    // context container until the service is found.
+    static object TryResolveByName(string fullName)
+    {
+        var t = FindType(fullName);
+        if (t == null) return null;
+        if (lastContainer != null)
+        {
+            object o = lastContainer.TryResolve(t);
+            if (o != null) return o;
+        }
+        foreach (var sc in UnityEngine.Object.FindObjectsByType<SceneContext>())
+        {
+            object o = sc.Container?.TryResolve(t);
+            if (o != null) return o;
+        }
+        foreach (var gc in UnityEngine.Object.FindObjectsByType<GameObjectContext>())
+        {
+            object o = gc.Container?.TryResolve(t);
+            if (o != null) return o;
+        }
+        return null;
     }
 
     static bool HasWaterNeighbour(WorldGeneratedDataSignal signal, int x, int y)

@@ -1,6 +1,36 @@
-# Work State — 2026-09-26 (QA cycle: water moiré + sedge bounds fixes)
+# Work State — 2026-09-26 (QA cycle: seed 5150 + gameplay harness)
 
 ## Current task
+
+**Autonomous QA cycle (seed 5150) — gameplay-level coverage added
+(2026-09-26):**
+- Cycle ran on recipe seed **5150** (restored to user value 777 after);
+  evidence `docs/qa/evidence/qa-cycle-seed5150/`, report
+  `docs/qa/QA_CYCLE_2026-09-26_seed5150.md`.
+- World: 48×48, 9 meshes, 726 272 verts, **nanVerts=0**, 0 errors,
+  `worldHash=DD09595646CF924B` (deterministic). land=1254, water=1050;
+  rivers+falls+confluence, no lake (legit variation).
+- **New `RunGameplayProbe` in `WorldVisualSmoke.cs`** — closes the prior
+  "world-gen only" gap. Resolves canonical services via Zenject
+  containers (reflection, `TypeCache`; no parallel authority):
+  `ConstructionService`, `UnitRecruitmentService`,
+  `ConstructionLifecycleService`, `IUnitFactory`.
+- Verified canonical paths end-to-end: castle-first bootstrap rule →
+  castle-01 placed (Settlement 1) → barrack placed in radius →
+  water/occupied/limit rejects w/ reasons → `TryRestoreOperational` →
+  `GetOptions`=3 → `TryEnqueue` warrior queued (qid=1) → `GetQueue`=1 →
+  `TryDeployReady` correctly "not ready" → `IUnitFactory.CreateUnit`
+  spawned warrior. Proof shots `game_building_0/1`, `game_unit_0`.
+- **No production defects** — only new-harness bring-up fixes (concrete-
+  type vs interface resolution, struct null-check, castle-first order,
+  UAC0005-safe TypeCache). Prior water-moiré + sedge fixes hold on
+  seed 5150 (clean navy water, OOB 16 rim overhangs ≤0.6u).
+- Verified: full EditMode **877/877**, smoke PASS deterministic, 0 errors.
+- Honest gaps: `TryDeployReady` never reaches ready in the smoke window
+  (turn advance not driven); insufficient-resource popup UI not exercised
+  (enqueue succeeded → no shortage surfaced).
+
+## Previous task (completed)
 
 **Autonomous QA cycle (seed 4242) — fixes verified (2026-09-26):**
 - Cycle ran on recipe seed **4242** (restored to user value 777 after);
