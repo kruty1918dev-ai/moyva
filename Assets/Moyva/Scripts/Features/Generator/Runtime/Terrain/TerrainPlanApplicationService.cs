@@ -10,14 +10,16 @@ namespace Kruty1918.Moyva.Generator.Runtime
     {
         /// <summary>
         /// Applies the recipe's terrain plan to the exported logical map:
-        /// per-cell relief heights, stair corridors, road/footpath routes.
-        /// Returns the generated passage plan (possibly empty).
+        /// per-cell relief heights, river/lake channel carving, stair
+        /// corridors, road/footpath routes. Returns the generated passage
+        /// plan (possibly empty).
         /// </summary>
         TerrainPassagePlan Apply(
             LogicalTileMap map,
             GeneratorMapRecipe recipe,
             float[,] reliefField,
-            int seed);
+            int seed,
+            RecipeHydrologyPlan hydrology = null);
     }
 
     /// <summary>
@@ -44,13 +46,22 @@ namespace Kruty1918.Moyva.Generator.Runtime
             LogicalTileMap map,
             GeneratorMapRecipe recipe,
             float[,] reliefField,
-            int seed)
+            int seed,
+            RecipeHydrologyPlan hydrology = null)
         {
             if (map == null || recipe == null)
                 return null;
 
             if (reliefField != null)
                 ApplyRelief(map, recipe, reliefField);
+
+            // Channel carving must precede the shore pass: river/lake cells
+            // whose flood level never rose above raw terrain carry a water
+            // surface just below the land surface, so the land winner would
+            // hide the channel. Dropping their land columns to the bed makes
+            // the water sheet the winner and lets the shoreline measure the
+            // true water contour.
+            CarveWaterChannels(map, recipe, hydrology);
 
             // Shore runs on the post-relief surfaces so the band follows the
             // real waterline; passages and routes read the graded map.
@@ -62,6 +73,14 @@ namespace Kruty1918.Moyva.Generator.Runtime
             TerrainPassagePlan passages = _passagePlanner.Plan(
                 map.SurfaceHeights,
                 recipe.Passages);
+            if (passages != null && passages.Flights.Count > 0)
+            {
+                // A stair module replaces every terrain sample on its cell —
+                // a flight through a river/lake would erase the water sheet
+                // and read as a hole in the channel, so water-crossing
+                // flights are dropped whole.
+                passages.Flights.RemoveAll(flight => FlightTouchesWater(map, flight));
+            }
             if (passages != null && passages.Flights.Count > 0)
                 CarveFlights(map, passages, recipe.Passages);
 
@@ -107,6 +126,68 @@ namespace Kruty1918.Moyva.Generator.Runtime
             }
         }
 
+        /*
+         * On river/lake cells the water surface sits just below the
+         * surrounding land (fill level minus a few centimetres). Without a
+         * carve, the land sample keeps the raw terrain height and wins the
+         * visual vote by millimetres — the channel renders as grass. Lower
+         * every land column to the planned bed so the water sheet wins and
+         * the bed column below stays consistent with the provider geometry.
+         */
+        private static void CarveWaterChannels(
+            LogicalTileMap map,
+            GeneratorMapRecipe recipe,
+            RecipeHydrologyPlan hydrology)
+        {
+            if (hydrology?.RiverMask == null || hydrology.LakeMask == null
+                || hydrology.BedHeight == null)
+            {
+                return;
+            }
+
+            int width = Mathf.Min(map.Width, hydrology.RiverMask.GetLength(0));
+            int height = Mathf.Min(map.Height, hydrology.RiverMask.GetLength(1));
+            for (int x = 0; x < width; x++)
+            for (int y = 0; y < height; y++)
+            {
+                if (!hydrology.RiverMask[x, y] && !hydrology.LakeMask[x, y])
+                    continue;
+
+                float surface = hydrology.WaterSurface != null
+                    ? hydrology.WaterSurface[x, y]
+                    : float.NaN;
+                float bed = hydrology.BedHeight[x, y];
+                float cap = IsFinite(bed)
+                    ? bed
+                    : IsFinite(surface) ? surface - 0.01f : float.NaN;
+                if (!IsFinite(cap))
+                    continue;
+
+                TileStackCell stack = map.GetCellStack(x, y);
+                if (stack == null || stack.IsEmpty)
+                    continue;
+
+                for (int i = 0; i < stack.Samples.Count; i++)
+                {
+                    TileLayerSample sample = stack.Samples[i];
+                    if (!sample.IsTerrainLike
+                        || sample.TileGeometryMode == TileGeometryMode.SurfaceOnly
+                        || IsWaterLike(recipe, sample.TileId))
+                    {
+                        continue;
+                    }
+
+                    float current = IsFinite(sample.SurfaceHeight)
+                        ? sample.SurfaceHeight
+                        : sample.Height;
+                    if (!IsFinite(current) || current <= cap)
+                        continue;
+
+                    stack.SetAt(i, sample.WithSurfaceHeight(cap));
+                }
+            }
+        }
+
         private static void CarveFlights(
             LogicalTileMap map,
             TerrainPassagePlan plan,
@@ -147,6 +228,39 @@ namespace Kruty1918.Moyva.Generator.Runtime
             }
         }
 
+        private static bool FlightTouchesWater(LogicalTileMap map, StairFlight flight)
+        {
+            if (flight?.Modules == null)
+                return false;
+            for (int i = 0; i < flight.Modules.Length; i++)
+            {
+                Vector2Int cell = flight.Modules[i];
+                if (IsWaterCell(map.GetCellStack(cell.x, cell.y)))
+                    return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// The cell renders a water sheet: a surface-only terrain sample is
+        /// the channel/lake/sea marker, matching the spawner's water test.
+        /// </summary>
+        private static bool IsWaterCell(TileStackCell stack)
+        {
+            if (stack == null)
+                return false;
+            for (int i = 0; i < stack.Samples.Count; i++)
+            {
+                TileLayerSample sample = stack.Samples[i];
+                if (sample.IsTerrainLike
+                    && sample.TileGeometryMode == TileGeometryMode.SurfaceOnly)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         private static void ApplyRoutes(
             LogicalTileMap map,
             TerrainRoutePlan routes,
@@ -170,7 +284,9 @@ namespace Kruty1918.Moyva.Generator.Runtime
             foreach (Vector2Int cell in cells)
             {
                 TileStackCell stack = map.GetCellStack(cell.x, cell.y);
-                if (stack == null || stack.IsEmpty)
+                // A road/footpath overlay on a water cell would cover the
+                // sheet it sits above — routes never enter open water.
+                if (stack == null || stack.IsEmpty || IsWaterCell(stack))
                     continue;
 
                 float surface = map.SurfaceHeights[cell.x, cell.y];
@@ -212,6 +328,9 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     authoredClosurePolicy: AuthoredClosurePolicy.PreserveAuthored));
             }
         }
+
+        private static bool IsFinite(float value)
+            => !float.IsNaN(value) && !float.IsInfinity(value);
 
         private static bool IsWaterLike(GeneratorMapRecipe recipe, string tileId)
         {

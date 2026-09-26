@@ -8,6 +8,7 @@ namespace Kruty1918.Moyva.MapChunks.Runtime
     {
         private const string RootName = "MapVisualChunks";
         private readonly Dictionary<MapChunkCoord, Transform> _roots = new();
+        private readonly Dictionary<Transform, MapChunkCoord> _coords = new();
         private Transform _root;
 
         public Transform GetOrCreateRoot(MapChunkCoord coord)
@@ -21,6 +22,7 @@ namespace Kruty1918.Moyva.MapChunks.Runtime
             if (existingChild != null)
             {
                 _roots[coord] = existingChild;
+                _coords[existingChild] = coord;
                 return existingChild;
             }
 
@@ -28,6 +30,7 @@ namespace Kruty1918.Moyva.MapChunks.Runtime
             chunkObject.transform.SetParent(_root, false);
             var transform = chunkObject.transform;
             _roots[coord] = transform;
+            _coords[transform] = coord;
             return transform;
         }
 
@@ -67,7 +70,11 @@ namespace Kruty1918.Moyva.MapChunks.Runtime
                         stale.Add(pair.Key);
                 }
                 for (int i = 0; i < stale.Count; i++)
+                {
+                    if (_roots.TryGetValue(stale[i], out var transform))
+                        _coords.Remove(transform);
                     _roots.Remove(stale[i]);
+                }
             }
 
             return removed;
@@ -82,6 +89,50 @@ namespace Kruty1918.Moyva.MapChunks.Runtime
                 return true;
 
             return transform.parent == _root;
+        }
+
+        public bool TryGetOwnedChunk(Transform transform, out MapChunkCoord coord)
+        {
+            coord = default;
+            if (transform == null || _root == null)
+                return false;
+
+            for (Transform current = transform; current != null; current = current.parent)
+            {
+                if (current.parent != _root)
+                    continue;
+
+                if (_coords.TryGetValue(current, out coord))
+                    return true;
+                // Chunk roots present in the scene without going through
+                // GetOrCreateRoot still resolve by their MapChunk_X_Y name.
+                if (TryParseChunkName(current.name, out coord))
+                {
+                    _coords[current] = coord;
+                    return true;
+                }
+                return false;
+            }
+
+            return false;
+        }
+
+        private static bool TryParseChunkName(string name, out MapChunkCoord coord)
+        {
+            coord = default;
+            if (string.IsNullOrEmpty(name) || !name.StartsWith("MapChunk_", System.StringComparison.Ordinal))
+                return false;
+
+            string[] parts = name.Substring(9).Split('_');
+            if (parts.Length != 2
+                || !int.TryParse(parts[0], out int x)
+                || !int.TryParse(parts[1], out int y))
+            {
+                return false;
+            }
+
+            coord = new MapChunkCoord(x, y);
+            return true;
         }
 
         private void EnsureRoot()

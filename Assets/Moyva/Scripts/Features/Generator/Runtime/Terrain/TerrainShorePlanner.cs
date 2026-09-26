@@ -52,6 +52,12 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 ? shoreTileId
                 : config.ShorePresetId.Trim();
 
+            // Shore-only water detection: cells whose winner is a water-rendered
+            // tile that is not part of the shared water-like list (swamp) must
+            // still register their surface so neighbouring land grades against
+            // the real waterline instead of ignoring them.
+            string[] waterIds = MergeIds(waterLikeTileIds, config.WaterTileIds);
+
             var water = new bool[width, height];
             var waterSurface = new float[width, height];
             var winnerIndex = new int[width, height];
@@ -68,12 +74,17 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     continue;
 
                 TileLayerSample main = stack.Samples[winner];
-                if (IsWater(main, waterLikeTileIds))
+                if (IsWater(main, waterIds))
                 {
                     water[x, y] = true;
+                    // A SurfaceOnly sheet may carry NaN heights until the map
+                    // reprojects; fall back to the resolved winner surface so
+                    // the shoreline measures the real water level.
                     waterSurface[x, y] = IsFinite(main.SurfaceHeight)
                         ? main.SurfaceHeight
-                        : main.Height;
+                        : IsFinite(main.Height)
+                            ? main.Height
+                            : originalSurface[x, y];
                 }
                 else
                 {
@@ -120,16 +131,37 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 if (original - floor > maxDrop)
                     continue;
 
+                /*
+                 * The visible sand strip is gated by coverage: with
+                 * BandCoverage < 1 only a deterministic-noise subset of band
+                 * cells converts, so the band reads as an irregular strip
+                 * whose average width is a fraction of a tile. Non-converted
+                 * band cells still grade (one rise step softer), so the
+                 * geometric descent is continuous where grass meets water —
+                 * cliffs are untouched via maxDrop above.
+                 */
+                bool convert = distance <= band
+                    && Geography.DeterministicNoise.Hash01(
+                        config.SeedSalt, x, y, 5) < config.BandCoverage;
                 float cap = floor + Mathf.Max(0, distance - 1) * rise;
-                bool convert = distance <= band;
+                if (!convert && distance <= band)
+                    cap = floor + distance * rise;
+                // Band cells that keep their terrain still rise to the
+                // waterline floor — a water-adjacent cell can never sit
+                // below the wash sheet. Blend cells only cap downward.
                 float target = convert
                     ? Mathf.Clamp(original, floor, cap)
-                    : Mathf.Min(original, cap);
-                if (!convert && target >= original - 0.0001f)
+                    : distance <= band
+                        ? Mathf.Clamp(original, floor, cap)
+                        : Mathf.Min(original, cap);
+                // Skip only when nothing changes — a band cell below the
+                // waterline still needs the lift that hides the wash sheet.
+                if (!convert && Mathf.Abs(target - original) <= 0.0001f)
                     continue;
 
-                ApplyShoreToCell(stack, waterLikeTileIds, donorFound, donor,
-                    shoreTileId, shorePresetId, convert, target);
+                ApplyShoreToCell(stack, waterIds, donorFound, donor,
+                    shoreTileId, shorePresetId, convert, target,
+                    winnerIndex[x, y], distance <= band);
             }
         }
 
@@ -166,10 +198,16 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
                 int d = Mathf.Max(Mathf.Abs(nx - x), Mathf.Abs(ny - y));
                 float surface = waterSurface[nx, ny];
-                if (d < best
-                    || d == best && IsFinite(surface) && surface > bestLevel)
+                // Level is chosen among the nearest-distance water cells; a
+                // non-finite surface must not poison the comparison, so the
+                // level resets whenever a strictly nearer cell is found.
+                if (d < best)
                 {
                     best = d;
+                    bestLevel = IsFinite(surface) ? surface : float.MinValue;
+                }
+                else if (d == best && IsFinite(surface) && surface > bestLevel)
+                {
                     bestLevel = surface;
                 }
             }
@@ -190,7 +228,9 @@ namespace Kruty1918.Moyva.Generator.Runtime
             string shoreTileId,
             string shorePresetId,
             bool convert,
-            float target)
+            float target,
+            int winnerIndex,
+            bool waterAdjacent)
         {
             for (int i = 0; i < stack.Samples.Count; i++)
             {
@@ -207,12 +247,17 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     : sample;
                 // Converted cells flatten every land layer to the beach level
                 // so the shore tile stays the winner; blend cells only cap
-                // heights, preserving each layer's relative order.
+                // heights, preserving each layer's relative order. A band
+                // cell that keeps its terrain still lifts its winning sample
+                // to the waterline floor so the wash sheet can never surface
+                // above dry land.
                 float sampleTarget = convert
                     ? target
-                    : Mathf.Min(
-                        IsFinite(sample.SurfaceHeight) ? sample.SurfaceHeight : target,
-                        target);
+                    : waterAdjacent && i == winnerIndex
+                        ? target
+                        : Mathf.Min(
+                            IsFinite(sample.SurfaceHeight) ? sample.SurfaceHeight : target,
+                            target);
                 stack.SetAt(i, updated.WithSurfaceHeight(sampleTarget));
             }
         }
@@ -350,6 +395,19 @@ namespace Kruty1918.Moyva.Generator.Runtime
             }
 
             return false;
+        }
+
+        private static string[] MergeIds(string[] primary, string[] extra)
+        {
+            if (extra == null || extra.Length == 0)
+                return primary;
+            if (primary == null || primary.Length == 0)
+                return extra;
+
+            var merged = new string[primary.Length + extra.Length];
+            System.Array.Copy(primary, merged, primary.Length);
+            System.Array.Copy(extra, 0, merged, primary.Length, extra.Length);
+            return merged;
         }
 
         private static bool IsFinite(float value)

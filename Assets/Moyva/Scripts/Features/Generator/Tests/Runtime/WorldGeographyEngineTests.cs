@@ -219,6 +219,40 @@ namespace Kruty1918.Moyva.Generator.Tests.Runtime
                     "rejected candidate should be marked best-effort");
         }
 
+        [Test]
+        public void Generate_Forests_AppearAcrossSeedSpace()
+        {
+            var engine = new WorldGeographyEngine();
+            var archetypes = new[]
+            {
+                WorldArchetype.Balanced, WorldArchetype.Pangaea,
+                WorldArchetype.Continents, WorldArchetype.Highlands
+            };
+            int forestWorlds = 0;
+            foreach (var archetype in archetypes)
+            {
+                int aWorlds = 0, aMax = 0, aSeed = 0;
+                for (int seed = 1; seed <= 24; seed++)
+                {
+                    var r = engine.Generate(Request(seed, archetype));
+                    if (r.Report.ForestCells > 0)
+                    {
+                        forestWorlds++;
+                        aWorlds++;
+                        if (r.Report.ForestCells > aMax)
+                        {
+                            aMax = r.Report.ForestCells;
+                            aSeed = seed;
+                        }
+                    }
+                }
+                TestContext.WriteLine(
+                    $"{archetype}: forestWorlds={aWorlds}/24 maxCells={aMax} bestSeed={aSeed}");
+            }
+            Assert.Greater(forestWorlds, 0,
+                "no forest tiles across 24 seeds x 4 archetypes — biome threshold unreachable");
+        }
+
         private static int CountTiles(WorldGeographyResult r, string id)
         {
             int n = 0;

@@ -742,7 +742,6 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             Mesh copy = UnityEngine.Object.Instantiate(mesh);
             copy.name = mesh.name + "_borderClamp";
             copy.vertices = clamped;
-            copy.RecalculateNormals();
             copy.RecalculateBounds();
             _meshRegistry.Register(copy);
             _borderClampedMeshCache[key] = copy;
@@ -917,7 +916,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             mesh.RecalculateBounds();
             mesh.bounds = CreateStableChunkBounds(area, mesh.bounds);
             if (!mesh.HasVertexAttribute(VertexAttribute.Normal))
-                mesh.RecalculateNormals();
+                FacetNormalsMeshUtility.Apply(mesh);
             return mesh;
         }
 

@@ -105,27 +105,32 @@ def main():
     albedo[y:y + PATCH, x:x + PATCH, :3] = make_sand_albedo((178, 142, 94), rng, strata=True)
     Image.fromarray(albedo).save(albedo_path)
 
+    # Normal/roughness/metallic maps were removed by the dual-tiles texture
+    # migration; regenerate them only if the files still exist.
     normal_path = ATLAS_DIR / "Moyva_NormalAtlas.png"
-    normal = np.asarray(Image.open(normal_path)).copy()
-    for name in ("sand_top", "sand_side"):
-        x, y = patch_rect(layout, name)
-        normal[y:y + PATCH, x:x + PATCH, :3] = make_normal_patch(rng)
-    Image.fromarray(normal).save(normal_path)
+    if normal_path.exists():
+        normal = np.asarray(Image.open(normal_path)).copy()
+        for name in ("sand_top", "sand_side"):
+            x, y = patch_rect(layout, name)
+            normal[y:y + PATCH, x:x + PATCH, :3] = make_normal_patch(rng)
+        Image.fromarray(normal).save(normal_path)
 
     rough_path = ATLAS_DIR / "Moyva_RoughnessAtlas.png"
-    rough = np.asarray(Image.open(rough_path)).copy()
-    for name in ("sand_top", "sand_side"):
-        x, y = patch_rect(layout, name)
-        rough[y:y + PATCH, x:x + PATCH] = make_gray_patch(214, rng)
-    Image.fromarray(rough).save(rough_path)
+    if rough_path.exists():
+        rough = np.asarray(Image.open(rough_path)).copy()
+        for name in ("sand_top", "sand_side"):
+            x, y = patch_rect(layout, name)
+            rough[y:y + PATCH, x:x + PATCH] = make_gray_patch(214, rng)
+        Image.fromarray(rough).save(rough_path)
 
     metal_path = ATLAS_DIR / "Moyva_MetallicSmoothnessAtlas.png"
-    metal = np.asarray(Image.open(metal_path)).copy()
-    for name in ("sand_top", "sand_side"):
-        x, y = patch_rect(layout, name)
-        metal[y:y + PATCH, x:x + PATCH, :3] = 0
-        metal[y:y + PATCH, x:x + PATCH, 3] = make_gray_patch(38, rng, amp=5.0)
-    Image.fromarray(metal).save(metal_path)
+    if metal_path.exists():
+        metal = np.asarray(Image.open(metal_path)).copy()
+        for name in ("sand_top", "sand_side"):
+            x, y = patch_rect(layout, name)
+            metal[y:y + PATCH, x:x + PATCH, :3] = 0
+            metal[y:y + PATCH, x:x + PATCH, 3] = make_gray_patch(38, rng, amp=5.0)
+        Image.fromarray(metal).save(metal_path)
 
     print("sand_top / sand_side regenerated in all four atlas maps")
 

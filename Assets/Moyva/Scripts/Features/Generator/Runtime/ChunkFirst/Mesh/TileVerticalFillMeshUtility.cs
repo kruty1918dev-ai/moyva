@@ -329,7 +329,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             skirt.SetVertices(skirtVertices);
             skirt.SetUVs(0, skirtUvs);
             skirt.SetTriangles(skirtTriangles, 0, false);
-            skirt.RecalculateNormals();
+            FacetNormalsMeshUtility.Apply(skirt);
             skirt.RecalculateBounds();
 
             return CombineSourceWithSkirt(
@@ -1242,7 +1242,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             }
 
             if (!hasNormals)
-                result.RecalculateNormals();
+                FacetNormalsMeshUtility.Apply(result);
 
             result.RecalculateBounds();
             return result;
@@ -1344,7 +1344,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             skirt.SetVertices(vertices);
             skirt.SetUVs(0, uvs);
             skirt.SetTriangles(triangles, 0, false);
-            skirt.RecalculateNormals();
+            FacetNormalsMeshUtility.Apply(skirt);
             skirt.RecalculateBounds();
 
             return skirt;

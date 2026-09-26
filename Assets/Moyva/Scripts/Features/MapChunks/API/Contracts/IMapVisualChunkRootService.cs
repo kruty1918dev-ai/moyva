@@ -6,5 +6,10 @@ namespace Kruty1918.Moyva.MapChunks.API
     {
         Transform GetOrCreateRoot(MapChunkCoord coord);
         bool IsChunkRoot(Transform transform);
+        /// <summary>
+        /// Resolves the chunk owning a descendant of a chunk root
+        /// (MapChunk_X_Y). False for content outside the chunk hierarchy.
+        /// </summary>
+        bool TryGetOwnedChunk(Transform transform, out MapChunkCoord coord);
     }
 }

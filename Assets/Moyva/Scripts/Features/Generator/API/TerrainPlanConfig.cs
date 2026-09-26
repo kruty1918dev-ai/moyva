@@ -144,6 +144,15 @@ namespace Kruty1918.Moyva.Generator.API
 
         [Tooltip("Land cells whose surface exceeds water + lift by more than this stay untouched (cliff shoreline).")]
         [Min(0.05f)] public float MaxDropToWaterMeters = 0.9f;
+
+        [Tooltip("Fraction of band cells converted to the shore tile; the rest stay their terrain but still grade toward the waterline. Below 1 the band reads as an irregular partial-tile strip instead of a uniform full-cell ring.")]
+        [Range(0f, 1f)] public float BandCoverage = 1f;
+
+        [Tooltip("Seed salt so the coverage gate does not correlate with relief or layer masks.")]
+        public int SeedSalt = 947;
+
+        [Tooltip("Extra winner tile ids counted as water for shore detection (e.g. 'swamp' tiles that render water but are not in shared WaterLikeTileIds). Shore-only: these ids are not skipped by relief/carve passes.")]
+        public string[] WaterTileIds;
     }
 
     /// <summary>

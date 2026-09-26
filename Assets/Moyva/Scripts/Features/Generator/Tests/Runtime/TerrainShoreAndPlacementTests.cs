@@ -105,6 +105,44 @@ namespace Kruty1918.Moyva.Generator.Tests.Runtime
             Assert.AreEqual(WaterLevel, map.SurfaceHeights[1, 0], 0.0001f);
         }
 
+        // A swamp tile renders water but is a solid non-water-like tile id:
+        // only the shore-local WaterTileIds extension may count it as water,
+        // otherwise water-adjacent land never lifts and the wash sheet floats.
+        private static TileLayerSample Swamp(float surface)
+            => new TileLayerSample(
+                "swamp-layer", "Swamp", null, null, "swamp", "swamp",
+                LayerKind.BaseTerrain, 0, 0, 0, surface, surface, null,
+                TileGeometryMode.SolidTerrain);
+
+        [Test]
+        public void NonWaterLikeWinner_LiftsNeighborViaConfigIds()
+        {
+            var map = BuildMap(3, 1);
+            map.AddSample(0, 0, Swamp(0.49f));
+            map.AddSample(1, 0, Land("grass", 0f));
+            map.AddSample(2, 0, Land("grass", 0.4f));
+
+            var config = Config(band: 1, blend: 0);
+            config.WaterTileIds = new[] { "swamp" };
+            new TerrainShorePlanner().Apply(map, config, null);
+            map.ReprojectAll();
+
+            Assert.AreEqual(0.49f + 0.04f, map.SurfaceHeights[1, 0], 0.0001f);
+        }
+
+        [Test]
+        public void NonWaterLikeWinner_WithoutConfigIds_StaysUnlifted()
+        {
+            var map = BuildMap(3, 1);
+            map.AddSample(0, 0, Swamp(0.49f));
+            map.AddSample(1, 0, Land("grass", 0f));
+
+            new TerrainShorePlanner().Apply(map, Config(band: 1, blend: 0), null);
+            map.ReprojectAll();
+
+            Assert.AreEqual(0f, map.SurfaceHeights[1, 0], 0.0001f);
+        }
+
         [Test]
         public void NoWater_NoChanges()
         {

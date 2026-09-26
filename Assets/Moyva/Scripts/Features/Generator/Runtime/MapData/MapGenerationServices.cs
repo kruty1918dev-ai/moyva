@@ -373,13 +373,14 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     compiled,
                     mapSize.x,
                     mapSize.y);
+            RecipeHydrologyPlan hydrology = maskSession.MergedHydrologyPlan;
             TerrainPassagePlan passages = _terrainPlanApplier?.Apply(
                 logicalMap,
                 request.Recipe,
                 reliefField,
-                seed);
+                seed,
+                hydrology);
             _terrainHeightPublisher.Publish(logicalMap.SurfaceHeights);
-            RecipeHydrologyPlan hydrology = maskSession.MergedHydrologyPlan;
             _hydrologyStore?.Replace(hydrology);
             var result = CreateResult(logicalMap, compiled, cellSize, hasBounds, bounds);
             result.TerrainPassages = passages;

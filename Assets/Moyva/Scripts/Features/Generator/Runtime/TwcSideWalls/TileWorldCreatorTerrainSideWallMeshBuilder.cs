@@ -1,3 +1,4 @@
+using Kruty1918.Moyva.Generator.Runtime.ChunkFirst;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -37,7 +38,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             state.Mesh.SetVertices(state.Vertices);
             state.Mesh.SetTriangles(state.Triangles, 0);
             state.Mesh.SetUVs(0, state.Uvs);
-            state.Mesh.RecalculateNormals();
+            FacetNormalsMeshUtility.Apply(state.Mesh);
             state.Mesh.RecalculateTangents();
             state.Mesh.RecalculateBounds();
         }

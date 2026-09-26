@@ -143,7 +143,10 @@ namespace Kruty1918.Moyva.Generator.Tests.Runtime
             var plan = RecipeHydrologyPlanner.Build(terrain, sink, new Vector2Int(w, h), Config(), 5);
 
             Assert.Greater(plan.RiverCellCount, 0);
-            for (int x = 10; x < w; x++)
+            // The terminal receiver cell at the sink edge may be marked so the
+            // mouth ends in visible water, but rivers must never continue
+            // through the sink: columns deeper than the entry stay unmarked.
+            for (int x = 11; x < w; x++)
             for (int y = 0; y < h; y++)
                 Assert.IsFalse(plan.RiverMask[x, y], "River must not run through the sink.");
         }
@@ -165,7 +168,15 @@ namespace Kruty1918.Moyva.Generator.Tests.Runtime
                 if (!plan.RiverMask[x, y])
                     continue;
                 int parent = plan.FlowParent[x, y];
-                Assert.GreaterOrEqual(parent, 0, "River cell must have a downstream parent.");
+                // A terminal receiver at the map border is a flood root:
+                // it drains out of the map and legitimately has no parent.
+                bool isBorder = x == 0 || y == 0 || x == w - 1 || y == h - 1;
+                if (parent < 0)
+                {
+                    Assert.IsTrue(isBorder,
+                        $"River cell ({x},{y}) without a downstream parent must lie on the map border.");
+                    continue;
+                }
                 int px = parent % w;
                 int py = parent / w;
                 Assert.GreaterOrEqual(
@@ -285,6 +296,116 @@ namespace Kruty1918.Moyva.Generator.Tests.Runtime
                     Assert.LessOrEqual(bed, terrain[x, y] + 0.0001f,
                         $"River bed ({x},{y}) must not float above the floor.");
                 }
+            }
+        }
+
+        [Test]
+        public void Accumulation_MonotoneAlongFlowParent()
+        {
+            // Terraced slope: 0.5 m plateaus of equal flooded height — the
+            // case that broke plain descending-sort accumulation. Every
+            // child's accumulation must reach its parent, so a parent can
+            // never hold less than a child.
+            const int w = 16, h = 16;
+            var terrain = new float[w, h];
+            for (int x = 0; x < w; x++)
+            for (int y = 0; y < h; y++)
+                terrain[x, y] = Mathf.Floor((w - 1 - x) * 0.5f) * 0.5f;
+
+            var plan = RecipeHydrologyPlanner.Build(terrain, null, new Vector2Int(w, h), Config(), 17);
+
+            for (int x = 0; x < w; x++)
+            for (int y = 0; y < h; y++)
+            {
+                int parent = plan.FlowParent[x, y];
+                if (parent < 0)
+                    continue;
+                int px = parent % w;
+                int py = parent / w;
+                Assert.GreaterOrEqual(
+                    plan.Accumulation[px, py] + 0.0001f, plan.Accumulation[x, y],
+                    $"acc[parent ({px},{py})] < acc[child ({x},{y})] — accumulation order broken.");
+            }
+        }
+
+        [Test]
+        public void RiverCells_ReachesReceiverThroughMarkedCells()
+        {
+            const int w = 16, h = 16;
+            var terrain = new float[w, h];
+            for (int x = 0; x < w; x++)
+            for (int y = 0; y < h; y++)
+                terrain[x, y] = Mathf.Floor((w - 1 - x) * 0.5f) * 0.5f
+                    + Mathf.Abs(y - 7.5f) * 0.25f;
+
+            var plan = RecipeHydrologyPlanner.Build(terrain, null, new Vector2Int(w, h), Config(), 23);
+
+            for (int x = 0; x < w; x++)
+            for (int y = 0; y < h; y++)
+            {
+                if (!plan.RiverMask[x, y])
+                    continue;
+
+                // Walk the flow chain: every cell on it must be water
+                // (river or lake) until the chain terminates at a receiver.
+                int index = x + y * w;
+                for (int steps = 0; steps <= w * h; steps++)
+                {
+                    int cx = index % w;
+                    int cy = index / w;
+                    Assert.IsTrue(
+                        plan.RiverMask[cx, cy] || plan.LakeMask[cx, cy]
+                            || !float.IsNaN(plan.WaterSurface[cx, cy]),
+                        $"River chain from ({x},{y}) breaks at ({cx},{cy}) — land on the channel.");
+                    int p = plan.FlowParent[cx, cy];
+                    if (p < 0)
+                        break;
+                    index = p;
+                    if (steps == w * h)
+                        Assert.Fail($"River cell ({x},{y}) chain never terminates.");
+                }
+            }
+        }
+
+        [Test]
+        public void RiverCells_AreFourConnected()
+        {
+            const int w = 16, h = 16;
+            var terrain = new float[w, h];
+            for (int x = 0; x < w; x++)
+            for (int y = 0; y < h; y++)
+                terrain[x, y] = Mathf.Floor((w - 1 - x) * 0.5f) * 0.5f
+                    + Mathf.Abs(y - 7.5f) * 0.25f;
+
+            var plan = RecipeHydrologyPlanner.Build(terrain, null, new Vector2Int(w, h), Config(), 29);
+
+            int[] dx = { -1, 1, 0, 0 };
+            int[] dy = { 0, 0, -1, 1 };
+            for (int x = 0; x < w; x++)
+            for (int y = 0; y < h; y++)
+            {
+                if (!plan.RiverMask[x, y])
+                    continue;
+
+                bool waterNeighbor = false;
+                for (int d = 0; d < 4; d++)
+                {
+                    int nx = x + dx[d];
+                    int ny = y + dy[d];
+                    if (nx < 0 || ny < 0 || nx >= w || ny >= h)
+                    {
+                        waterNeighbor = true; // border drain counts
+                        break;
+                    }
+                    if (plan.RiverMask[nx, ny] || plan.LakeMask[nx, ny]
+                        || !float.IsNaN(plan.WaterSurface[nx, ny]))
+                    {
+                        waterNeighbor = true;
+                        break;
+                    }
+                }
+                Assert.IsTrue(waterNeighbor,
+                    $"River cell ({x},{y}) has no cardinal water neighbour — orphan puddle.");
             }
         }
 

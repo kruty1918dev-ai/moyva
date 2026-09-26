@@ -10,6 +10,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
     internal sealed class TwcTileMeshSourceProvider : IResolvedTileMeshSource
     {
         private const float FlatSurfaceBoundsHeightTolerance = 0.0001f;
+        private const float WaterfallLipOverlap = 0.1f;
 
         private static Mesh _waterfallStripMesh;
 
@@ -232,12 +233,13 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         {
             TileLayerSample sample = composition.MainTerrain;
             float cellSize = ResolveCellSize();
-            if (_hydrology == null
-                || cellSize <= 0.0001f
-                || !_hydrology.TryGetWaterSurface(composition.Cell, out float upperY))
-            {
+            // Heights must come from the rendered surfaces, not the plan's
+            // WaterSurface grid: sink cells store drainage pseudo-surfaces
+            // (filled - offset) that can sit metres above the rendered sheet,
+            // which would lift the strip into a floating pane.
+            float upperY = sample.SurfaceHeight;
+            if (_hydrology == null || cellSize <= 0.0001f || !IsFinite(upperY))
                 return 0;
-            }
 
             float minDrop = _hydrology.WaterfallMinDropMeters;
             if (minDrop <= 0.0001f)
@@ -249,7 +251,12 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             {
                 Vector2Int d = WaterfallDirs[i];
                 var neighbor = new Vector2Int(composition.Cell.x + d.x, composition.Cell.y + d.y);
-                if (!_hydrology.TryGetWaterSurface(neighbor, out float lowerY))
+                // Keep the plan gate so falls only face water; the neighbour's
+                // own rendered surface then sets the real drop height.
+                if (!_hydrology.TryGetWaterSurface(neighbor, out _))
+                    continue;
+                float lowerY = ResolveNeighborSurfaceHeight(composition, d);
+                if (!IsFinite(lowerY))
                     continue;
                 float drop = upperY - lowerY;
                 if (drop < minDrop)
@@ -260,9 +267,12 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                     return 0;
 
                 var dir = new Vector3(d.x, 0f, d.y);
+                // Sink the strip by a lip overlap: the top edge hides under the
+                // upper sheet's rounded rim instead of poking through it, while
+                // the submerged bottom stays hidden under the lower sheet.
                 Vector3 edgeCenter = new Vector3(
                     (composition.Cell.x + d.x * 0.5f) * cellSize,
-                    lowerY,
+                    lowerY - WaterfallLipOverlap,
                     (composition.Cell.y + d.y * 0.5f) * cellSize);
                 Quaternion rotation = Quaternion.LookRotation(dir.normalized, Vector3.up);
                 var localMatrix = Matrix4x4.TRS(
@@ -286,6 +296,26 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 added++;
             }
             return added;
+        }
+
+        /// <summary>Rendered winner surface of the neighbour in direction <paramref name="d"/>.</summary>
+        private static float ResolveNeighborSurfaceHeight(ResolvedTileComposition composition, Vector2Int d)
+        {
+            if (d.y > 0)
+            {
+                return d.x > 0 ? composition.NorthEastSurfaceHeight
+                    : d.x < 0 ? composition.NorthWestSurfaceHeight
+                    : composition.NorthSurfaceHeight;
+            }
+            if (d.y < 0)
+            {
+                return d.x > 0 ? composition.SouthEastSurfaceHeight
+                    : d.x < 0 ? composition.SouthWestSurfaceHeight
+                    : composition.SouthSurfaceHeight;
+            }
+            return d.x > 0 ? composition.EastSurfaceHeight
+                : d.x < 0 ? composition.WestSurfaceHeight
+                : float.NaN;
         }
 
         private Material[] ResolveWaterfallMaterials(TilesBuildLayer buildLayer, TilePreset preset)
@@ -354,6 +384,15 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             List<TileMeshSource> results)
         {
             TileLayerSample waterSample = composition.WaterSurface;
+            float landSurface = composition.MainTerrain.SurfaceHeight;
+            // A wash sheet above the land surface reads as a floating cyan
+            // plate on dry ground; it is only meant to wash the seam under
+            // the bank face, never to surface on top of it.
+            if (IsFinite(landSurface)
+                && waterSample.SurfaceHeight > landSurface + 0.0001f)
+            {
+                return 0;
+            }
             TilesBuildLayer buildLayer = ResolveBuildLayer(waterSample);
             TilePreset preset =
                 ResolvePreset(buildLayer, waterSample, composition.Cell, GlobalSeed.Current)
