@@ -51,16 +51,21 @@ namespace Kruty1918.UIActions.Runtime
             if (!(_inputPolicy?.CanProcess(GameplayInputKind.KeyboardNavigation, pointerPosition) ?? true))
                 return;
 
-            bool typing = IsTextInputFocused();
+            if (IsTextInputFocused())
+            {
+                // A text field owns the keyboard: no binding may fire, including
+                // remapped Escape chords (UiEscapeRouter owns that press). Drop
+                // held latches so a release mid-typing cannot wedge the action.
+                _heldActionsTriggered.Clear();
+                return;
+            }
+
             int ignoredModifiers = _ignoredModifierMask?.Invoke() ?? 0;
 
             for (int i = 0; i < _bindings.Count; i++)
             {
                 UiHotkeyBinding binding = _bindings[i];
                 if (!binding.HasBinding || !_contexts.IsActionAllowedByContext(binding.ActionId))
-                    continue;
-
-                if (typing && binding.PrimaryKey != Key.Escape && binding.SecondaryKey != Key.Escape)
                     continue;
 
                 if (!IsContextAllowed(binding))
@@ -179,7 +184,7 @@ namespace Kruty1918.UIActions.Runtime
             if (eventSystem == null || eventSystem.currentSelectedGameObject == null)
                 return false;
 
-            TMP_InputField input = eventSystem.currentSelectedGameObject.GetComponent<TMP_InputField>();
+            TMP_InputField input = eventSystem.currentSelectedGameObject.GetComponentInParent<TMP_InputField>();
             return input != null && input.isFocused;
         }
 
@@ -199,11 +204,23 @@ namespace Kruty1918.UIActions.Runtime
         private static bool KeyHeld(Keyboard keyboard, Key key)
             => key != Key.None && keyboard[key].isPressed;
 
+        // A chord is key + the binding's modifiers; conflicts must consider
+        // primary/secondary cross-pairs — remapping A.Secondary onto B.Primary
+        // would otherwise let both actions fire on one press. Unbound slots
+        // (Key.None) never conflict.
         private static bool SameChord(UiHotkeyBinding left, UiHotkeyBinding right)
-            => left.PrimaryKey == right.PrimaryKey
-                && left.Ctrl == right.Ctrl
-                && left.Shift == right.Shift
-                && left.Alt == right.Alt;
+        {
+            if (left.Ctrl != right.Ctrl || left.Shift != right.Shift || left.Alt != right.Alt)
+                return false;
+
+            return SameKey(left.PrimaryKey, right.PrimaryKey)
+                || SameKey(left.PrimaryKey, right.SecondaryKey)
+                || SameKey(left.SecondaryKey, right.PrimaryKey)
+                || SameKey(left.SecondaryKey, right.SecondaryKey);
+        }
+
+        private static bool SameKey(Key left, Key right)
+            => left != Key.None && left == right;
 
         private static bool ContextsOverlap(
             IReadOnlyCollection<string> left,
