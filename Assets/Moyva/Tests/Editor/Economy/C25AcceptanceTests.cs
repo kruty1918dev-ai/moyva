@@ -40,7 +40,7 @@ namespace Kruty1918.Moyva.Tests.Economy
             _eliminated = new List<FactionEliminatedSignal>();
 
             var container = new DiContainer();
-            SignalBusInstaller.Install(container);
+            Zenject.SignalBusInstaller.Install(container);
             container.DeclareSignal<SettlementCapturedSignal>().OptionalSubscriber();
             container.DeclareSignal<FactionEliminatedSignal>().OptionalSubscriber();
             _signals = container.Resolve<SignalBus>();
