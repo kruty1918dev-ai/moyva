@@ -395,6 +395,16 @@ namespace Kruty1918.Moyva.Tests.Bootstrap
             return classes.Split(' ').Any(token => token == "active");
         }
 
+        /// <summary>U07 contract: region rail rows are keyboard-selectable
+        /// navigator buttons that deliberately carry no click action — the
+        /// markup marks them with the "region-row" class.</summary>
+        private static bool IsRegionRow(Button button)
+        {
+            var element = button.GetComponent<ReactElement>();
+            string classes = element?.Component?.ClassName ?? string.Empty;
+            return classes.Split(' ').Any(token => token == "region-row");
+        }
+
         /// <summary>Mounts the markup once to count enabled controls, then
         /// re-mounts a fresh fixture per button so every control is clicked in
         /// exactly the state it was rendered in — earlier clicks can never make
@@ -455,7 +465,7 @@ namespace Kruty1918.Moyva.Tests.Bootstrap
                     button.onClick.Invoke();
                     if (fixture.EffectCount == before)
                     {
-                        if (HasActiveMarker(button)) explainedNoops++;
+                        if (HasActiveMarker(button) || IsRegionRow(button)) explainedNoops++;
                         else dead.Add($"{labels[index]} @click#{index}");
                     }
                 }

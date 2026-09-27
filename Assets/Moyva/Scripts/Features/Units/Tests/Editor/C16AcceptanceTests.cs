@@ -33,6 +33,10 @@ namespace Kruty1918.Moyva.Tests.Units
         public void SetUp()
         {
             _economy = new FakeEconomy();
+            // Warehouse-path shortage preview reads settlement stock; keep the
+            // fake funded so the tests exercise payment atomicity, not preview.
+            _economy.SettlementAvailable["wood"] = 100f;
+            _economy.SettlementAvailable["food"] = 100f;
             _lifecycle = new FakeLifecycle();
             _snapshot = new FakeSnapshotSource(
                 new ConstructionSavedPlacement(Position, BuildingId, Owner));

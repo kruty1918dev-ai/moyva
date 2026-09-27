@@ -89,7 +89,8 @@ namespace Kruty1918.Moyva.Tests.Bootstrap
             StringAssert.Contains("data-key=\"supply-order-ord-1\"", html);
             StringAssert.Contains("data-key=\"supply-order-ord-1-wood\"", html);
             int row = html.IndexOf("supply-order-ord-1-wood", System.StringComparison.Ordinal);
-            int end = html.IndexOf("</view>", row, System.StringComparison.Ordinal);
+            int innerEnd = html.IndexOf("</view>", row, System.StringComparison.Ordinal);
+            int end = innerEnd < 0 ? -1 : html.IndexOf("</view>", innerEnd + 1, System.StringComparison.Ordinal);
             Assert.Greater(end, row);
             string segment = html.Substring(row, end - row);
             StringAssert.Contains("need 10", segment);

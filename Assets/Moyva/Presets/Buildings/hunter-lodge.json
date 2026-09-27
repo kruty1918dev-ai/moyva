@@ -9,7 +9,7 @@
     "id": "hunter-lodge",
     "displayName": "Hunter's Lodge",
     "category": "Civilian",
-    "role": "Food",
+    "role": "Production",
     "description": "A hunting lodge. Every few turns the hunters return with meat, but each hunt has only a chance to succeed.",
     "tags": [
       "civilian",

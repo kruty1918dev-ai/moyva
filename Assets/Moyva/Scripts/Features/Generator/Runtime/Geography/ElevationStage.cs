@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.Runtime.Geography
@@ -76,10 +77,26 @@ namespace Kruty1918.Moyva.Generator.Runtime.Geography
             float bandWidth = Mathf.Max(5f, halfExtent * 0.12f);
 
             // Seed a few wandering arcs: each defined by anchor + heading + curvature.
+            // Anchors are drawn from land cells so arcs start on a landmass —
+            // a uniform anchor often lands in the ocean on multi-centre maps,
+            // and the coast-faded stamp then contributes nothing at all.
+            var landCells = CollectLandCells(landMask, w, h);
             for (int r = 0; r < rangeCount; r++)
             {
-                float ax = w * (0.15f + 0.7f * DeterministicNoise.Hash01(seed, r, 701));
-                float ay = h * (0.15f + 0.7f * DeterministicNoise.Hash01(seed, r, 709));
+                float ax, ay;
+                if (landCells.Count > 0)
+                {
+                    int pick = Mathf.Clamp(
+                        Mathf.FloorToInt(DeterministicNoise.Hash01(seed, r, 701) * landCells.Count),
+                        0, landCells.Count - 1);
+                    ax = landCells[pick].x;
+                    ay = landCells[pick].y;
+                }
+                else
+                {
+                    ax = w * (0.15f + 0.7f * DeterministicNoise.Hash01(seed, r, 701));
+                    ay = h * (0.15f + 0.7f * DeterministicNoise.Hash01(seed, r, 709));
+                }
                 float heading = DeterministicNoise.Hash01(seed, r, 717) * Mathf.PI * 2f;
                 float curvature = (DeterministicNoise.Hash01(seed, r, 719) - 0.5f) * 0.55f;
                 float length = halfExtent * (0.8f + DeterministicNoise.Hash01(seed, r, 727) * 1.2f);
@@ -96,6 +113,16 @@ namespace Kruty1918.Moyva.Generator.Runtime.Geography
                 }
             }
             return field;
+        }
+
+        private static List<Vector2Int> CollectLandCells(float[,] landMask, int w, int h)
+        {
+            var cells = new List<Vector2Int>();
+            for (int x = 0; x < w; x++)
+            for (int y = 0; y < h; y++)
+                if (landMask[x, y] >= LandmassStage.LandThreshold)
+                    cells.Add(new Vector2Int(x, y));
+            return cells;
         }
 
         private static void StampRidge(
