@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.Runtime.Geography
@@ -5,7 +6,9 @@ namespace Kruty1918.Moyva.Generator.Runtime.Geography
     /// <summary>
     /// Assigns canonical gameplay tile ids from terrain level + moisture/forest
     /// fields + masks, places strategic object ids, and produces the float
-    /// surface-height map the renderer consumes.
+    /// surface-height map the renderer consumes. Biome choice is field-driven
+    /// (coherent zones), never per-pixel random — after assignment an explicit
+    /// isolated-tile rule snaps lone cells into a unanimous neighbourhood.
     /// </summary>
     internal sealed class BiomeStage
     {
@@ -19,6 +22,15 @@ namespace Kruty1918.Moyva.Generator.Runtime.Geography
             public int MountainCells;
             public int ForestCells;
             public int ObjectCells;
+            public int SnappedCells;
+        }
+
+        /// <summary>Biome blob metrics: tile id → sorted-descending blob areas.</summary>
+        internal sealed class Stats
+        {
+            public int TotalBlobs;
+            public Dictionary<string, List<int>> BlobSizes =
+                new Dictionary<string, List<int>>();
         }
 
         internal Output Generate(
@@ -41,10 +53,11 @@ namespace Kruty1918.Moyva.Generator.Runtime.Geography
             var heights = new float[w, h];
             var moisture = new float[w, h];
             var forestField = new float[w, h];
-            int mountains = 0, forests = 0;
 
             float moistScale = biomes.MoistureScale;
             float forestScale = biomes.ForestScale;
+            // Snow caps are a coherent climate field, not per-pixel hash noise.
+            float snowScale = Mathf.Max(10f, Mathf.Min(w, h) * 0.35f);
 
             for (int x = 0; x < w; x++)
             for (int y = 0; y < h; y++)
@@ -61,21 +74,29 @@ namespace Kruty1918.Moyva.Generator.Runtime.Geography
                     * Mathf.Lerp(0.4f, 1.4f, p.ForestDensity));
                 forestField[x, y] = f;
 
-                string tile;
                 if (riverMask[x, y] || lakeMask[x, y] || level == request.WaterLevel)
                 {
-                    tile = "water";
+                    tiles[x, y] = "water";
                     heights[x, y] = waterSurface[x, y];
+                    continue;
                 }
-                else
-                {
-                    tile = ResolveLandTile(
-                        request, level, m, f, beachMask[x, y], seed, x, y);
-                    heights[x, y] = level * request.HeightStep;
-                    if (tile == "mountain" || tile == "snow") mountains++;
-                    if (tile == "forest-sparse" || tile == "forest-dense") forests++;
-                }
+
+                float snowField = DeterministicNoise.Fbm(
+                    seed + 7013, x / snowScale, y / snowScale, 3);
+                string tile = ResolveLandTile(
+                    request, level, m, f, snowField, beachMask[x, y]);
+                heights[x, y] = level * request.HeightStep;
                 tiles[x, y] = tile;
+            }
+
+            int snapped = SnapIsolatedTiles(tiles, w, h);
+
+            int mountains = 0, forests = 0;
+            for (int x = 0; x < w; x++)
+            for (int y = 0; y < h; y++)
+            {
+                if (tiles[x, y] == "mountain" || tiles[x, y] == "snow") mountains++;
+                if (tiles[x, y] == "forest-sparse" || tiles[x, y] == "forest-dense") forests++;
             }
 
             int objectCells = PlaceObjects(request, tiles, levels, objects, seed);
@@ -90,12 +111,96 @@ namespace Kruty1918.Moyva.Generator.Runtime.Geography
                 MountainCells = mountains,
                 ForestCells = forests,
                 ObjectCells = objectCells,
+                SnappedCells = snapped,
             };
+        }
+
+        /// <summary>
+        /// Explicit isolated-biome rule: a non-water cell whose full
+        /// 8-neighbourhood is one identical non-water tile adopts it. Water
+        /// contact (beach/shore cells) and mixed neighbourhoods are untouched —
+        /// transitions stay sharp, no global smoothing.
+        /// </summary>
+        private static int SnapIsolatedTiles(string[,] tiles, int w, int h)
+        {
+            var snapped = (string[,])tiles.Clone();
+            int count = 0;
+            for (int x = 0; x < w; x++)
+            for (int y = 0; y < h; y++)
+            {
+                string t = tiles[x, y];
+                if (t == "water")
+                    continue;
+
+                string n = null;
+                bool unanimous = true;
+                int seen = 0;
+                for (int dx = -1; dx <= 1 && unanimous; dx++)
+                for (int dy = -1; dy <= 1; dy++)
+                {
+                    if (dx == 0 && dy == 0) continue;
+                    int nx = x + dx, ny = y + dy;
+                    if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+                    string nt = tiles[nx, ny];
+                    if (nt == "water") { unanimous = false; break; }
+                    seen++;
+                    if (n == null) n = nt;
+                    else if (nt != n) { unanimous = false; break; }
+                }
+                if (unanimous && seen >= 3 && n != t)
+                {
+                    snapped[x, y] = n;
+                    count++;
+                }
+            }
+            System.Array.Copy(snapped, tiles, tiles.Length);
+            return count;
+        }
+
+        /// <summary>Counts 4-connected same-tile blob areas per biome id.</summary>
+        internal static Stats MeasureTiles(string[,] tiles)
+        {
+            int w = tiles.GetLength(0), h = tiles.GetLength(1);
+            var seen = new bool[w, h];
+            var queue = new int[w * h];
+            var stats = new Stats();
+            for (int sx = 0; sx < w; sx++)
+            for (int sy = 0; sy < h; sy++)
+            {
+                if (seen[sx, sy]) continue;
+                string t = tiles[sx, sy];
+                int area = 0, head = 0, tail = 0;
+                seen[sx, sy] = true;
+                queue[tail++] = sx * h + sy;
+                while (head < tail)
+                {
+                    int c = queue[head++];
+                    int cx = c / h, cy = c % h;
+                    area++;
+                    int[] dxs = { -1, 1, 0, 0 };
+                    int[] dys = { 0, 0, -1, 1 };
+                    for (int d = 0; d < 4; d++)
+                    {
+                        int nx = cx + dxs[d], ny = cy + dys[d];
+                        if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+                        if (seen[nx, ny] || tiles[nx, ny] != t) continue;
+                        seen[nx, ny] = true;
+                        queue[tail++] = nx * h + ny;
+                    }
+                }
+                if (!stats.BlobSizes.TryGetValue(t, out var list))
+                    stats.BlobSizes[t] = list = new List<int>();
+                list.Add(area);
+                stats.TotalBlobs++;
+            }
+            foreach (var list in stats.BlobSizes.Values)
+                list.Sort((a, b) => b.CompareTo(a));
+            return stats;
         }
 
         private static string ResolveLandTile(
             WorldGenerationRequest request, int level, float moisture, float forest,
-            bool beach, int seed, int x, int y)
+            float snowField, bool beach)
         {
             var biomes = request.Config.Biomes;
             var p = request.Config.FindArchetype(request.ArchetypeId());
@@ -105,9 +210,9 @@ namespace Kruty1918.Moyva.Generator.Runtime.Geography
 
             // High terrain: peaks → mountain/snow.
             if (level >= request.MaxLevel)
-                return DeterministicNoise.Hash01(seed, x, y, 61) < p.SnowDensity ? "snow" : "mountain";
+                return snowField < p.SnowDensity ? "snow" : "mountain";
             if (level >= request.HillLevel + 1)
-                return moisture > 0.6f && DeterministicNoise.Hash01(seed, x, y, 63) < 0.35f
+                return moisture > 0.6f && snowField < 0.35f
                     ? "snow"
                     : "mountain";
             if (level == request.HillLevel)

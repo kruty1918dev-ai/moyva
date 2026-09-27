@@ -1036,6 +1036,67 @@
           "additionalProperties": false,
           "title": "Ai Extensibility",
           "description": "Правила AI-розширюваності: автономна економіка ворогів, торгівля з гравцем, ескорт каравань."
+        },
+        "foraging": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "title": "Enabled",
+              "description": "true = жителі періодично приносять базові ресурси з мапи (збір, полювання, рубка).\nГарантує, що гравець без ресурсів може відновити економіку і не застрягнути."
+            },
+            "minResidents": {
+              "type": "integer",
+              "title": "Min Residents",
+              "description": "Мінімальна кількість жителів у поселенні, за якої працює збір ресурсів.\nПриклад: 1 — поселення без жителів нічого не збирає."
+            },
+            "yields": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "resourceId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "title": "Resource Id",
+                    "description": "ID ресурсу з реєстру (має збігатися з ResourceDefinition.Id).\nПриклад: \"walnut-wood-materials-resources\"."
+                  },
+                  "intervalTurns": {
+                    "type": "integer",
+                    "title": "Interval Turns",
+                    "description": "Кожні N ходів жителі приносять цей ресурс.\nПриклад: 5 — деревина кожні 5 ходів, 20 — рідкісний ресурс."
+                  },
+                  "baseAmount": {
+                    "type": "number",
+                    "title": "Base Amount",
+                    "description": "Базова кількість ресурсу за спрацювання (незалежно від населення)."
+                  },
+                  "perResidentAmount": {
+                    "type": "number",
+                    "title": "Per Resident Amount",
+                    "description": "Додаткова кількість ресурсу на одного жителя за спрацювання.\n0 = фіксована кількість; 0.1 = +1 ресурс на кожні 10 жителів."
+                  }
+                },
+                "additionalProperties": false
+              },
+              "title": "Yields",
+              "description": "Перелік ресурсів, які жителі можуть зібрати, з інтервалом та кількістю.\nДешеві ресурси — частіше; дорогі (залізо) — рідше."
+            }
+          },
+          "additionalProperties": false,
+          "title": "Foraging",
+          "description": "Правила збору ресурсів жителями: гарантований мінімальний дохід без будівель (anti-softlock)."
         }
       },
       "additionalProperties": false,
