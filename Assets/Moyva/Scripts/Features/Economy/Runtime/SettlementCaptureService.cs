@@ -111,6 +111,17 @@ namespace Kruty1918.Moyva.Economy.Runtime
             if (string.IsNullOrWhiteSpace(previous))
                 previous = Normalize(state.OwnerId);
             string next = Normalize(newOwnerId);
+
+            // Settlement-level gates must reject before any building transfer runs,
+            // so an invalid capture produces no mutation and no transfer signals.
+            if (!state.IsActive)
+                return SettlementCaptureResult.Rejected(settlementId, "Settlement is inactive.");
+            if (!string.Equals(Normalize(state.OwnerId), previous, StringComparison.Ordinal))
+                return SettlementCaptureResult.Rejected(settlementId,
+                    $"Settlement belongs to '{state.OwnerId}', not '{previous}'.");
+            if (string.Equals(previous, next, StringComparison.Ordinal))
+                return SettlementCaptureResult.Rejected(settlementId, "Settlement already belongs to this owner.");
+
             var transferredPositions = new List<Vector2Int>();
             for (int index = 0; index < state.Buildings.Count; index++)
             {
