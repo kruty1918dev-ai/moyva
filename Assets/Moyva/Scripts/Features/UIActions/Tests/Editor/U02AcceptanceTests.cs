@@ -147,14 +147,15 @@ namespace Kruty1918.Moyva.Tests.UIActions
         }
 
         // Guard against a silently-dead injection path turning "suppressed"
-        // assertions into false positives.
+        // assertions into false positives. Batch EditMode never reports
+        // wasPressedThisFrame for injected state — isPressed is the live check.
         private void AssertKeyPressed(string keyPropertyName)
         {
             object current = KeyboardType.GetProperty("current").GetValue(null);
             Assert.NotNull(current, "Keyboard.current is null — injection is not live.");
             object keyControl = KeyboardType.GetProperty(keyPropertyName).GetValue(current);
             bool pressed = (bool)keyControl.GetType()
-                .GetProperty("wasPressedThisFrame").GetValue(keyControl);
+                .GetProperty("isPressed").GetValue(keyControl);
             Assert.IsTrue(pressed, $"Injected '{keyPropertyName}' press never landed.");
         }
 
@@ -276,6 +277,9 @@ namespace Kruty1918.Moyva.Tests.UIActions
         }
 
         // --- Typing gate through the real Tick + injected keyboard ---
+        // Batch EditMode cannot produce wasPressedThisFrame, so TriggeredOnce
+        // bindings can never fire here regardless of the gate — these tests
+        // use Repeatable (held + latch) so a broken gate would really execute.
 
         [Test]
         public void Tick_WhileTypingInFocusedField_NoHotkeyFires()
@@ -286,8 +290,9 @@ namespace Kruty1918.Moyva.Tests.UIActions
             EventSystem.current.SetSelectedGameObject(field.gameObject);
 
             var service = CreateService(
-                MakeBinding(ActionA, "B"),
-                MakeBinding(ActionB, "Escape")); // even a remapped Escape chord
+                MakeBinding(ActionA, "B", mode: UiHotkeyTriggerMode.Repeatable),
+                // even a remapped Escape chord
+                MakeBinding(ActionB, "Escape", mode: UiHotkeyTriggerMode.Repeatable));
 
             InjectKeys("B");
             AssertKeyPressed("bKey");
@@ -313,7 +318,8 @@ namespace Kruty1918.Moyva.Tests.UIActions
             child.transform.SetParent(field.gameObject.transform, false);
             EventSystem.current.SetSelectedGameObject(child);
 
-            var service = CreateService(MakeBinding(ActionA, "B"));
+            var service = CreateService(
+                MakeBinding(ActionA, "B", mode: UiHotkeyTriggerMode.Repeatable));
 
             InjectKeys("B");
             AssertKeyPressed("bKey");
@@ -330,7 +336,8 @@ namespace Kruty1918.Moyva.Tests.UIActions
             CreateEventSystem();
             var field = CreateFocusedField();
             EventSystem.current.SetSelectedGameObject(field.gameObject);
-            var service = CreateService(MakeBinding(ActionA, "B"));
+            var service = CreateService(
+                MakeBinding(ActionA, "B", mode: UiHotkeyTriggerMode.Repeatable));
 
             InjectKeys("B");
             AssertKeyPressed("bKey");

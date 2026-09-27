@@ -50,7 +50,10 @@ namespace Kruty1918.Moyva.Economy.Runtime
                 if (string.Equals(resource.Id, trimmed, StringComparison.Ordinal)
                     || (category.HasValue && resource.Category == category.Value))
                 {
-                    result.Add(resource.Id);
+                    // Malformed databases can list the same concrete id twice;
+                    // the pool entry must count once, not per definition.
+                    if (!result.Contains(resource.Id))
+                        result.Add(resource.Id);
                 }
             }
 

@@ -111,7 +111,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                     if (!IsFinite(surface))
                         continue;
                     float target = touchesLand
-                        ? surface - config.ShoreRecessMeters
+                        ? surface - Mathf.Max(0.01f, config.ShoreRecessMeters)
                         : surface - DepthAt(kind[cx, cy], vertexDist, config);
                     minY = Mathf.Min(minY, target);
                 }
