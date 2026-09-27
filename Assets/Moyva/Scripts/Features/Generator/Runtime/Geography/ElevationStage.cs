@@ -19,8 +19,13 @@ namespace Kruty1918.Moyva.Generator.Runtime.Geography
 
             var mountainField = BuildMountainField(w, h, seed, p, landMask, halfExtent);
             var elevation = new float[w, h];
-            float hillScale = Mathf.Max(6f, halfExtent * 0.16f);
-            float valleyScale = Mathf.Max(10f, halfExtent * 0.3f);
+            // Relief hierarchy is built at world scale: macro provinces span ~the
+            // whole map, hills/valleys span a large fraction of it. Keeping these
+            // scales large is what lets an overview read ridges and plains as
+            // coherent landforms instead of per-chunk noise.
+            float macroScale = Mathf.Max(24f, halfExtent * 0.9f);
+            float hillScale = Mathf.Max(14f, halfExtent * 0.45f);
+            float valleyScale = Mathf.Max(18f, halfExtent * 0.55f);
 
             for (int x = 0; x < w; x++)
             for (int y = 0; y < h; y++)
@@ -30,6 +35,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.Geography
                     ? Mathf.Lerp(0.02f, 0.32f, Mathf.Clamp01(landMask[x, y] * 2f)) // shelf → deep
                     : Mathf.Lerp(0.42f, 0.58f, Mathf.Sqrt(land));                 // coastal → interior
 
+                float macro = DeterministicNoise.Fbm(
+                    seed + 307, x / macroScale, y / macroScale, 2);
                 float hills = DeterministicNoise.WarpedFbm(
                     seed + 101, x / hillScale, y / hillScale, 0.35f, 4);
                 float valleys = DeterministicNoise.Fbm(
@@ -37,8 +44,9 @@ namespace Kruty1918.Moyva.Generator.Runtime.Geography
                 float ridge = mountainField[x, y];
 
                 float elev = baseElev
-                    + (hills - 0.5f) * 0.16f * p.HillDensity * Mathf.Max(0.2f, land)
-                    + ridge * 0.5f
+                    + (macro - 0.5f) * 0.10f * land
+                    + (hills - 0.5f) * 0.14f * p.HillDensity * Mathf.Max(0.2f, land)
+                    + ridge * 0.55f
                     - Mathf.Max(0f, valleys - 0.62f) * 0.22f * Mathf.Max(0.2f, land);
 
                 elevation[x, y] = Mathf.Clamp01(elev);
@@ -62,8 +70,10 @@ namespace Kruty1918.Moyva.Generator.Runtime.Geography
             if (rangeCount == 0 || p.MountainDensity <= 0.001f)
                 return field;
 
-            float rangeScale = Mathf.Max(8f, halfExtent * 0.12f);
-            float bandWidth = Mathf.Max(4f, halfExtent * 0.1f);
+            // Range crest texture and band width are proportional to the map —
+            // ranges read as world-scale arcs rather than chunk-local bumps.
+            float rangeScale = Mathf.Max(12f, halfExtent * 0.28f);
+            float bandWidth = Mathf.Max(5f, halfExtent * 0.12f);
 
             // Seed a few wandering arcs: each defined by anchor + heading + curvature.
             for (int r = 0; r < rangeCount; r++)
@@ -78,7 +88,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.Geography
                 float x = ax, y = ay, dir = heading;
                 for (int s = 0; s < steps; s++)
                 {
-                    StampRidge(field, w, h, x, y, bandWidth, seed, r, s, rangeScale, p.MountainDensity);
+                    StampRidge(field, w, h, x, y, bandWidth, seed, r, s, rangeScale,
+                        p.MountainDensity, landMask);
                     dir += curvature * 0.1f;
                     x += Mathf.Cos(dir);
                     y += Mathf.Sin(dir);
@@ -89,7 +100,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.Geography
 
         private static void StampRidge(
             float[,] field, int w, int h, float cx, float cy, float band,
-            int seed, int range, int step, float rangeScale, float density)
+            int seed, int range, int step, float rangeScale, float density,
+            float[,] landMask)
         {
             int radius = Mathf.CeilToInt(band);
             int x0 = Mathf.Max(0, Mathf.FloorToInt(cx) - radius);
@@ -103,13 +115,20 @@ namespace Kruty1918.Moyva.Generator.Runtime.Geography
                 if (d >= 1f)
                     continue;
 
+                // Ridges belong to landmasses: fade the stamp to zero at the
+                // coastline so arcs crossing the sea raise no underwater spikes
+                // and land elevation bounds stay consistent for quantization.
+                float landFactor = Mathf.Clamp01((landMask[x, y] - 0.5f) * 3f);
+                if (landFactor <= 0f)
+                    continue;
+
                 float falloff = 1f - d * d;
                 float ridge = DeterministicNoise.Ridged(
                     seed + range * 131 + 4001,
                     x / rangeScale,
                     y / rangeScale,
                     4);
-                float value = falloff * Mathf.Pow(ridge, 1.4f) * density;
+                float value = falloff * Mathf.Pow(ridge, 1.4f) * density * landFactor;
                 if (value > field[x, y])
                     field[x, y] = value;
             }
