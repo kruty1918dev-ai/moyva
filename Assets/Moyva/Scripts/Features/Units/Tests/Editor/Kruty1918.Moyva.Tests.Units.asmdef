@@ -11,6 +11,7 @@
         "Kruty1918.Moyva.Signals",
         "Kruty1918.Moyva.Grid",
         "Kruty1918.Moyva.ObjectsMap",
+        "Kruty1918.Moyva.Pathfinding",
         "Kruty1918.Moyva.SaveSystem",
         "Kruty1918.Moyva.Turns",
         "Kruty1918.Motion",
