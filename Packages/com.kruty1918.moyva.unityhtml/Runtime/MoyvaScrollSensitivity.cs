@@ -23,7 +23,8 @@ namespace UnityHTML.Runtime
                 return;
             if (_baseSensitivity < 0f)
                 _baseSensitivity = _rect.scrollSensitivity;
-            _rect.scrollSensitivity = _baseSensitivity * wheelSensitivity;
+            _rect.scrollSensitivity = _baseSensitivity
+                * UnityHtmlScrollSettings.ClampWheelSensitivity(wheelSensitivity);
         }
     }
 }
