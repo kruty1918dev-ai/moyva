@@ -121,25 +121,50 @@ namespace Kruty1918.Moyva.Generator.Runtime.Geography
             return filled;
         }
 
-        /// <summary>Flow accumulation: process cells in descending filled order.</summary>
+        /// <summary>
+        /// Flow accumulation over the flood-parent DAG. Elevation sorting alone is
+        /// not enough on flat filled areas (equal filled levels order children and
+        /// parents arbitrarily, so upstream weight could arrive after the parent
+        /// already propagated). Processing leaves-first guarantees every child
+        /// contributes before its parent flushes downstream.
+        /// </summary>
         private float[,] Accumulate(float[,] filled, int[,] parent, int w, int h)
         {
+            int n = w * h;
             var acc = new float[w, h];
-            var order = new int[w * h];
-            for (int i = 0; i < order.Length; i++) order[i] = i;
-            System.Array.Sort(order, (a, b) =>
-                filled[b % w, b / w].CompareTo(filled[a % w, a / w]));
-
-            for (int i = 0; i < order.Length; i++)
+            var pendingChildren = new int[n];
+            for (int i = 0; i < n; i++)
             {
-                int index = order[i];
-                int x = index % w;
-                int y = index / w;
-                acc[x, y] += 1f;
-                int p = parent[x, y];
+                int p = parent[i % w, i / w];
                 if (p >= 0)
-                    acc[p % w, p / w] += acc[x, y];
+                    pendingChildren[p]++;
             }
+
+            var queue = new Queue<int>(n);
+            for (int i = 0; i < n; i++)
+            {
+                if (pendingChildren[i] == 0)
+                {
+                    acc[i % w, i / w] = 1f;
+                    queue.Enqueue(i);
+                }
+            }
+
+            while (queue.Count > 0)
+            {
+                int index = queue.Dequeue();
+                int p = parent[index % w, index / w];
+                if (p < 0)
+                    continue;
+
+                acc[p % w, p / w] += acc[index % w, index / w];
+                if (--pendingChildren[p] == 0)
+                {
+                    acc[p % w, p / w] += 1f;
+                    queue.Enqueue(p);
+                }
+            }
+
             return acc;
         }
 

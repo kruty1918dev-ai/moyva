@@ -18,6 +18,7 @@
   "includePlatforms": ["Editor"],
   "overrideReferences": true,
   "precompiledReferences": [
+    "Zenject-usage.dll",
     "nunit.framework.dll"
   ],
   "autoReferenced": false,

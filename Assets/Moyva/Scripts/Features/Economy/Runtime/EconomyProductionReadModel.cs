@@ -79,10 +79,23 @@ namespace Kruty1918.Moyva.Economy.Runtime
         private static bool HasInputs(EconomySettlementState settlement, IReadOnlyList<BuildingResourceAmount> inputs)
         {
             if (inputs == null) return true;
+
+            // Mirror EconomyProductionTickService eligibility exactly:
+            // duplicate ids aggregate and only unreserved stock can pay.
+            var required = new Dictionary<string, int>(StringComparer.Ordinal);
             foreach (var input in inputs)
             {
                 if (input == null || string.IsNullOrWhiteSpace(input.ResourceId) || input.Amount <= 0) continue;
-                if (settlement.GetResource(input.ResourceId) < input.Amount) return false;
+                string id = input.ResourceId.Trim();
+                required[id] = required.TryGetValue(id, out int current)
+                    ? current + input.Amount
+                    : input.Amount;
+            }
+
+            foreach (var pair in required)
+            {
+                if (settlement.GetAvailableResource(pair.Key) < pair.Value)
+                    return false;
             }
             return true;
         }

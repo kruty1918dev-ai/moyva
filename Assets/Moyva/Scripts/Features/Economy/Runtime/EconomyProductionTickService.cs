@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Economy.API;
@@ -169,9 +170,16 @@ namespace Kruty1918.Moyva.Economy.Runtime
                         continue;
                     }
 
-                    ConsumeRecipeInputs(
-                        state,
-                        recipe.Inputs);
+                    if (!ConsumeRecipeInputs(
+                            state,
+                            recipe.Inputs))
+                    {
+                        // A committed cycle never ships outputs for inputs it
+                        // could not actually take (reserved stock, races).
+                        progress = turnsPerCycle;
+                        break;
+                    }
+
                     AddRecipeOutputs(
                         state,
                         recipe.Outputs);
@@ -187,25 +195,25 @@ namespace Kruty1918.Moyva.Economy.Runtime
             return completed;
         }
 
+        /// <summary>
+        /// Aggregates a recipe's inputs per resource id (duplicate entries
+        /// must sum, not pass the same pool twice) and preflights against
+        /// <see cref="EconomySettlementState.GetAvailableResource"/> —
+        /// the same spendable view <see cref="EconomySettlementState.ConsumeResource"/>
+        /// enforces, so reserved stock can never satisfy a check it cannot pay.
+        /// </summary>
         private static bool HasRecipeInputs(
             EconomySettlementState state,
             IReadOnlyList<BuildingResourceAmount> inputs)
         {
-            if (inputs == null)
+            var required = AggregateInputs(inputs);
+            if (required == null)
                 return true;
 
-            for (int index = 0; index < inputs.Count; index++)
+            foreach (var pair in required)
             {
-                BuildingResourceAmount input = inputs[index];
-                if (input == null
-                    || string.IsNullOrWhiteSpace(input.ResourceId)
-                    || input.Amount <= 0)
-                {
-                    continue;
-                }
-
-                if (state.GetResource(input.ResourceId)
-                    < input.Amount)
+                if (state.GetAvailableResource(pair.Key)
+                    < pair.Value)
                 {
                     return false;
                 }
@@ -214,13 +222,35 @@ namespace Kruty1918.Moyva.Economy.Runtime
             return true;
         }
 
-        private static void ConsumeRecipeInputs(
+        /// <summary>
+        /// All-or-nothing input consumption matching
+        /// <see cref="HasRecipeInputs"/> exactly: one aggregated consume per
+        /// resource id, so a recipe cannot strip part of its bill.
+        /// </summary>
+        private static bool ConsumeRecipeInputs(
             EconomySettlementState state,
             IReadOnlyList<BuildingResourceAmount> inputs)
         {
-            if (inputs == null)
-                return;
+            var required = AggregateInputs(inputs);
+            if (required == null)
+                return true;
 
+            foreach (var pair in required)
+            {
+                if (!state.ConsumeResource(pair.Key, pair.Value))
+                    return false;
+            }
+
+            return true;
+        }
+
+        private static List<KeyValuePair<string, int>> AggregateInputs(
+            IReadOnlyList<BuildingResourceAmount> inputs)
+        {
+            if (inputs == null)
+                return null;
+
+            var required = new List<KeyValuePair<string, int>>();
             for (int index = 0; index < inputs.Count; index++)
             {
                 BuildingResourceAmount input = inputs[index];
@@ -231,10 +261,25 @@ namespace Kruty1918.Moyva.Economy.Runtime
                     continue;
                 }
 
-                state.ConsumeResource(
-                    input.ResourceId,
-                    input.Amount);
+                string id = input.ResourceId.Trim();
+                int existing = required.FindIndex(
+                    e => string.Equals(
+                        e.Key, id, StringComparison.Ordinal));
+                if (existing >= 0)
+                {
+                    var entry = required[existing];
+                    required[existing] =
+                        new KeyValuePair<string, int>(
+                            id, entry.Value + input.Amount);
+                }
+                else
+                {
+                    required.Add(
+                        new KeyValuePair<string, int>(id, input.Amount));
+                }
             }
+
+            return required.Count == 0 ? null : required;
         }
 
         private static void AddRecipeOutputs(

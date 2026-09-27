@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.Runtime.Geography
@@ -69,20 +70,30 @@ namespace Kruty1918.Moyva.Generator.Runtime.Geography
             }
 
             // Depth bands: water near land is shallower (higher surface).
+            // Eligibility is evaluated against a per-ring snapshot — otherwise the
+            // same-ring writes would let the band propagate across open water.
             int shallow = Mathf.Max(0, coast.ShallowBandWidth);
             float deepSurface = water * request.HeightStep + request.WaterSurfaceOffset;
+            var shallowed = new bool[w, h];
             for (int ring = 0; ring < shallow; ring++)
             {
+                var newly = new List<Vector2Int>();
                 for (int x = 0; x < w; x++)
                 for (int y = 0; y < h; y++)
                 {
-                    if (levels[x, y] != water || lakeMask[x, y] || riverMask[x, y])
+                    if (levels[x, y] != water || lakeMask[x, y] || riverMask[x, y] || shallowed[x, y])
                         continue;
-                    if (!TouchesLandOrShallowed(levels, waterSurface, water, deepSurface, x, y, w, h))
+                    if (!TouchesLandOrShallowed(levels, shallowed, water, x, y, w, h))
                         continue;
-                    float depthT = (float)(ring + 1) / (shallow + 1);
-                    waterSurface[x, y] = Mathf.Max(
-                        waterSurface[x, y],
+                    newly.Add(new Vector2Int(x, y));
+                }
+
+                float depthT = (float)(ring + 1) / (shallow + 1);
+                foreach (Vector2Int cell in newly)
+                {
+                    shallowed[cell.x, cell.y] = true;
+                    waterSurface[cell.x, cell.y] = Mathf.Max(
+                        waterSurface[cell.x, cell.y],
                         deepSurface + 0.1f * depthT);
                 }
             }
@@ -104,7 +115,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.Geography
         }
 
         private static bool TouchesLandOrShallowed(
-            int[,] levels, float[,] waterSurface, int waterLevel, float deepSurface,
+            int[,] levels, bool[,] shallowed, int waterLevel,
             int x, int y, int w, int h)
         {
             for (int dx = -1; dx <= 1; dx++)
@@ -113,8 +124,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.Geography
                 if (dx == 0 && dy == 0) continue;
                 int nx = x + dx, ny = y + dy;
                 if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
-                if (levels[nx, ny] != waterLevel
-                    || waterSurface[nx, ny] > deepSurface + 0.0001f)
+                if (levels[nx, ny] != waterLevel || shallowed[nx, ny])
                     return true;
             }
             return false;

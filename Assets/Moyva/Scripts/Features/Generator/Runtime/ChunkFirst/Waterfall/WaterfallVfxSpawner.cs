@@ -88,13 +88,15 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 string id = $"{front.Anchor.x}_{front.Anchor.y}_{front.Dir.x}_{front.Dir.y}";
                 float frontWidth = front.WidthCells * cs;
 
-                spawned += SpawnOne(
-                    config.EdgeFoamPrefab, root, $"wfall_edge_{id}", lipPos, rotation,
-                    Vector3.one * vfxScale, frontWidth, maxParticles);
-                spawned += SpawnOne(
-                    config.ImpactSplashPrefab, root, $"wfall_splash_{id}", basePos, rotation,
-                    Vector3.one * vfxScale, frontWidth, maxParticles);
-                if (front.Drop >= mistDrop)
+                if (spawned < budget)
+                    spawned += SpawnOne(
+                        config.EdgeFoamPrefab, root, $"wfall_edge_{id}", lipPos, rotation,
+                        Vector3.one * vfxScale, frontWidth, maxParticles);
+                if (spawned < budget)
+                    spawned += SpawnOne(
+                        config.ImpactSplashPrefab, root, $"wfall_splash_{id}", basePos, rotation,
+                        Vector3.one * vfxScale, frontWidth, maxParticles);
+                if (front.Drop >= mistDrop && spawned < budget)
                 {
                     spawned += SpawnOne(
                         config.MistPrefab, root, $"wfall_mist_{id}", basePos, rotation,

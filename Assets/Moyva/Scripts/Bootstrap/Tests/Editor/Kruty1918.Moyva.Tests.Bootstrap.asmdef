@@ -46,6 +46,7 @@
     "overrideReferences": true,
     "precompiledReferences": [
         "Zenject-usage.dll",
+        "Newtonsoft.Json.dll",
         "nunit.framework.dll"
     ],
     "autoReferenced": false,
