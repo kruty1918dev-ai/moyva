@@ -130,22 +130,40 @@ namespace Kruty1918.Moyva.Units.Runtime
                 throw;
             }
 
-            UnitRecruitmentQueueItemSnapshot enqueued = _queue.EnqueueValidated(
-                owner,
-                recruitingBuildingPosition,
-                recruitingBuildingId,
-                unitType,
-                Math.Max(1, recipe.TrainingTurns),
-                ResolveProgressSequence(), costs, fundingSettlementId,
-                recipe.TrainingSeconds > 0f && !float.IsInfinity(recipe.TrainingSeconds)
-                    ? recipe.TrainingSeconds
-                    : Math.Max(1, recipe.TrainingTurns) * (_progressClock?.SandboxRoundSeconds ?? 10f));
-
-            if (_progressClock?.IsRealtime != true
-                && _turns != null
-                && !_turns.TryRecordAction(owner, "unit-recruit-enqueue"))
+            UnitRecruitmentQueueItemSnapshot enqueued;
+            try
             {
+                enqueued = _queue.EnqueueValidated(
+                    owner,
+                    recruitingBuildingPosition,
+                    recruitingBuildingId,
+                    unitType,
+                    Math.Max(1, recipe.TrainingTurns),
+                    ResolveProgressSequence(), costs, fundingSettlementId,
+                    recipe.TrainingSeconds > 0f && !float.IsInfinity(recipe.TrainingSeconds)
+                        ? recipe.TrainingSeconds
+                        : Math.Max(1, recipe.TrainingTurns) * (_progressClock?.SandboxRoundSeconds ?? 10f));
             }
+            catch
+            {
+                _economy.ReleaseRecruitmentPopulation(owner, reservedQueueId);
+                _economy.RefundRecruitmentResources(owner, fundingSettlementId, costs);
+                throw;
+            }
+
+            if (enqueued.QueueId != reservedQueueId)
+            {
+                // A nested RestoreState during payment signals re-keyed the queue;
+                // the population reservation lives under the pre-payment id.
+                _queue.TryCancel(owner, recruitingBuildingPosition, enqueued.QueueId, out _);
+                _economy.ReleaseRecruitmentPopulation(owner, reservedQueueId);
+                _economy.RefundRecruitmentResources(owner, fundingSettlementId, costs);
+                reason = "Recruitment queue state changed during payment; retry.";
+                return false;
+            }
+
+            if (_progressClock?.IsRealtime != true)
+                _turns?.TryRecordAction(owner, "unit-recruit-enqueue");
 
             FireQueueChanged(enqueued);
             return true;
@@ -269,7 +287,9 @@ namespace Kruty1918.Moyva.Units.Runtime
                 IReadOnlyDictionary<string, float> reserved = null;
                 if (!_economy.OwnerHasAnyWarehouse(owner))
                 {
-                    available = _economy.GetOwnerPoolResourceTotals(owner);
+                    // Commit path (TryConsumeOwnerPoolResources) anti-softlock-falls
+                    // back to owner pool + all settlement pools; preview must mirror it.
+                    available = _economy.GetOwnerResourceTotals(owner);
                 }
                 else
                 {
@@ -396,7 +416,7 @@ namespace Kruty1918.Moyva.Units.Runtime
                 out unitId,
                 out reason);
             if (deployed)
-                _economy?.DeployRecruitmentPopulation(ownerId, queueId, unitId);
+                _economy?.DeployRecruitmentPopulation(NormalizeRequiredId(ownerId), queueId, unitId);
             return deployed;
         }
 
