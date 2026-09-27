@@ -35,6 +35,9 @@ namespace Kruty1918.UIActions.Runtime
             if (TryUnfocusTextInput())
                 return true;
 
+            if (IsExpandedDropdownSelected())
+                return true;
+
             var active = _contexts.ActiveContexts;
             for (int i = 0; i < active.Count; i++)
             {
@@ -77,6 +80,20 @@ namespace Kruty1918.UIActions.Runtime
                     UiActionResult.Performed());
             }
             return true;
+        }
+
+        // A shown dropdown claims Escape through the input module's Cancel
+        // action on the same press; routing a context action here too would
+        // close two layers for one keypress. IsExpanded stays true while the
+        // list fades out, so the shield holds regardless of tick ordering.
+        private bool IsExpandedDropdownSelected()
+        {
+            EventSystem eventSystem = EventSystem.current;
+            if (eventSystem == null || eventSystem.currentSelectedGameObject == null)
+                return false;
+
+            TMP_Dropdown dropdown = eventSystem.currentSelectedGameObject.GetComponentInParent<TMP_Dropdown>();
+            return dropdown != null && dropdown.IsExpanded;
         }
     }
 }

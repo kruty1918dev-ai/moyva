@@ -1,8 +1,6 @@
 using Kruty1918.Moyva.GameMode.API;
 using Kruty1918.Moyva.UIActions.API;
 using Kruty1918.UIActions.API;
-using TMPro;
-using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using Zenject;
 
@@ -38,17 +36,6 @@ namespace Kruty1918.Moyva.GameMode.Runtime
             Keyboard keyboard = Keyboard.current;
             if (keyboard == null || !keyboard.escapeKey.wasPressedThisFrame)
                 return;
-
-            // While a text field is focused, Escape releases the field instead
-            // of firing gameplay actions — the next press reaches the router.
-            UnityEngine.GameObject selected = EventSystem.current?.currentSelectedGameObject;
-            if (selected != null
-                && selected.GetComponent<TMP_InputField>() is TMP_InputField input
-                && input.isFocused)
-            {
-                EventSystem.current.SetSelectedGameObject(null);
-                return;
-            }
 
             if (_escapeRouter.TryHandleEscape())
                 return;
