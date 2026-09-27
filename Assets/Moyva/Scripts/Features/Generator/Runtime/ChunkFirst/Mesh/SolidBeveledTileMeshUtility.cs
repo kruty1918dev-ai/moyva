@@ -43,18 +43,22 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 new Vector3(-t, 0f, t),
                 new Vector3(t, 0f, t),
                 new Vector3(t, 0f, -t),
-                Vector3.up);
+                Vector3.up,
+                Vector2.zero);
 
             // Bevel ring: one mitered trapezoid per side. The outer bottom
             // edges at y = -d form the authored bottom contour the closure
-            // skirt extrudes downward on open sides.
+            // skirt extrudes downward on open sides. uvOutward unfolds each
+            // face onto the plateau's UV plane so texel density stays uniform
+            // across the edge instead of stretching by sqrt(2) on the slope.
             AddQuad(
                 positions, normals, uvs, triangles,
                 new Vector3(-t, 0f, t),
                 new Vector3(-h, -d, h),
                 new Vector3(h, -d, h),
                 new Vector3(t, 0f, t),
-                new Vector3(0f, TopInset, BevelDrop));
+                new Vector3(0f, TopInset, BevelDrop),
+                new Vector2(0f, 1f));
 
             AddQuad(
                 positions, normals, uvs, triangles,
@@ -62,7 +66,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 new Vector3(h, -d, h),
                 new Vector3(h, -d, -h),
                 new Vector3(t, 0f, -t),
-                new Vector3(BevelDrop, TopInset, 0f));
+                new Vector3(BevelDrop, TopInset, 0f),
+                new Vector2(1f, 0f));
 
             AddQuad(
                 positions, normals, uvs, triangles,
@@ -70,7 +75,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 new Vector3(h, -d, -h),
                 new Vector3(-h, -d, -h),
                 new Vector3(-t, 0f, -t),
-                new Vector3(0f, TopInset, -BevelDrop));
+                new Vector3(0f, TopInset, -BevelDrop),
+                new Vector2(0f, -1f));
 
             AddQuad(
                 positions, normals, uvs, triangles,
@@ -78,7 +84,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 new Vector3(-h, -d, -h),
                 new Vector3(-h, -d, h),
                 new Vector3(-t, 0f, t),
-                new Vector3(-BevelDrop, TopInset, 0f));
+                new Vector3(-BevelDrop, TopInset, 0f),
+                new Vector2(-1f, 0f));
 
             var mesh = new Mesh
             {
@@ -104,7 +111,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             Vector3 b,
             Vector3 c,
             Vector3 d,
-            Vector3 expectedNormal)
+            Vector3 expectedNormal,
+            Vector2 uvOutward)
         {
             Vector3 normal = Vector3.Cross(b - a, c - a);
             bool flip = normal.sqrMagnitude > 1e-12f
@@ -124,8 +132,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             for (int i = 0; i < 4; i++)
             {
                 normals.Add(normal);
-                Vector3 p = positions[start + i];
-                uvs.Add(new Vector2(p.x + Half, p.z + Half));
+                uvs.Add(TileSurfaceUv(positions[start + i], uvOutward));
             }
             triangles.Add(start);
             triangles.Add(start + 1);
@@ -133,6 +140,30 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             triangles.Add(start);
             triangles.Add(start + 2);
             triangles.Add(start + 3);
+        }
+
+        /*
+         * Maps a vertex onto the plateau's UV plane. Plateau vertices keep the
+         * world-planar mapping; bevel vertices slide outward by the true slope
+         * length, so the shared top edge keeps identical UVs on both faces and
+         * a checker keeps the same density across the edge.
+         */
+        private static Vector2 TileSurfaceUv(Vector3 position, Vector2 uvOutward)
+        {
+            var uv = new Vector2(position.x + Half, position.z + Half);
+            if (uvOutward == Vector2.zero)
+                return uv;
+
+            float slopeOverInset =
+                Mathf.Sqrt(TopInset * TopInset + BevelDrop * BevelDrop)
+                / TopInset;
+            float overhang =
+                position.x * uvOutward.x
+                + position.z * uvOutward.y
+                - (Half - TopInset);
+            return uv
+                + uvOutward
+                * (Mathf.Max(0f, overhang) * (slopeOverInset - 1f));
         }
     }
 }
