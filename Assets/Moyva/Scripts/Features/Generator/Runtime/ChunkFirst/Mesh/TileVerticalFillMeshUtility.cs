@@ -86,15 +86,29 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                     HeightEpsilon * 10f,
                     meshHeight * 0.02f);
 
+                /*
+                 * Bottom-ring verts on occluded footprint sides must not be
+                 * stretched: the neighbour's shell already covers the seam, and
+                 * a deformed wall there becomes a coincident interior face.
+                 * Corner verts still move when either touching side is open.
+                 */
+                bool pulled = false;
                 for (int i = 0; i < deformed.Length; i++)
                 {
                     Vector3 relative = linearMatrix.MultiplyPoint3x4(deformed[i]);
-                    if (relative.y <= bottomBand)
+                    if (relative.y > bottomBand
+                        || !BottomBandSideIsOpen(source, deformed[i]))
                     {
-                        relative.y = targetBottom;
-                        deformed[i] = inverseLinear.MultiplyPoint3x4(relative);
+                        continue;
                     }
+
+                    relative.y = targetBottom;
+                    deformed[i] = inverseLinear.MultiplyPoint3x4(relative);
+                    pulled = true;
                 }
+
+                if (!pulled)
+                    return false;
 
                 result = CopyMesh(
                     source.Mesh,
@@ -279,11 +293,13 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                     linearMatrix.MultiplyPoint3x4(
                         vertices[edge.B]);
 
-                float edgeBottom =
+                float worldEdgeBottom =
                     tileSource.EdgeBottoms.Resolve(
                         side,
-                        tileSource.VisibleBottomY)
-                    - tileSource.LocalMatrix.m13;
+                        tileSource.VisibleBottomY);
+
+                float edgeBottom =
+                    worldEdgeBottom - tileSource.LocalMatrix.m13;
 
                 if (edgeBottom
                     >= Mathf.Min(topA.y, topB.y)
@@ -295,13 +311,17 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 Vector3 bottomA =
                     new Vector3(
                         topA.x,
-                        edgeBottom,
+                        CornerAwareBottomY(
+                            tileSource, worldA, side, worldEdgeBottom)
+                        - tileSource.LocalMatrix.m13,
                         topA.z);
 
                 Vector3 bottomB =
                     new Vector3(
                         topB.x,
-                        edgeBottom,
+                        CornerAwareBottomY(
+                            tileSource, worldB, side, worldEdgeBottom)
+                        - tileSource.LocalMatrix.m13,
                         topB.z);
 
                 AddOneSidedQuad(
@@ -557,8 +577,15 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 Vector3 worldBottomB =
                     worldTopB;
 
-                worldBottomA.y = bottomY;
-                worldBottomB.y = bottomY;
+                /*
+                 * At a corner shared with a deeper open side the shallower
+                 * wall must dip to the neighbour's bottom; otherwise the
+                 * diagonal seam keeps a vertical slit into the hollow shell.
+                 */
+                worldBottomA.y = CornerAwareBottomY(
+                    source, worldTopA, side, bottomY);
+                worldBottomB.y = CornerAwareBottomY(
+                    source, worldTopB, side, bottomY);
 
                 /*
                  * Зберігаємо winding таким самим, як у
@@ -1379,8 +1406,10 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             Vector3 worldBottomA = worldTopA;
             Vector3 worldBottomB = worldTopB;
 
-            worldBottomA.y = bottomY;
-            worldBottomB.y = bottomY;
+            worldBottomA.y = CornerAwareBottomY(
+                source, worldTopA, side, bottomY);
+            worldBottomB.y = CornerAwareBottomY(
+                source, worldTopB, side, bottomY);
 
             AddOneSidedQuad(
                 vertices,
@@ -1433,6 +1462,93 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
 
         private static bool IsFinite(float value)
             => !float.IsNaN(value) && !float.IsInfinity(value);
+
+        /*
+         * A bottom-band vertex only stretches downward when the wall it feeds
+         * is actually exposed: verts resting on occluded footprint sides stay
+         * at the authored bottom, corner verts move when either touching side
+         * is open, and interior bottom verts always follow the floor.
+         */
+        private static bool BottomBandSideIsOpen(
+            TileMeshSource source,
+            Vector3 localVertex)
+        {
+            if (!source.HasTileFootprint)
+                return true;
+
+            Vector3 world = source.LocalMatrix.MultiplyPoint3x4(localVertex);
+            TileMeshOccludedSides touched = TouchedFootprintSides(source, world);
+            if (touched == TileMeshOccludedSides.None)
+                return true;
+
+            return (touched & ~source.OccludedSides) != 0;
+        }
+
+        private static TileMeshOccludedSides TouchedFootprintSides(
+            TileMeshSource source,
+            Vector3 world)
+        {
+            float half = source.TileHalfExtent;
+            float tolerance = Mathf.Max(0.001f, half * 0.02f);
+            float centreX = source.TileCenterXZ.x;
+            float centreZ = source.TileCenterXZ.y;
+
+            TileMeshOccludedSides touched = TileMeshOccludedSides.None;
+            if (IsNear(world.x, centreX - half, tolerance))
+                touched |= TileMeshOccludedSides.West;
+            if (IsNear(world.x, centreX + half, tolerance))
+                touched |= TileMeshOccludedSides.East;
+            if (IsNear(world.z, centreZ - half, tolerance))
+                touched |= TileMeshOccludedSides.South;
+            if (IsNear(world.z, centreZ + half, tolerance))
+                touched |= TileMeshOccludedSides.North;
+            return touched;
+        }
+
+        /*
+         * At a footprint corner shared with a deeper open side, the wall
+         * endpoint dips to the adjacent bottom so the corner column stays
+         * closed on both planes. Occluded or shallower neighbours change
+         * nothing.
+         */
+        private static float CornerAwareBottomY(
+            TileMeshSource source,
+            Vector3 worldTop,
+            TileMeshOccludedSides side,
+            float bottomY)
+        {
+            if (!source.HasTileFootprint)
+                return bottomY;
+
+            TileMeshOccludedSides adjacent =
+                TouchedFootprintSides(source, worldTop) & ~side;
+            if (adjacent == TileMeshOccludedSides.None
+                || (source.OccludedSides & adjacent) != 0)
+            {
+                return bottomY;
+            }
+
+            foreach (TileMeshOccludedSides candidate in NeighbourSides)
+            {
+                if ((adjacent & candidate) == 0)
+                    continue;
+
+                float adjacentBottom = source.EdgeBottoms.Resolve(
+                    candidate, source.VisibleBottomY);
+                if (IsFinite(adjacentBottom))
+                    bottomY = Mathf.Min(bottomY, adjacentBottom);
+            }
+
+            return bottomY;
+        }
+
+        private static readonly TileMeshOccludedSides[] NeighbourSides =
+        {
+            TileMeshOccludedSides.North,
+            TileMeshOccludedSides.East,
+            TileMeshOccludedSides.South,
+            TileMeshOccludedSides.West
+        };
 
         internal static bool IsBoundaryEdgeOccluded(
             TileMeshSource source,
