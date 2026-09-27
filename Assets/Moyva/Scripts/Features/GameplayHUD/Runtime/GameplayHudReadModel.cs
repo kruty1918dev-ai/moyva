@@ -1772,6 +1772,17 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (CanonicalResourceLabels.TryGetValue(normalized, out string label))
                 return label;
 
+            // Authoritative preset displayName keeps concrete resources named
+            // as themselves: "cabbage-food-resources" is "Cabbage", not
+            // "Cabbage Food" — the -food- infix is a category marker, and
+            // "Food" alone is reserved for the aggregate category total.
+            string displayName = _population?.GetResourceDisplayName(normalized);
+            if (!string.IsNullOrWhiteSpace(displayName)
+                && !string.Equals(displayName, normalized, StringComparison.Ordinal))
+            {
+                return displayName;
+            }
+
             normalized = TrimSuffix(normalized, "-materials-resources");
             normalized = TrimSuffix(normalized, "_materials_resources");
             normalized = TrimSuffix(normalized, "-resources");
@@ -1816,7 +1827,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private static readonly Dictionary<string, string> CanonicalResourceLabels =
             new(StringComparer.Ordinal)
             {
-                ["steak-food-resources"] = "Food",
+                ["steak-food-resources"] = "Steak",
                 ["walnut-wood-materials-resources"] = "Wood",
                 ["stone-materials-resources"] = "Stone",
                 ["iron-ore-materials-resources"] = "Iron Ore",
