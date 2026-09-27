@@ -1,0 +1,51 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "moyva-parallel-audit/event-trace.schema.json",
+  "title": "Moyva parallel audit event trace record (JSONL)",
+  "description": "One JSON object per line. The delta/event trace is the audit's proof that committed state actually changed: it records canonical SignalBus events and command results, each pinned to snapshot sequence/frame/time from the run header. A scan MUST NOT fabricate deltas by calling preview APIs (e.g. IConstructionSessionCommands.TryPreviewAt); a trace row is evidence of a real state transition or a real rejected/accepted command.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["runId", "sequence", "frame", "wallTimeUtc", "kind", "name", "source"],
+  "properties": {
+    "runId": {
+      "type": "string",
+      "description": "Correlates to the run header, e.g. <taskId>-<seed>-<utcstamp>."
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Snapshot sequence from the run header this event belongs to."
+    },
+    "frame": {
+      "type": ["integer", "null"],
+      "description": "Time.frameCount when the event was observed."
+    },
+    "gameTime": {
+      "type": ["number", "null"],
+      "description": "Time.time (scaled). Frozen value while game is paused distinguishes pause from capture-tool downtime."
+    },
+    "wallTimeUtc": { "type": "string", "format": "date-time" },
+    "kind": {
+      "type": "string",
+      "enum": ["signal", "command-result", "query-snapshot", "marker"],
+      "description": "signal = SignalBus event observed; command-result = canonical command accepted/rejected; query-snapshot = read-only canonical query sample; marker = harness annotation (e.g. capture-start)."
+    },
+    "name": {
+      "type": "string",
+      "description": "Signal type name (e.g. UnitMovedSignal, WorldGeneratedDataSignal, GamePausedSignal) or command/query id."
+    },
+    "source": {
+      "type": "string",
+      "description": "Emitting authority, e.g. GameStateService, UnitMovementService, ConstructionService, MultiplayerAuthorityService, harness."
+    },
+    "payload": {
+      "type": ["object", "null"],
+      "description": "Serialized public fields of the signal/result (unitId, position, reason, ...)."
+    },
+    "provenance": {
+      "type": "string",
+      "enum": ["live-game", "bridge-injected", "editor-simulated", "unknown"],
+      "description": "How the event was produced. bridge-injected/editor-simulated rows are diagnostics only and cannot satisfy gameplay-evidence acceptance."
+    }
+  }
+}

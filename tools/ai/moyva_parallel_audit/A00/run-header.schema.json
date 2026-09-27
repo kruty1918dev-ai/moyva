@@ -1,0 +1,243 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "moyva-parallel-audit/run-header.schema.json",
+  "title": "Moyva parallel audit run header",
+  "description": "Machine-readable identity header for every audit run/snapshot. One header per run; each snapshot inside a run carries its own snapshot.sequence/frame/time. Produced by collect_run_header.py (environment/git part) merged with a runtime probe (capture_runtime_snapshot.cs via unity eval_file) when an Editor is available; consumed by Q01 acceptance review. Verified against base 98d86e11f1fd905d7e90b6b7a4e8c30dc6b20e38.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "taskId",
+    "owner",
+    "capturedAtUtc",
+    "baseSha",
+    "treeSha",
+    "branch",
+    "seed",
+    "rng",
+    "world",
+    "mode",
+    "clockConfig",
+    "snapshot",
+    "environment"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "taskId": {
+      "type": "string",
+      "pattern": "^[A-Z][0-9]{2}$",
+      "description": "Audit task ID, e.g. A00, C01, G09, U04, Q01."
+    },
+    "owner": {
+      "type": "string",
+      "description": "Owning worktree branch, e.g. night/moyva/20260927-113705/a00 or work/moyva/a00-reviewed. One mutation authority per ID."
+    },
+    "capturedAtUtc": { "type": "string", "format": "date-time" },
+    "baseSha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$",
+      "description": "Actual commit SHA the run started from (git rev-parse HEAD of the worktree). The wave coordinator pins this; never a moving remote HEAD."
+    },
+    "treeSha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$",
+      "description": "git rev-parse HEAD^{tree}; compared across wave worktrees to prove identical base content."
+    },
+    "branch": { "type": "string" },
+    "seed": {
+      "type": "integer",
+      "description": "Requested world seed: GameLaunchContext.Seed when the menu/new-game path configured it, else GeneratorMapRecipe.Seed, else 0. 0 means 'not pinned' and resolves to GlobalSeed.DefaultSeed (=42) via MapSeedService.Resolve."
+    },
+    "rng": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["resolvedSeed", "normalizedSeed", "globalSeedCurrent", "unityRandomInitialized", "fixtureId"],
+      "properties": {
+        "resolvedSeed": {
+          "type": ["integer", "null"],
+          "description": "Seed that MapGenerationPipeline.Generate fed to GlobalSeed.InitializeDeterministic (request.SeedOverride ?? MapSeedService.Resolve(recipe)). Null before generation ran."
+        },
+        "normalizedSeed": {
+          "type": ["integer", "null"],
+          "description": "GlobalSeed.Normalize(seed): 0 -> 1. The deterministic value that seeds all generator hashing."
+        },
+        "globalSeedCurrent": {
+          "type": ["integer", "null"],
+          "description": "Kruty1918.Moyva.Generator.Runtime.GlobalSeed.Current at capture time; null if not readable (editor-stopped probe)."
+        },
+        "unityRandomInitialized": {
+          "type": ["boolean", "null"],
+          "description": "True only when GlobalSeed.InitializeDeterministic ran in this session (it also calls UnityEngine.Random.InitState). Null when not observable."
+        },
+        "fixtureId": {
+          "type": "string",
+          "description": "ID from audit-seeds.json, e.g. audit-s01-default. Empty when running an ad-hoc seed."
+        }
+      }
+    },
+    "world": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requestedMapType", "resolvedArchetype", "recipeId", "dimensions", "playerCount"],
+      "properties": {
+        "requestedMapType": {
+          "type": "string",
+          "description": "Map type as requested. Domain depends on source: MapType {continents,pangaea,islands,highlands,desert,random} for GameLaunchContext.MapType / lobby DTOs; MapTypePreset {balanced,continental,island,mountain,plains} for WorldCreationConfig.MapType. Empty string when not requested."
+        },
+        "mapTypeSource": {
+          "type": "string",
+          "enum": ["launch-context", "world-creation-preset", "lobby-dto", "none", "unknown"],
+          "description": "Where requestedMapType was read from."
+        },
+        "resolvedArchetype": {
+          "type": "string",
+          "enum": ["balanced", "continents", "pangaea", "islands", "highlands", "desert", "not-resolved", "unknown"],
+          "description": "Engine archetype AFTER resolution. At base 98d86e11 the recipe-driven pipeline consumes no MapType->archetype mapping: WorldArchetypeResolver/WorldGeographyEngine are only exercised by tests. Emit 'not-resolved' and identify the world shape by recipeId instead. A future MapType consumer must update this field to the resolved value."
+        },
+        "recipeId": {
+          "type": "string",
+          "description": "id of the GeneratorMapRecipe JSON actually loaded by IMapGenerationEnvironment (e.g. 'testgeneratorrecipe' from Assets/Moyva/Presets/Generator/recipes/). This is the real resolved generator profile."
+        },
+        "dimensions": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["requestedWidth", "requestedHeight", "width", "height"],
+          "properties": {
+            "requestedWidth": { "type": ["integer", "null"], "minimum": 1 },
+            "requestedHeight": { "type": ["integer", "null"], "minimum": 1 },
+            "width": {
+              "type": ["integer", "null"],
+              "minimum": 16,
+              "description": "Final width AFTER MapSizeResolver + MapChunkSizePolicy.CropAxis (chunk-multiple, min 16). From WorldGeneratedDataSignal.Width or grid service."
+            },
+            "height": {
+              "type": ["integer", "null"],
+              "minimum": 16,
+              "description": "Final height after the same policy; from WorldGeneratedDataSignal.Height."
+            },
+            "sizePreset": {
+              "type": "string",
+              "enum": ["small", "medium", "large", "custom", "unknown"],
+              "description": "GameLaunchContext.Size: 0=small(32), 1=medium(64), 2=large(128)."
+            },
+            "source": {
+              "type": "string",
+              "description": "Which authority produced width/height, per MapSizeResolver precedence: 'launch-context' | 'recipe-shared-settings' | 'requested' | 'signal' | 'unknown'."
+            }
+          }
+        },
+        "playerCount": { "type": ["integer", "null"], "minimum": 1 }
+      }
+    },
+    "mode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "playMode"],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": ["editor-stopped", "editor-playing", "editor-paused", "batch-editmode", "batch-playmode", "standalone-build"],
+          "description": "Capture environment. editor-stopped headers are environment probes, NOT gameplay evidence."
+        },
+        "playMode": {
+          "type": "string",
+          "enum": ["stopped", "playing", "paused", "unknown"],
+          "description": "EditorApplication.isPlaying/isPlayingOrWillChangePlaymode + isPaused mapped; 'paused' is the Unity play-mode pause, distinct from game pause."
+        },
+        "gameState": {
+          "type": "string",
+          "enum": ["idle", "playing", "paused", "gameOver", "unknown"],
+          "description": "IGameStateService.CurrentState (GameStateType) lowercased. gameState=paused is the GAME pause (GamePausedSignal{IsPaused=true}), not a harness stop."
+        },
+        "launchMode": {
+          "type": "string",
+          "description": "GameLaunchContext.Mode (GameLaunchMode enum name), e.g. MenuNewGame, MenuBotGame, DirectGameplay, Unknown."
+        },
+        "networkSession": {
+          "type": "string",
+          "enum": ["offline", "host", "client", "unknown"]
+        }
+      }
+    },
+    "clockConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["timeScale", "fixedDeltaTime", "maximumDeltaTime"],
+      "properties": {
+        "timeScale": {
+          "type": ["number", "null"],
+          "description": "Time.timeScale at capture. GameStateService.PauseGame sets it to 0 ONLY when IGamePauseModePolicy.IsMultiplayerSessionActive is false; null when not observable."
+        },
+        "fixedDeltaTime": { "type": ["number", "null"], "description": "Time.fixedDeltaTime." },
+        "maximumDeltaTime": { "type": ["number", "null"], "description": "Time.maximumDeltaTime." },
+        "pauseOwnsTimeScale": {
+          "type": ["boolean", "null"],
+          "description": "GameStateService._ownsSimulationPause equivalent: whether the pause subsystem currently owns timeScale=0. Distinguishes game pause (true) from a stopped/backgrounded editor (false/null)."
+        }
+      }
+    },
+    "fps": {
+      "type": ["number", "null"],
+      "description": "Measured frames per second over the sampling window; null when not measured (e.g. editor-stopped probe)."
+    },
+    "frameTimeMs": {
+      "type": ["number", "null"],
+      "description": "CPU frame time in ms over the sampling window (e.g. mean of Time.deltaTime or frameTiming.cpuFrameTimeMs when a stats source exists); null when not measured."
+    },
+    "snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sequence", "frame", "gameTime", "wallTimeUtc"],
+      "properties": {
+        "sequence": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Harness-assigned monotonic snapshot counter within the run. Every snapshot MUST have a distinct sequence; reuse invalidates the set."
+        },
+        "frame": {
+          "type": ["integer", "null"],
+          "description": "UnityEngine.Time.frameCount at capture; null in editor-stopped mode."
+        },
+        "gameTime": {
+          "type": ["number", "null"],
+          "description": "UnityEngine.Time.time (scaled game seconds); null when not in play mode. A frozen value during pause distinguishes game pause from harness downtime."
+        },
+        "wallTimeUtc": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Real UTC timestamp of the snapshot; keeps advancing while the game is paused."
+        },
+        "startupSequence": {
+          "type": ["integer", "null"],
+          "description": "WorldGeneratedDataSignal.StartupSequence (long) for the world this snapshot belongs to."
+        },
+        "snapshotRevision": {
+          "type": ["integer", "null"],
+          "description": "WorldGeneratedDataSignal.SnapshotRevision; distinguishes regenerated worlds within one session."
+        },
+        "startupSessionId": {
+          "type": ["string", "null"],
+          "description": "WorldGeneratedDataSignal.StartupSessionId; correlates snapshot -> launch."
+        }
+      }
+    },
+    "environment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["unityVersion", "projectPath", "worktree", "collector"],
+      "properties": {
+        "unityVersion": { "type": ["string", "null"] },
+        "projectPath": { "type": "string" },
+        "worktree": { "type": "string", "description": "Filesystem path of the owning worktree." },
+        "pipelinePort": { "type": ["integer", "null"], "description": "unity CLI pipeline port from 'unity status' when a live editor serves the worktree." },
+        "editorPid": { "type": ["integer", "null"], "description": "PID of the Unity.exe serving THIS worktree; used to never signal a foreign editor." },
+        "collector": {
+          "type": "string",
+          "description": "Tool that produced the header, e.g. collect_run_header.py/1 + capture_runtime_snapshot.cs/1."
+        },
+        "platform": { "type": ["string", "null"] }
+      }
+    },
+    "notes": { "type": "string" }
+  }
+}
