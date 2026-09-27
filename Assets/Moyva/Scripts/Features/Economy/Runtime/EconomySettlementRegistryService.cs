@@ -19,6 +19,11 @@ namespace Kruty1918.Moyva.Economy.Runtime
         private readonly Dictionary<Vector2Int, string> _positionToOwnerId =
             new Dictionary<Vector2Int, string>();
 
+        // Town hall position registered with each settlement; reported as the
+        // canonical center (e.g. SettlementCapturedSignal.CenterPosition).
+        private readonly Dictionary<string, Vector2Int> _settlementCenters =
+            new Dictionary<string, Vector2Int>(StringComparer.Ordinal);
+
         /// <summary>публічної.</summary>
         public IReadOnlyDictionary<string, EconomySettlementState> AllSettlements => _settlements;
 
@@ -67,6 +72,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
 
             _settlements[state.SettlementId] = state;
             _positionToSettlement[townHallPosition] = state.SettlementId;
+            _settlementCenters[state.SettlementId] = townHallPosition;
         }
 
         /// <summary>Скасовує реєстрацію поселення.</summary>
@@ -76,6 +82,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
                 return;
 
             _settlements.Remove(settlementId);
+            _settlementCenters.Remove(settlementId);
 
             var positionsToRemove = new List<Vector2Int>();
             foreach (var kvp in _positionToSettlement)
@@ -149,7 +156,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
                 return false;
             }
 
-            bool centerResolved = false;
+            bool centerResolved = _settlementCenters.TryGetValue(settlementId, out centerPosition);
             var mappedPositions = new List<Vector2Int>();
             foreach (var pair in _positionToSettlement)
             {
