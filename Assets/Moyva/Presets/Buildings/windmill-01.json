@@ -10,7 +10,7 @@
     "displayName": "Вітряк",
     "category": "Industrial",
     "role": "Production",
-    "description": "Переробляє зерно за допомогою вітряного механізму.",
+    "description": "Виробляє їжу для поселення за допомогою вітряного механізму.",
     "tags": []
   },
   "presentation": {
@@ -121,18 +121,18 @@
     "cost": [
       {
         "resourceId": "walnut-wood-materials-resources",
-        "amount": 1
+        "amount": 15
       },
       {
         "resourceId": "stone-materials-resources",
-        "amount": 1
+        "amount": 5
       },
       {
         "resourceId": "hardwood-materials-resources",
-        "amount": 1
+        "amount": 5
       }
     ],
-    "buildTurns": 1,
+    "buildTurns": 2,
     "requiresBuilder": true,
     "workRequired": 0
   },

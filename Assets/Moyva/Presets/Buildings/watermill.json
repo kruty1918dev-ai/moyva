@@ -10,7 +10,7 @@
     "displayName": "Watermill",
     "category": "Industrial",
     "role": "Production",
-    "description": "A river mill that grinds grain into food. Must be built next to water.",
+    "description": "A river mill that produces food for the settlement. Must be built next to water.",
     "tags": [
       "industry",
       "production",

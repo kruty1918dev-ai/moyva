@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Kruty1918.Moyva.Economy.API;
 using UnityEngine;
 
@@ -18,12 +19,24 @@ namespace Kruty1918.Moyva.Economy.Runtime
         /// Mutates <paramref name="state"/> in place.
         /// Returns (arrivals, deaths, foodConsumed, waterConsumed).
         /// </summary>
+        /// <param name="deathsByCause">
+        /// Optional sink: each death is tallied under "hunger" (food/water
+        /// deficit), "cold" (firewood deficit), "collapse" (house collapsed),
+        /// or "age" (age-tier mortality) so losses are never lumped together.
+        /// </param>
         public (int arrivals, int deaths, float foodConsumed, float waterConsumed) Tick(
             EconomySettlementState state, EconomyRulesConfigSO rules,
-            EconomyDatabaseSO database = null)
+            EconomyDatabaseSO database = null,
+            IDictionary<string, int> deathsByCause = null)
         {
             if (state == null || rules == null)
                 return (0, 0, 0f, 0f);
+
+            // Consumption stats may only count needs that actually spend a
+            // modeled resource; an unmodeled need is vacuously satisfied and
+            // consumes nothing.
+            bool foodModeled = _consumptionService.ResolveNeedResourceIds(database, "Food").Count > 0;
+            bool waterModeled = _consumptionService.ResolveNeedResourceIds(database, "Water").Count > 0;
 
             var pop = rules.Population;
             int arrivals = 0;
@@ -70,8 +83,8 @@ namespace Kruty1918.Moyva.Economy.Runtime
                 bool fedFood = _consumptionService.ConsumeNeed(state, database, "Food", foodNeeded);
                 bool fedWater = _consumptionService.ConsumeNeed(state, database, "Water", waterNeeded);
 
-                if (fedFood) foodConsumed += foodNeeded;
-                if (fedWater) waterConsumed += waterNeeded;
+                if (fedFood && foodModeled) foodConsumed += foodNeeded;
+                if (fedWater && waterModeled) waterConsumed += waterNeeded;
 
                 // Firewood + Clothing consumption
                 float firewoodNeeded = consumption.FirewoodPerTurn;
@@ -126,6 +139,14 @@ namespace Kruty1918.Moyva.Economy.Runtime
                 {
                     state.Residents.RemoveAt(i);
                     deaths++;
+                    if (deathsByCause != null)
+                    {
+                        string cause = resident.HouseCollapsed ? "collapse"
+                            : !fedFood || !fedWater ? "hunger"
+                            : !hasFirewood ? "cold"
+                            : "age";
+                        deathsByCause[cause] = (deathsByCause.TryGetValue(cause, out int n) ? n : 0) + 1;
+                    }
                 }
                 else
                 {
