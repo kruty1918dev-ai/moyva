@@ -146,8 +146,17 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 ThemeId = config.StairThemeId,
             };
 
+            /*
+             * Reserve the entrance as well as the modules: it must remain a
+             * flat low-plateau cell for the entry step. Without this a later
+             * flight's corridor can claim the cell, carve a module on top of
+             * it, and break this flight's entry step — the stair pair stays
+             * registered but the surface delta exceeds the stair rise and
+             * traversal rejects the passage the planner emitted.
+             */
             foreach (Vector2Int cell in cells)
                 occupied.Add(cell);
+            occupied.Add(entrance);
             return true;
         }
 
