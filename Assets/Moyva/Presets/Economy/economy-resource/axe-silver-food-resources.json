@@ -5,7 +5,7 @@
   "id": "axe-silver-food-resources",
   "model": "economy-resource",
   "displayName": "Axe-silver",
-  "category": "Food",
+  "category": "Materials",
   "icon": {
     "$asset": "asset.sprite.16x16-items-sheet-40.62d7684d",
     "editorPath": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
