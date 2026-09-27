@@ -1,0 +1,67 @@
+{
+  "fixtureVersion": 1,
+  "verifiedAgainstBaseSha": "98d86e11f1fd905d7e90b6b7a4e8c30dc6b20e38",
+  "description": "RNG fixtures for reproducible audit runs. 'launch*' fields emulate GameLaunchContext world settings (Packages/com.kruty1918.save-system/Runtime/SavePlayModeOptions.cs). 'expected*' fields are static precomputations of the production resolvers so a run can assert them before comparing live output.",
+  "resolutionRules": {
+    "seed": "MapSeedService.Resolve: GameLaunchContext.TryGetSeed (HasWorldSettings && seed != 0) -> GlobalSeed.Normalize; else recipe.Seed != 0 -> GlobalSeed.Normalize; else GlobalSeed.DefaultSeed (42). MapGenerationPipeline.Generate then calls GlobalSeed.InitializeDeterministic(resolved) which also UnityEngine.Random.InitState(resolved).",
+    "dimensions": "MapSizeResolver.Resolve: GameLaunchContext.TryGetWorldDimensions (explicit Width/Height else Size->32/64/128) -> recipe.SharedSettings when HasMapSize -> requested; then MapChunkSizePolicy.CropAxis: <16 -> 16, else floor to multiple of 16. SeedOverride requests bypass the resolver and use requested dims directly.",
+    "archetype": "No production MapType->archetype consumer at this base SHA (WorldArchetypeResolver is exercised only by WorldGeographyEngineTests). Expected resolvedArchetype is 'not-resolved'; world shape is determined by the loaded recipe.",
+    "defaultRecipe": "Assets/Moyva/Presets/Generator/recipes/testgeneratorrecipe.json (id 'testgeneratorrecipe', seed 777, SharedSettings has no map size)."
+  },
+  "seeds": [
+    {
+      "id": "audit-s01-default",
+      "launchSeed": 42,
+      "launchSize": 1,
+      "launchMapType": "continents",
+      "playerCount": 2,
+      "expected": {
+        "resolvedSeed": 42,
+        "normalizedSeed": 42,
+        "width": 64,
+        "height": 64,
+        "sizePreset": "medium",
+        "dimensionSource": "launch-context",
+        "resolvedArchetype": "not-resolved",
+        "recipeId": "testgeneratorrecipe"
+      },
+      "purpose": "Canonical default run: launch-seed precedence path, medium map."
+    },
+    {
+      "id": "audit-s02-small-islands",
+      "launchSeed": 1337,
+      "launchSize": 0,
+      "launchMapType": "islands",
+      "playerCount": 2,
+      "expected": {
+        "resolvedSeed": 1337,
+        "normalizedSeed": 1337,
+        "width": 32,
+        "height": 32,
+        "sizePreset": "small",
+        "dimensionSource": "launch-context",
+        "resolvedArchetype": "not-resolved",
+        "recipeId": "testgeneratorrecipe"
+      },
+      "purpose": "Second distinct live seed; smallest preset to shorten generation/capture time."
+    },
+    {
+      "id": "audit-s03-recipe-fallback",
+      "launchSeed": 0,
+      "launchSize": 2,
+      "launchMapType": "random",
+      "playerCount": 2,
+      "expected": {
+        "resolvedSeed": 777,
+        "normalizedSeed": 777,
+        "width": 128,
+        "height": 128,
+        "sizePreset": "large",
+        "dimensionSource": "launch-context",
+        "resolvedArchetype": "not-resolved",
+        "recipeId": "testgeneratorrecipe"
+      },
+      "purpose": "Exercises MapSeedService recipe-seed fallback (launchSeed 0 -> recipe.Seed 777) and proves 'random' MapType changes nothing at this SHA."
+    }
+  ]
+}
