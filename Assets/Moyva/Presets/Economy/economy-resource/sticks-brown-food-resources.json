@@ -5,7 +5,7 @@
   "id": "sticks-brown-food-resources",
   "model": "economy-resource",
   "displayName": "Sticks-brown",
-  "category": "Food",
+  "category": "Materials",
   "icon": {
     "$asset": "asset.sprite.16x16-items-sheet-45.62d7684d",
     "editorPath": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
