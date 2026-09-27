@@ -306,16 +306,19 @@
         },
         "frameStride": {
           "type": "integer",
-          "minimum": 1,
-          "x-moyva-editorMinimum": 1
+          "title": "Frame Stride",
+          "minimum": 1.0,
+          "x-moyva-editorMinimum": 1.0
         },
         "smoothing": {
           "type": "number",
+          "title": "Smoothing",
           "minimum": 0.01,
           "x-moyva-editorMinimum": 0.01
         },
         "tiltStrength": {
           "type": "number",
+          "title": "Tilt Strength",
           "minimum": 0.0,
           "maximum": 8.0,
           "x-moyva-editorMinimum": 0.0,
@@ -323,25 +326,31 @@
         },
         "defaultSampleRadius": {
           "type": "number",
+          "title": "Default Sample Radius",
           "minimum": 0.05,
           "x-moyva-editorMinimum": 0.05
         },
         "waveFrequency": {
           "type": "number",
+          "title": "Wave Frequency",
           "minimum": 0.0001,
           "x-moyva-editorMinimum": 0.0001
         },
         "waveSpeed": {
-          "type": "number"
+          "type": "number",
+          "title": "Wave Speed"
         },
         "waveHeight": {
-          "type": "number"
+          "type": "number",
+          "title": "Wave Height"
         },
         "directionX": {
-          "type": "number"
+          "type": "number",
+          "title": "Direction X"
         },
         "directionY": {
-          "type": "number"
+          "type": "number",
+          "title": "Direction Y"
         },
         "waves": {
           "type": [
@@ -355,20 +364,24 @@
             ],
             "properties": {
               "enabled": {
-                "type": "boolean"
+                "type": "boolean",
+                "title": "Enabled"
               },
               "waveLength": {
                 "type": "number",
+                "title": "Wave Length",
                 "minimum": 0.01,
                 "x-moyva-editorMinimum": 0.01
               },
               "amplitude": {
                 "type": "number",
+                "title": "Amplitude",
                 "minimum": 0.0,
                 "x-moyva-editorMinimum": 0.0
               },
               "directionDegrees": {
                 "type": "number",
+                "title": "Direction Degrees",
                 "minimum": 0.0,
                 "maximum": 360.0,
                 "x-moyva-editorMinimum": 0.0,
@@ -376,7 +389,8 @@
               }
             },
             "additionalProperties": false
-          }
+          },
+          "title": "Waves"
         }
       },
       "additionalProperties": false,

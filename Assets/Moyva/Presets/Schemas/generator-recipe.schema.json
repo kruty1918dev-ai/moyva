@@ -2161,13 +2161,6 @@
           "minimum": 0.05,
           "x-moyva-editorMinimum": 0.05
         },
-        "submergedDepthMeters": {
-          "type": "number",
-          "title": "Submerged Depth Meters",
-          "description": "Depth below the adjacent water surface applied to converted shore cells; 0 keeps them ShoreLiftMeters above the waterline.",
-          "minimum": 0.0,
-          "x-moyva-editorMinimum": 0.0
-        },
         "bandCoverage": {
           "type": "number",
           "title": "Band Coverage",
@@ -2176,6 +2169,13 @@
           "maximum": 1.0,
           "x-moyva-editorMinimum": 0.0,
           "x-moyva-editorMaximum": 1.0
+        },
+        "submergedDepthMeters": {
+          "type": "number",
+          "title": "Submerged Depth Meters",
+          "description": "Depth below the adjacent water surface applied to converted shore cells; 0 keeps them ShoreLiftMeters above the waterline.",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
         },
         "seedSalt": {
           "type": "integer",
