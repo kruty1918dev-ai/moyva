@@ -27,6 +27,13 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         /// recruiter, one under construction, a buildable recruiter or an
         /// honest "no source" entry.</summary>
         UnitSource = 5,
+        /// <summary>A settlement is registered at the position but the
+        /// canonical resolver cannot fund from it — it is inactive or owned
+        /// by another faction.</summary>
+        InactiveSettlement = 6,
+        /// <summary>The goal owner is not the active turn owner — actions
+        /// stay queued until the turn comes back.</summary>
+        TurnWait = 7,
     }
 
     internal enum GuidanceOptionKind
@@ -52,6 +59,15 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         /// <summary>Population is short because food stock is empty — build a
         /// food producer.</summary>
         ProduceFood = 7,
+        /// <summary>A supply order already carries this resource to the
+        /// site — open the supply panel instead of sending another wagon.</summary>
+        AwaitDelivery = 8,
+        /// <summary>The pending placement is blocked on this tile — focus it
+        /// so the outline can be moved or cancelled.</summary>
+        MovePending = 9,
+        /// <summary>A trained unit waits in the building's queue — open the
+        /// queue to deploy it.</summary>
+        DeployReady = 10,
     }
 
     /// <summary>What the player originally tried to do, kept so guidance can
@@ -108,6 +124,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         public float Required;
         public float Available;
         public float Reserved;
+        /// <summary>Position the blocker belongs to when it differs from the
+        /// goal position — used by Refresh for per-placement checks.</summary>
+        public Vector2Int? Position;
         /// <summary>Whether the blocking condition is satisfied right now —
         /// recomputed on every capture so the popup marks completed items.</summary>
         public bool Resolved;
@@ -200,8 +219,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (pending == null || pending.Count == 0 || _construction == null)
                 return model;
 
-            var feasibility = new ProducerFeasibilityResolver(
-                _buildings, _availability, _construction, _economyInfo);
+            // Not the goal owner's turn — every fix waits; say so first.
+            AddTurnWaitBlocker(model, ownerId);
+
             bool first = true;
 
             foreach (var pair in pending)
@@ -228,17 +248,31 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 if (!string.IsNullOrWhiteSpace(status.ErrorMessage)
                     && !hasResourceDeficit)
                 {
-                    model.Blockers.Add(new GuidanceBlocker
+                    var spatial = new GuidanceBlocker
                     {
                         Kind = GuidanceBlockerKind.Placement,
                         Title = BuildBlockerTitle(buildingId, position),
                         Detail = status.ErrorMessage,
                         Required = 1f,
-                    });
+                        Position = position,
+                    };
+                    spatial.Options.Add(new GuidanceOption(
+                        GuidanceOptionKind.MovePending,
+                        buildingId,
+                        "Focus this tile — move the pending outline somewhere valid or cancel it.",
+                        buildingId, null, position));
+                    model.Blockers.Add(spatial);
                 }
 
-                if (!projection.HasSettlement)
+                if (!projection.HasSettlement
+                    && !TryAddInactiveSettlementBlocker(model, ownerId, position)
+                    && projection.HasDeficit
+                    && (projection.Balances == null || projection.Balances.Count == 0))
                 {
+                    // Genuine "nobody funds this" — owner-pool funded
+                    // placements (start state) legitimately have no
+                    // settlement, and deficit-bearing ones are already
+                    // covered by their resource blockers.
                     model.Blockers.Add(new GuidanceBlocker
                     {
                         Kind = GuidanceBlockerKind.Eligibility,
@@ -247,6 +281,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                             ? "No settlement funds this placement."
                             : projection.Message,
                         Required = 1f,
+                        Position = position,
                     });
                 }
 
@@ -267,10 +302,14 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                         Required = balance.Reserved,
                         Available = balance.Available,
                         Reserved = balance.Reserved,
+                        Position = position,
                     };
+                    float inbound = supplyUseful
+                        ? InTransitSupply(position, balance.ResourceId)
+                        : 0f;
                     blocker.Options.AddRange(ResolveResourceOptions(
                         ownerId, projection.SettlementId, balance.ResourceId,
-                        position, supplyUseful));
+                        position, supplyUseful, inbound, -balance.Remaining));
                     model.Blockers.Add(blocker);
                 }
             }
@@ -294,105 +333,113 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     Position = buildingPosition,
                 },
             };
-            // Unit source: which building trains this unit and how to get
-            // one — informational when a recruiter already exists, a real
-            // blocker when none is placed or buildable. Added before the
-            // query check so the "?" help entry always explains the source.
-            AddUnitSourceBlocker(model, ownerId, unitTypeId);
+            AddTurnWaitBlocker(model, ownerId);
 
             var query = _recruitment as IUnitRecruitmentQuery;
-            if (query == null)
+            if (query != null)
             {
-                Refresh(model, ownerId);
-                return model;
-            }
+                string settlementId = ResolveFundingSettlement(
+                    model, ownerId, buildingPosition);
 
-            string settlementId = null;
-            if (_economyInfo != null
-                && _economyInfo.TryGetSettlementContext(buildingPosition, out var ctx))
-                settlementId = ctx.SettlementId;
+                query.TryGetEnqueueShortages(ownerId, buildingPosition, unitTypeId,
+                    out IReadOnlyList<UnitRecruitmentShortage> shortages,
+                    out string reason);
 
-            query.TryGetEnqueueShortages(ownerId, buildingPosition, unitTypeId,
-                out IReadOnlyList<UnitRecruitmentShortage> shortages,
-                out string reason);
+                var feasibility = new ProducerFeasibilityResolver(
+                    _buildings, _availability, _construction, _economyInfo);
 
-            var feasibility = new ProducerFeasibilityResolver(
-                _buildings, _availability, _construction, _economyInfo);
-
-            if (shortages != null)
-            {
-                for (int i = 0; i < shortages.Count; i++)
+                if (shortages != null)
                 {
-                    var shortage = shortages[i];
-                    if (shortage.IsPopulation)
+                    for (int i = 0; i < shortages.Count; i++)
                     {
-                        var blocker = new GuidanceBlocker
+                        var shortage = shortages[i];
+                        if (shortage.IsPopulation)
                         {
-                            Kind = GuidanceBlockerKind.Population,
-                            Title = "Population",
+                            var blocker = new GuidanceBlocker
+                            {
+                                Kind = GuidanceBlockerKind.Population,
+                                Title = "Population",
+                                Required = shortage.Required,
+                                Available = shortage.Available,
+                                Reserved = shortage.Reserved,
+                                Position = buildingPosition,
+                            };
+                            if (shortage.PopulationBlocker == PopulationGrowthBlocker.Housing)
+                            {
+                                blocker.Detail = "Units are recruited from free residents — housing is full, so residents cannot grow.";
+                                string housing = HousingBuildingId(ownerId, buildingPosition);
+                                if (!string.IsNullOrWhiteSpace(housing))
+                                    blocker.Options.Add(new GuidanceOption(
+                                        GuidanceOptionKind.BuildHousing,
+                                        string.Empty, null, housing));
+                            }
+                            else if (shortage.PopulationBlocker == PopulationGrowthBlocker.Food)
+                            {
+                                blocker.Detail = "Units are recruited from free residents — food stock is empty, so residents starve."
+                                    + FoodReserveSuffix(ownerId, buildingPosition);
+                                AddFoodProducerOption(blocker, ownerId, settlementId, feasibility);
+                            }
+                            else
+                            {
+                                blocker.Detail = "No free residents in this settlement — units are recruited from free residents."
+                                    + FoodReserveSuffix(ownerId, buildingPosition);
+                                AddFoodProducerOption(blocker, ownerId, settlementId, feasibility);
+                            }
+                            if (shortage.Reserved > Epsilon)
+                                blocker.Options.Add(new GuidanceOption(
+                                    GuidanceOptionKind.OpenQueue,
+                                    string.Empty,
+                                    "Reserved by queued training — cancel entries to free them."));
+                            model.Blockers.Add(blocker);
+                            continue;
+                        }
+
+                        if (string.IsNullOrWhiteSpace(shortage.ResourceId))
+                            continue;
+
+                        var resourceBlocker = new GuidanceBlocker
+                        {
+                            Kind = GuidanceBlockerKind.Resource,
+                            ResourceId = shortage.ResourceId,
+                            Title = shortage.ResourceId,
                             Required = shortage.Required,
                             Available = shortage.Available,
                             Reserved = shortage.Reserved,
+                            Position = buildingPosition,
                         };
-                        if (shortage.PopulationBlocker == PopulationGrowthBlocker.Housing)
-                        {
-                            blocker.Detail = "Units are recruited from free residents — housing is full, so residents cannot grow.";
-                            string housing = HousingBuildingId(ownerId);
-                            if (!string.IsNullOrWhiteSpace(housing))
-                                blocker.Options.Add(new GuidanceOption(
-                                    GuidanceOptionKind.BuildHousing,
-                                    string.Empty, null, housing));
-                        }
-                        else if (shortage.PopulationBlocker == PopulationGrowthBlocker.Food)
-                        {
-                            blocker.Detail = "Units are recruited from free residents — food stock is empty, so residents starve.";
-                            AddFoodProducerOption(blocker, ownerId, settlementId, feasibility);
-                        }
-                        else
-                        {
-                            blocker.Detail = "No free residents in this settlement — units are recruited from free residents.";
-                            AddFoodProducerOption(blocker, ownerId, settlementId, feasibility);
-                        }
-                        model.Blockers.Add(blocker);
-                        continue;
+                        resourceBlocker.Options.AddRange(ResolveResourceOptions(
+                            ownerId, settlementId, shortage.ResourceId,
+                            null, supplyUseful: false, inbound: 0f, missing: 0f));
+                        if (shortage.Reserved > Epsilon)
+                            resourceBlocker.Options.Add(new GuidanceOption(
+                                GuidanceOptionKind.OpenQueue,
+                                string.Empty,
+                                "Reserved by queued training — cancel entries to free them."));
+                        model.Blockers.Add(resourceBlocker);
                     }
+                }
 
-                    if (string.IsNullOrWhiteSpace(shortage.ResourceId))
-                        continue;
-
-                    var resourceBlocker = new GuidanceBlocker
+                if (!string.IsNullOrWhiteSpace(reason)
+                    && (shortages == null || shortages.Count == 0))
+                {
+                    model.Blockers.Add(new GuidanceBlocker
                     {
-                        Kind = GuidanceBlockerKind.Resource,
-                        ResourceId = shortage.ResourceId,
-                        Title = shortage.ResourceId,
-                        Required = shortage.Required,
-                        Available = shortage.Available,
-                        Reserved = shortage.Reserved,
-                    };
-                    resourceBlocker.Options.AddRange(ResolveResourceOptions(
-                        ownerId, settlementId, shortage.ResourceId,
-                        null, supplyUseful: false));
-                    if (shortage.Reserved > Epsilon)
-                        resourceBlocker.Options.Add(new GuidanceOption(
-                            GuidanceOptionKind.OpenQueue,
-                            string.Empty,
-                            "Reserved by queued training — cancel entries to free them."));
-                    model.Blockers.Add(resourceBlocker);
+                        Kind = GuidanceBlockerKind.Generic,
+                        Title = string.IsNullOrWhiteSpace(unitTypeId)
+                            ? "Recruitment" : unitTypeId,
+                        Detail = reason,
+                        Required = 1f,
+                        Position = buildingPosition,
+                    });
                 }
             }
 
-            if (!string.IsNullOrWhiteSpace(reason)
-                && (shortages == null || shortages.Count == 0))
-            {
-                model.Blockers.Add(new GuidanceBlocker
-                {
-                    Kind = GuidanceBlockerKind.Generic,
-                    Title = string.IsNullOrWhiteSpace(unitTypeId)
-                        ? "Recruitment" : unitTypeId,
-                    Detail = reason,
-                    Required = 1f,
-                });
-            }
+            // Unit source: which building trains this unit and how to get
+            // one — informational when a recruiter already exists, a real
+            // blocker when none is placed or buildable. Always added after
+            // the shortage blockers so the "?" help entry still explains the
+            // source without displacing the actionable shortages.
+            AddUnitSourceBlocker(model, ownerId, unitTypeId, buildingPosition);
 
             Refresh(model, ownerId);
             return model;
@@ -425,6 +472,18 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                         blocker.Resolved = UnitSourceAvailable(
                             ownerId, blocker.ResourceId);
                         break;
+                    case GuidanceBlockerKind.InactiveSettlement:
+                        blocker.Resolved = blocker.Position.HasValue
+                            && _economyInfo != null
+                            && _economyInfo.TryResolveConstructionSettlement(
+                                blocker.Position.Value, ownerId, out _);
+                        break;
+                    case GuidanceBlockerKind.TurnWait:
+                        string active = _construction?.GetActiveOwner();
+                        blocker.Resolved = string.IsNullOrWhiteSpace(active)
+                            || string.Equals(active, ownerId,
+                                StringComparison.Ordinal);
+                        break;
                     default:
                         blocker.Resolved = false;
                         break;
@@ -437,13 +496,37 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         {
             if (_economyInfo == null || string.IsNullOrWhiteSpace(resourceId))
                 return false;
-            IReadOnlyDictionary<string, float> totals =
-                !string.IsNullOrWhiteSpace(settlementId)
-                    ? _economyInfo.GetSettlementAvailableResourceTotals(settlementId)
-                    : _economyInfo.GetOwnerResourceTotals(ownerId);
+            IReadOnlyDictionary<string, float> totals;
+            if (!string.IsNullOrWhiteSpace(settlementId))
+            {
+                // Stock inside an inactive settlement cannot fund anything —
+                // the settlement list is authoritative for liveness.
+                if (!IsActiveSettlement(ownerId, settlementId))
+                    return false;
+                totals = _economyInfo.GetSettlementAvailableResourceTotals(settlementId);
+            }
+            else
+            {
+                totals = _economyInfo.GetOwnerResourceTotals(ownerId);
+            }
             return totals != null
                 && totals.TryGetValue(resourceId, out float available)
                 && available + Epsilon >= required;
+        }
+
+        /// <summary>Settlement is usable only while it shows up in the
+        /// owner's active settlement list — an unlisted id is dead stock,
+        /// not spendable coverage.</summary>
+        private bool IsActiveSettlement(string ownerId, string settlementId)
+        {
+            var settlements = _economy?.GetOwnerSettlementSnapshots(ownerId);
+            if (settlements == null)
+                return true; // no liveness source — keep historical behavior
+            for (int i = 0; i < settlements.Count; i++)
+                if (string.Equals(settlements[i].SettlementId, settlementId,
+                        StringComparison.Ordinal))
+                    return true;
+            return false;
         }
 
         private bool PopulationCovered(float required, string ownerId, Vector2Int position)
@@ -466,12 +549,14 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         /// <summary>Concrete next-step options for one resource deficit:
         /// existing producer (producing/idle/under construction), buildable
-        /// producer or prerequisite via the bounded feasibility search, a
+        /// producer or prerequisite via the bounded feasibility search, an
+        /// already-inbound supply order when one covers the gap, a
         /// supply-wagon alternative when the placement is settlement-funded,
         /// or an honest "unobtainable" entry.</summary>
         private List<GuidanceOption> ResolveResourceOptions(
             string ownerId, string settlementId, string resourceId,
-            Vector2Int? supplyPosition, bool supplyUseful)
+            Vector2Int? supplyPosition, bool supplyUseful,
+            float inbound = 0f, float missing = 0f)
         {
             var options = new List<GuidanceOption>();
             if (string.IsNullOrWhiteSpace(resourceId))
@@ -543,11 +628,24 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             if (supplyUseful && _supply != null && supplyPosition.HasValue)
             {
-                options.Add(new GuidanceOption(
-                    GuidanceOptionKind.OpenSupply,
-                    resourceId,
-                    "Send it to this settlement by supply wagon.",
-                    null, resourceId, supplyPosition));
+                if (inbound > Epsilon)
+                {
+                    options.Add(new GuidanceOption(
+                        GuidanceOptionKind.AwaitDelivery,
+                        resourceId,
+                        "A supply wagon is already bringing it — check the order.",
+                        null, resourceId, supplyPosition));
+                }
+                // Sending a second wagon for a fully covered gap is wasteful —
+                // offer dispatch only for the part not already inbound.
+                if (inbound + Epsilon < missing)
+                {
+                    options.Add(new GuidanceOption(
+                        GuidanceOptionKind.OpenSupply,
+                        resourceId,
+                        "Send it to this settlement by supply wagon.",
+                        null, resourceId, supplyPosition));
+                }
             }
 
             return options;
@@ -637,13 +735,130 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             }
         }
 
+        /// <summary>Not-the-owner's-turn blocker: all fixes wait for the turn
+        /// to come back, so this leads the blocker list.</summary>
+        private void AddTurnWaitBlocker(GuidanceModel model, string ownerId)
+        {
+            if (model == null || _construction == null
+                || string.IsNullOrWhiteSpace(ownerId))
+                return;
+            string active = _construction.GetActiveOwner();
+            if (string.IsNullOrWhiteSpace(active)
+                || string.Equals(active, ownerId, StringComparison.Ordinal))
+                return;
+            model.Blockers.Add(new GuidanceBlocker
+            {
+                Kind = GuidanceBlockerKind.TurnWait,
+                Title = "Turn",
+                Detail = $"It is not your turn — '{active}' is acting. "
+                    + "These steps stay queued until your turn begins.",
+                Required = 1f,
+            });
+        }
+
+        /// <summary>A settlement is registered at the position but cannot
+        /// fund the owner — it is inactive or belongs to another faction.
+        /// Returns true when such a blocker was added.</summary>
+        private bool TryAddInactiveSettlementBlocker(GuidanceModel model,
+            string ownerId, Vector2Int position)
+        {
+            if (model == null || _economyInfo == null
+                || !_economyInfo.TryGetSettlementContext(position, out var registered)
+                || string.IsNullOrWhiteSpace(registered.SettlementId))
+                return false;
+
+            // The canonical funding resolver only returns active settlements
+            // owned by this player; a registered id that does not resolve to
+            // itself is dead stock, not a funder.
+            bool fundsItself = _economyInfo.TryResolveConstructionSettlement(
+                position, ownerId, out var resolved)
+                && string.Equals(resolved.SettlementId, registered.SettlementId,
+                    StringComparison.Ordinal);
+            if (fundsItself)
+                return false;
+
+            model.Blockers.Add(new GuidanceBlocker
+            {
+                Kind = GuidanceBlockerKind.InactiveSettlement,
+                Title = string.IsNullOrWhiteSpace(registered.SettlementName)
+                    ? "Settlement" : registered.SettlementName,
+                Detail = "This settlement cannot supply construction or workers — "
+                    + "it is inactive or belongs to another faction.",
+                Required = 1f,
+                Position = position,
+            });
+            return true;
+        }
+
+        /// <summary>Funding settlement for recruitment guidance: the
+        /// position-registered settlement when it is the active owner-funded
+        /// one; otherwise the nearest active owned settlement (and an
+        /// InactiveSettlement blocker explaining the dead one).</summary>
+        private string ResolveFundingSettlement(GuidanceModel model,
+            string ownerId, Vector2Int position)
+        {
+            if (_economyInfo == null
+                || !_economyInfo.TryGetSettlementContext(position, out var ctx))
+                return null;
+
+            bool fundsItself = _economyInfo.TryResolveConstructionSettlement(
+                position, ownerId, out var resolved)
+                && string.Equals(resolved.SettlementId, ctx.SettlementId,
+                    StringComparison.Ordinal);
+            if (fundsItself)
+                return ctx.SettlementId;
+
+            model.Blockers.Add(new GuidanceBlocker
+            {
+                Kind = GuidanceBlockerKind.InactiveSettlement,
+                Title = string.IsNullOrWhiteSpace(ctx.SettlementName)
+                    ? "Settlement" : ctx.SettlementName,
+                Detail = "This settlement cannot supply workers or resources — "
+                    + "it is inactive or belongs to another faction.",
+                Required = 1f,
+                Position = position,
+            });
+            return string.IsNullOrWhiteSpace(resolved.SettlementId)
+                ? null
+                : resolved.SettlementId;
+        }
+
+        /// <summary>Undelivered amount of a resource already dispatched to a
+        /// pending placement — honest "in transit" figure for the deficit.</summary>
+        private float InTransitSupply(Vector2Int position, string resourceId)
+        {
+            if (_supply == null || string.IsNullOrWhiteSpace(resourceId)
+                || !_supply.TryGetOrderAt(position, out var order)
+                || order.Status != ConstructionSupplyOrderStatus.Active
+                || order.Remaining == null)
+                return 0f;
+            return order.Remaining.TryGetValue(resourceId, out float remaining)
+                ? remaining
+                : 0f;
+        }
+
+        /// <summary>Food stock for a population blocker — only appended when
+        /// the snapshot actually knows the reserve; no starvation countdown
+        /// is shown because no reliable forecast exists.</summary>
+        private string FoodReserveSuffix(string ownerId, Vector2Int position)
+        {
+            if (_economyInfo == null)
+                return string.Empty;
+            float food = _economyInfo
+                .GetRecruitmentPopulation(ownerId, position).FoodAvailable;
+            return food >= 0f
+                ? $" Food reserve: {food:0.#}."
+                : string.Empty;
+        }
+
         /// <summary>"Where does this unit come from": scans owner placements
         /// for an operational or under-construction recruiter, then the
         /// building registry for a selectable recruiter, and reports the
         /// recipe's population/training cost so the player knows what each
-        /// unit consumes.</summary>
+        /// unit consumes. A trained-and-ready queue entry is surfaced as a
+        /// deploy action.</summary>
         private void AddUnitSourceBlocker(GuidanceModel model,
-            string ownerId, string unitTypeId)
+            string ownerId, string unitTypeId, Vector2Int buildingPosition)
         {
             if (model == null || string.IsNullOrWhiteSpace(unitTypeId))
                 return;
@@ -673,7 +888,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     anyId ??= definition.Id;
                     recipe ??= candidate;
                     var availability = _availability?.EvaluateSelectionAvailability(
-                        definition.Id, ownerId);
+                        definition.Id, ownerId, buildingPosition);
                     if (buildableId == null
                         && (!availability.HasValue || availability.Value.CanSelect))
                         buildableId = definition.Id;
@@ -695,6 +910,18 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     operational.BuildingId,
                     "This building trains this unit.",
                     operational.BuildingId, null, operational.Position));
+                if (_recruitment != null
+                    && _recruitment.TryPeekReady(ownerId, buildingPosition,
+                        out var readyItem)
+                    && readyItem.IsReady)
+                {
+                    blocker.Options.Add(new GuidanceOption(
+                        GuidanceOptionKind.DeployReady,
+                        readyItem.UnitTypeId,
+                        "A trained unit is waiting in the queue — deploy it to free the slot.",
+                        readyItem.RecruitingBuildingId, null,
+                        buildingPosition));
+                }
             }
             else if (constructing != null)
             {
@@ -839,8 +1066,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         }
 
         /// <summary>First selectable building with a housing module — mirrors
-        /// the recruitment card hint so both surfaces agree.</summary>
-        private string HousingBuildingId(string ownerId)
+        /// the recruitment card hint so both surfaces agree. The funding
+        /// position keeps the affordability check settlement-scoped.</summary>
+        private string HousingBuildingId(string ownerId, Vector2Int fundingPosition)
         {
             if (_buildings == null)
                 return null;
@@ -850,7 +1078,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                         definition, out HousingBuildingModule _))
                     continue;
                 var availability = _availability?.EvaluateSelectionAvailability(
-                    definition.Id, ownerId);
+                    definition.Id, ownerId, fundingPosition);
                 if (availability.HasValue && !availability.Value.CanSelect)
                     continue;
                 return definition.Id;

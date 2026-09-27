@@ -184,6 +184,35 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                             : state.T(option.Detail),
                         !option.HasPosition));
                     break;
+                case GuidanceOptionKind.AwaitDelivery:
+                    html.Append(Button(
+                        state.T("View supply order"),
+                        $"Globals.gameplay.GuidanceSupply({option.Position.x},{option.Position.y},'')",
+                        "button small",
+                        string.IsNullOrWhiteSpace(option.Detail)
+                            ? state.T("A wagon is already bringing this resource — inspect the order")
+                            : state.T(option.Detail),
+                        !option.HasPosition));
+                    break;
+                case GuidanceOptionKind.MovePending:
+                    html.Append(Button(
+                        state.T("Pick another tile"),
+                        $"Globals.gameplay.GuidanceFocusBuilding({option.Position.x},{option.Position.y},'{J(option.BuildingId)}')",
+                        "button small",
+                        string.IsNullOrWhiteSpace(option.Detail)
+                            ? state.T("Focus the blocked tile — move or cancel the pending outline")
+                            : state.T(option.Detail),
+                        !option.HasPosition));
+                    break;
+                case GuidanceOptionKind.DeployReady:
+                    html.Append(Button(
+                        state.T("Deploy unit"),
+                        "Globals.gameplay.GuidanceOpenQueue()",
+                        "button small primary",
+                        string.IsNullOrWhiteSpace(option.Detail)
+                            ? state.T("Open the queue — a trained unit waits for deployment")
+                            : state.T(option.Detail)));
+                    break;
                 case GuidanceOptionKind.OpenQueue:
                     html.Append(Button(
                         state.T("Review queue"),
