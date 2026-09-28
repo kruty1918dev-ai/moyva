@@ -1,0 +1,20 @@
+{
+  "name": "com.kruty1918.sprite-grounding",
+  "version": "0.1.0",
+  "displayName": "Kruty1918 Sprite Grounding",
+  "description": "Reusable runtime sprite/card grounding: alpha visible-bounds detection, trimmed sprite/mesh representation and support (anchor) point solving. No game-domain or DI dependencies.",
+  "unity": "6000.0",
+  "unityRelease": "0f1",
+  "author": {
+    "name": "Kruty1918"
+  },
+  "dependencies": {},
+  "keywords": [
+    "kruty1918",
+    "sprite",
+    "alpha-bounds",
+    "grounding",
+    "anchor",
+    "vegetation"
+  ]
+}
