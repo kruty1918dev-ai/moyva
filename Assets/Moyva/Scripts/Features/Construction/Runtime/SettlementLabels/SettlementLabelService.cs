@@ -7,13 +7,14 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Construction.Runtime
 {
-    internal sealed class SettlementLabelService : IInitializable, IDisposable
+    internal sealed class SettlementLabelService : IInitializable, ILateTickable, IDisposable
     {
         private readonly SignalBus _signalBus;
         private readonly IBuildingRegistry _buildingRegistry;
         private readonly IConstructionPlacedVisualLookup _placedVisualLookup;
         private readonly IEconomyInfoMediator _economyInfo;
         private readonly SettlementLabelSettings _settings;
+        private UnityEngine.Camera _camera;
 
         private readonly Dictionary<Vector2Int, GameObject> _labels = new();
 
@@ -25,13 +26,28 @@ namespace Kruty1918.Moyva.Construction.Runtime
             IBuildingRegistry buildingRegistry,
             IConstructionPlacedVisualLookup placedVisualLookup,
             IEconomyInfoMediator economyInfo,
-            SettlementLabelSettings settings)
+            SettlementLabelSettings settings,
+            [InjectOptional] UnityEngine.Camera camera = null)
         {
             _signalBus = signalBus;
             _buildingRegistry = buildingRegistry;
             _placedVisualLookup = placedVisualLookup;
             _economyInfo = economyInfo;
             _settings = settings;
+            _camera = camera;
+        }
+
+        public void LateTick()
+        {
+            if (_camera == null)
+                _camera = UnityEngine.Camera.main;
+            if (_camera == null)
+                return;
+
+            Quaternion rotation = _camera.transform.rotation;
+            foreach (GameObject label in _labels.Values)
+                if (label != null)
+                    label.transform.rotation = rotation;
         }
 
         public void Initialize()
