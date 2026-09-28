@@ -34,6 +34,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
 
         private readonly IRecipeHydrologyMap _hydrology;
         private readonly ITileWorldCreatorBuildEnvironment _environment;
+        private readonly ResolvedGenerationProfile _profile;
 
         private int _fieldVersion = -1;
         private float _fieldCellSize;
@@ -45,10 +46,12 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
 
         public WaterfallChunkMeshService(
             [InjectOptional] IRecipeHydrologyMap hydrology = null,
-            [InjectOptional] ITileWorldCreatorBuildEnvironment environment = null)
+            [InjectOptional] ITileWorldCreatorBuildEnvironment environment = null,
+            [InjectOptional] ResolvedGenerationProfile profile = null)
         {
             _hydrology = hydrology;
             _environment = environment;
+            _profile = profile;
         }
 
         /// <summary>
@@ -127,6 +130,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                     waterSheet[cell.x, cell.y] =
                         main.TileGeometryMode == TileGeometryMode.SurfaceOnly;
                     surfaces[cell.x, cell.y] = main.SurfaceHeight;
+                    if (waterSheet[cell.x, cell.y] && _profile?.SimpleWater == true)
+                        surfaces[cell.x, cell.y] += _profile.WaterSurfaceOffset;
                 }
                 else
                 {
@@ -134,14 +139,14 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 }
                 // The pour must land on plan-water, matching the legacy
                 // strip gate — a wet tile above a dry cliff is no fall.
-                waterTarget[cell.x, cell.y] =
-                    _hydrology.TryGetWaterSurface(cell, out _);
+                waterTarget[cell.x, cell.y] = waterSheet[cell.x, cell.y];
             }
 
             float step = _environment?.Options != null
                 ? Mathf.Max(0.01f, _environment.Options.TerrainHeightStep)
                 : 1f;
-            _minDropMeters = Mathf.Max(0.01f, _config.MinDropLevels * step);
+            _minDropMeters = Mathf.Max(0.01f, _config.MinDropMeters > 0f
+                ? _config.MinDropMeters : _config.MinDropLevels * step);
             _field = WaterfallFieldPlanner.Build(
                 mapWidth, mapHeight, cellSize,
                 waterSheet, surfaces, waterTarget, _minDropMeters);

@@ -264,6 +264,9 @@ namespace Kruty1918.Moyva.Generator.API
         [Tooltip("Minimum surface drop between neighbouring water cells, in terrain-height-step units. One level shows every visible water drop.")]
         [Min(1)] public int MinDropLevels = 2;
 
+        [Tooltip("Minimum rendered drop in meters. A positive value overrides MinDropLevels, including small visual elevation steps.")]
+        [Min(0f)] public float MinDropMeters;
+
         [Tooltip("Front curtain material. The SW3 waterfall material scrolls foam downward in world space; falls back to the water preset material when unset.")]
         public Material CurtainMaterial;
 

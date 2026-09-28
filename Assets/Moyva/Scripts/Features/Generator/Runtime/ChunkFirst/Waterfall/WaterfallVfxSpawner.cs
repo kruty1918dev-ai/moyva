@@ -147,9 +147,11 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             // depth must follow the drop scale, while X follows front width.
             instance.transform.localScale = new Vector3(sx, sy, sy);
             instance.transform.localRotation = rotation;
-            Vector3 localTop = new Vector3(bounds.center.x, bounds.max.y, bounds.center.z);
+            // Anchor the mesh's actual lip, not its whole curved volume's
+            // centre, which is forward of the upper sheet on SW3 prefabs.
+            Vector3 localTop = new Vector3(bounds.center.x, bounds.max.y, bounds.min.z);
             instance.transform.localPosition =
-                new Vector3(center.x, topY + 0.02f, center.z)
+                new Vector3(center.x, topY + Mathf.Min(0.01f, drop * 0.05f), center.z)
                 - rotation * Vector3.Scale(localTop, instance.transform.localScale);
 
             var waterfallRenderer = instance.GetComponent<MeshRenderer>();

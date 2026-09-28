@@ -21,7 +21,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         };
 
         /// <summary>Max height variation allowed inside one merged front.</summary>
-        public const float FrontHeightTolerance = 0.3f;
+        public const float FrontHeightTolerance = 0.001f;
 
         public sealed class Edge
         {
