@@ -1093,6 +1093,32 @@ MonoBehaviour:
     Asset: {fileID: 4836699464616695333, guid: a6ade8c5d0e9c8342a5c8c02094c9ac5, type: 3}
   - Key: asset.game-object.stone-stair-025.b0878e09
     Asset: {fileID: 3991494530572390410, guid: b0878e090aa221a40014dbac88568135, type: 3}
+  - Key: asset.game-object.sw-fern-a.f39b10b4
+    Asset: {fileID: 800000000000000081, guid: f39b10b413f35e26b1fe71006dfa4b8e, type: 3}
+  - Key: asset.game-object.sw-flower-a.978aef1d
+    Asset: {fileID: 800000000000000091, guid: 978aef1d6f0c58708c50e7870ce0bc16, type: 3}
+  - Key: asset.game-object.sw-flower-b.0f3d25fa
+    Asset: {fileID: 800000000000000101, guid: 0f3d25fa4a49587d894034c637ab4750, type: 3}
+  - Key: asset.game-object.sw-grass-cross-a.36447d44
+    Asset: {fileID: 800000000000000051, guid: 36447d4497b8595c99e99c7a1fd4e2a6, type: 3}
+  - Key: asset.game-object.sw-grass-tall-a.68339450
+    Asset: {fileID: 800000000000000071, guid: 68339450098e5f5e9d2dca69cb71abae, type: 3}
+  - Key: asset.game-object.sw-grass-tri-a.b0f6ace3
+    Asset: {fileID: 800000000000000061, guid: b0f6ace3891d5e4dbe639afc9e7ec1dc, type: 3}
+  - Key: asset.game-object.sw-rock-single-a.7ecf8dd9
+    Asset: {fileID: 800000000000000021, guid: 7ecf8dd9a06e5fd6953124e50663d848, type: 3}
+  - Key: asset.game-object.sw-rock-single-c.56e98167
+    Asset: {fileID: 800000000000000031, guid: 56e98167269f592da73cc8c2e5e62f09, type: 3}
+  - Key: asset.game-object.sw-rock-single-e.cc53e388
+    Asset: {fileID: 800000000000000041, guid: cc53e3882a7550cfb7a12f89524d8286, type: 3}
+  - Key: asset.game-object.sw-sedge-a.fd3447b8
+    Asset: {fileID: 800000000000000111, guid: fd3447b8c7045e759b6f9224ce453df6, type: 3}
+  - Key: asset.game-object.sw-tree-single-a.03b22c40
+    Asset: {fileID: 800000000000000001, guid: 03b22c40bdf85a47830b31a416462c0e, type: 3}
+  - Key: asset.game-object.sw-tree-single-b.145cf70d
+    Asset: {fileID: 800000000000000011, guid: 145cf70df55a55edb75e9df0306444f5, type: 3}
+  - Key: asset.game-object.sw-waterlily-a.019b7bd4
+    Asset: {fileID: 800000000000000121, guid: 019b7bd4b8c85c188558b0043fbd3ed0, type: 3}
   - Key: asset.game-object.swamp-corner-low.80fbced8
     Asset: {fileID: 238595087802136877, guid: 80fbced83373deee5d9a3e65b8066400, type: 3}
   - Key: asset.game-object.swamp-edge-low.9c1fbec7
@@ -1279,6 +1305,8 @@ MonoBehaviour:
     Asset: {fileID: 1029532166024854157, guid: c5f700218c39da048b98e8769cfed620, type: 3}
   - Key: asset.game-object.water.1d32aeff
     Asset: {fileID: 1384669653051272897, guid: 1d32aeffc2c9ab6c8a53853a9910a1f3, type: 3}
+  - Key: asset.game-object.waterfall-5x20.b90afd4f
+    Asset: {fileID: 407470225891518798, guid: b90afd4f9ad94dc4498e489d571082df, type: 3}
   - Key: asset.game-object.waterfall-edge.ff7c5633
     Asset: {fileID: 7171217065493457734, guid: ff7c56331a536ce4880bd8915c4ea87e, type: 3}
   - Key: asset.game-object.waterfall-impact-splashes.acd0d4ef
@@ -1295,8 +1323,10 @@ MonoBehaviour:
     Asset: {fileID: 919132149155446097, guid: 09b412ca8b07685468ecb5922f78897d, type: 3}
   - Key: asset.game-object.waterplant-c.0e9a8240
     Asset: {fileID: 919132149155446097, guid: 0e9a82408acdcf54c9d39f23bc1f30dc, type: 3}
-  - Key: asset.material.stylizedwater3-waterfall.9092099d
-    Asset: {fileID: 2100000, guid: 9092099d429920d49818f373c515b36d, type: 2}
+  - Key: asset.material.water-simplestable.efd5702d
+    Asset: {fileID: 2100000, guid: efd5702d306b4d2c8a1f8488bffaf4d4, type: 2}
+  - Key: asset.material.waterfall-simplestable.bc83a5f2
+    Asset: {fileID: 2100000, guid: bc83a5f2b46e69d4499b2e21d27d4467, type: 2}
   - Key: asset.sprite.16x16-items-sheet-10.62d7684d
     Asset: {fileID: 2043002081, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-104.62d7684d

@@ -31,15 +31,18 @@ namespace Kruty1918.Moyva.Generator.Runtime
         private readonly ITerrainPassagePlanner _passagePlanner;
         private readonly ITerrainRoutePlanner _routePlanner;
         private readonly ITerrainShorePlanner _shorePlanner;
+        private readonly ITerrainWaterlineLiftPlanner _waterlinePlanner;
 
         public TerrainPlanApplicationService(
             ITerrainPassagePlanner passagePlanner,
             ITerrainRoutePlanner routePlanner,
-            [Zenject.InjectOptional] ITerrainShorePlanner shorePlanner = null)
+            [Zenject.InjectOptional] ITerrainShorePlanner shorePlanner = null,
+            [Zenject.InjectOptional] ITerrainWaterlineLiftPlanner waterlinePlanner = null)
         {
             _passagePlanner = passagePlanner;
             _routePlanner = routePlanner;
             _shorePlanner = shorePlanner;
+            _waterlinePlanner = waterlinePlanner;
         }
 
         public TerrainPassagePlan Apply(
@@ -69,6 +72,22 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 map,
                 recipe.Shore,
                 recipe.SharedGeneratorSettings?.WaterLikeTileIds);
+
+            /*
+             * Waterline guard: the shore band only re-grades its configured
+             * radius and only BaseTerrain winners, so shallow-flooded shelf
+             * cells and non-band land can still sit below the neighbouring
+             * water sheet — the mesh then draws a water quad plus a water
+             * wall over dry land. The guard lifts exactly those cells above
+             * the waterline (never retypes, never lowers). It runs before
+             * passages/routes so they plan on the corrected heights.
+             */
+            _waterlinePlanner?.Apply(
+                map,
+                recipe.WaterlineLift,
+                MergeIds(
+                    recipe.SharedGeneratorSettings?.WaterLikeTileIds,
+                    recipe.Shore?.WaterTileIds));
 
             TerrainPassagePlan passages = _passagePlanner.Plan(
                 map.SurfaceHeights,
@@ -329,6 +348,19 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     tileGeometryMode: TileGeometryMode.SolidTerrain,
                     authoredClosurePolicy: AuthoredClosurePolicy.PreserveAuthored));
             }
+        }
+
+        private static string[] MergeIds(string[] primary, string[] extra)
+        {
+            if (extra == null || extra.Length == 0)
+                return primary;
+            if (primary == null || primary.Length == 0)
+                return extra;
+
+            var merged = new string[primary.Length + extra.Length];
+            System.Array.Copy(primary, merged, primary.Length);
+            System.Array.Copy(extra, 0, merged, primary.Length, extra.Length);
+            return merged;
         }
 
         private static bool IsFinite(float value)

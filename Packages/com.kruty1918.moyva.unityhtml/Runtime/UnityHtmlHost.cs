@@ -134,8 +134,11 @@ namespace UnityHTML.Runtime
             if (_tooltips != null)
             {
                 _tooltips.enabled = false;
-                if (ShouldDestroyDeferred()) UnityEngine.Object.Destroy(_tooltips);
-                else UnityEngine.Object.DestroyImmediate(_tooltips);
+                if (!EditorDomainUnloadInProgress())
+                {
+                    if (ShouldDestroyDeferred()) UnityEngine.Object.Destroy(_tooltips);
+                    else UnityEngine.Object.DestroyImmediate(_tooltips);
+                }
                 _tooltips = null;
             }
             _motion.Detach();
@@ -146,8 +149,11 @@ namespace UnityHTML.Runtime
             }
             finally
             {
-                ClearRootChildren(root);
-                RemoveMountLeftovers(root);
+                if (!EditorDomainUnloadInProgress())
+                {
+                    ClearRootChildren(root);
+                    RemoveMountLeftovers(root);
+                }
             }
         }
 
@@ -579,6 +585,35 @@ namespace UnityHTML.Runtime
             return Application.isPlaying;
 #endif
         }
+
+#if UNITY_EDITOR
+        // uGUI tracks live Selectables in statics (s_Selectables/s_SelectableCount)
+        // that reset on every domain load. When a domain reload tears down the
+        // [ExecuteAlways] preview anchors, OnDisable -> Unmount -> DestroyImmediate
+        // cascades Selectable.OnDisable into that already-drained registry
+        // (IndexOutOfRangeException). Skipping explicit destruction is safe:
+        // play-mode unloads drop these DontSave objects, and after plain
+        // compilation reloads the remount's cleanup destroys survivors whose
+        // non-serialized m_EnableCalled reset makes their OnDisable a no-op.
+        // Subscribed in the static constructor: it runs before any Unmount in
+        // this domain can run (RuntimeInitializeOnLoadMethod does not fire on
+        // plain script-compilation reloads).
+        private static bool s_editorDomainUnloadInProgress;
+
+        static UnityHtmlHost()
+        {
+            UnityEditor.AssemblyReloadEvents.beforeAssemblyReload -= OnBeforeEditorAssemblyReload;
+            UnityEditor.AssemblyReloadEvents.beforeAssemblyReload += OnBeforeEditorAssemblyReload;
+        }
+
+        private static void OnBeforeEditorAssemblyReload()
+            => s_editorDomainUnloadInProgress = true;
+
+        private static bool EditorDomainUnloadInProgress()
+            => s_editorDomainUnloadInProgress && !Application.isPlaying;
+#else
+        private static bool EditorDomainUnloadInProgress() => false;
+#endif
 
         private static void ClearDetachedEditorElements()
         {

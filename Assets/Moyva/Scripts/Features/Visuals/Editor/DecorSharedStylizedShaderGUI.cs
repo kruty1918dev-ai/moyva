@@ -124,6 +124,10 @@ namespace Kruty1918.Moyva.Visuals.Editor
             Draw("_AmbientStrength", "Ambient Strength");
             Draw("_LightStrength", "Main Light Strength");
             Draw("_MinimumBrightness", "Minimum Brightness");
+            Draw(
+                "_ReceivedShadowStrength",
+                "Received Shadow Strength",
+                "Наскільки реальні cast shadows (дерева, кручі) затемнюють рослинність поверх Minimum Brightness. 0 = ігнорувати тіні.");
             Draw("_ShadowTint", "Self Shadow Tint");
             Draw("_ShadowSoftness", "Self Shadow Softness");
         }
@@ -329,7 +333,7 @@ namespace Kruty1918.Moyva.Visuals.Editor
             SetFloat(material, "_CullMode", 0f);
             SetFloat(material, "_ContactBlobMode", CardMode);
             SetFloat(material, "_ContactShadowEnabled", 1f);
-            SetFloat(material, "_ContactDarkness", 0.09f);
+            SetFloat(material, "_ContactDarkness", 0.45f);
             SetFloat(material, "_ContactRadius", 0.46f);
             SetFloat(material, "_ContactSoftness", 0.70f);
             SetVector(material, "_ContactBlobAspect", new Vector4(1.25f, 0.55f, 0f, 0f));
@@ -362,7 +366,7 @@ namespace Kruty1918.Moyva.Visuals.Editor
             SetFloat(material, "_CullMode", 2f);
             SetFloat(material, "_ContactBlobMode", MeshMode);
             SetFloat(material, "_ContactShadowEnabled", 1f);
-            SetFloat(material, "_ContactDarkness", 0.14f);
+            SetFloat(material, "_ContactDarkness", 0.35f);
             SetFloat(material, "_ContactRadius", 0.55f);
             SetFloat(material, "_ContactSoftness", 0.68f);
             SetVector(material, "_ContactBlobAspect", new Vector4(1f, 1f, 0f, 0f));

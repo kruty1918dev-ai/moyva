@@ -31,6 +31,11 @@ namespace Kruty1918.Moyva.Generator.Runtime
         /// flow parents and waterfall edges. Null when hydrology is disabled.
         /// </summary>
         public RecipeHydrologyPlan Hydrology;
+        /// <summary>
+        /// Read-only detection result: water regions plus candidate corridors
+        /// where terrain could naturally connect them. Null when disabled.
+        /// </summary>
+        public WaterChannelCandidatePlan ChannelCandidates;
         public System.Collections.Generic.IReadOnlyList<CompiledLayerMap> CompiledLayers;
         public bool ForceChunkFirstCompositeBuild;
         /// <summary>
@@ -76,6 +81,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 LogicalTileMap = LogicalTileMap,
                 TerrainPassages = TerrainPassages,
                 Hydrology = Hydrology,
+                ChannelCandidates = ChannelCandidates,
                 CompiledLayers = CompiledLayers,
                 ForceChunkFirstCompositeBuild = ForceChunkFirstCompositeBuild,
                 HasAuthoredGeography = HasAuthoredGeography,

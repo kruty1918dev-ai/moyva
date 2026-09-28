@@ -1949,16 +1949,23 @@
             "minDropLevels": {
               "type": "integer",
               "title": "Min Drop Levels",
-              "description": "Minimum surface drop between an upper water cell and its lower water neighbour, in terrain-height-step units. Two levels is the recommended starting threshold.",
+              "description": "Minimum surface drop between neighbouring water cells, in terrain-height-step units. One level shows every visible water drop.",
               "minimum": 1.0,
               "x-moyva-editorMinimum": 1.0
+            },
+            "minDropMeters": {
+              "type": "number",
+              "title": "Min Drop Meters",
+              "description": "Minimum rendered drop in meters. A positive value overrides MinDropLevels, including small visual elevation steps.",
+              "minimum": 0.0,
+              "x-moyva-editorMinimum": 0.0
             },
             "curtainMaterial": {
               "type": [
                 "object",
                 "null"
               ],
-              "description": "Front curtain material. The SW3 waterfall material scrolls foam downward in world space; falls back to the water preset material when unset.",
+              "description": "Front curtain material. The SW3 river-mode material scrolls foam down the curtain via its animation direction vector; falls back to no curtain when unset.",
               "properties": {
                 "$asset": {
                   "type": "string",
@@ -1977,6 +1984,34 @@
                 "$asset"
               ],
               "title": "Curtain Material"
+            },
+            "uvTileSizeMeters": {
+              "type": "number",
+              "title": "Uv Tile Size Meters",
+              "description": "Curtain UV density: meters of ribbon arc length covered by one UV tile. Keeps foam scale constant across different drops and widths.",
+              "minimum": 0.05,
+              "x-moyva-editorMinimum": 0.05
+            },
+            "scrollSpeedScale": {
+              "type": "number",
+              "title": "Scroll Speed Scale",
+              "description": "Base multiplier on the curtain material's animation direction (scroll speed) at the reference drop.",
+              "minimum": 0.0,
+              "x-moyva-editorMinimum": 0.0
+            },
+            "speedReferenceDropMeters": {
+              "type": "number",
+              "title": "Speed Reference Drop Meters",
+              "description": "Drop height in meters where the scroll multiplier equals ScrollSpeedScale. Effective speed scales with sqrt(drop / reference), matching free-fall velocity.",
+              "minimum": 0.01,
+              "x-moyva-editorMinimum": 0.01
+            },
+            "vfxSpeedScale": {
+              "type": "number",
+              "title": "Vfx Speed Scale",
+              "description": "Multiplier on VFX particle start speeds, scaling with sqrt(drop / reference) like the curtain scroll.",
+              "minimum": 0.0,
+              "x-moyva-editorMinimum": 0.0
             },
             "edgeFoamPrefab": {
               "type": [
@@ -2200,6 +2235,122 @@
       "additionalProperties": false,
       "title": "Shore",
       "description": "Shoreline band: re-type water-adjacent land to the shore tile and grade heights toward the waterline."
+    },
+    "waterlineLift": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "title": "Enabled"
+        },
+        "liftMeters": {
+          "type": "number",
+          "title": "Lift Meters",
+          "description": "Clearance above the highest adjacent water surface in meters. Should exceed the render profile's water surface offset.",
+          "minimum": 0.005,
+          "maximum": 0.5,
+          "x-moyva-editorMinimum": 0.005,
+          "x-moyva-editorMaximum": 0.5
+        },
+        "terraceJoinMeters": {
+          "type": "number",
+          "title": "Terrace Join Meters",
+          "description": "Snap the corrected surface to a stable neighbouring land terrace when it sits within this many meters above the required clearance; avoids thin half-step platforms. 0 disables.",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        },
+        "transitionCells": {
+          "type": "integer",
+          "title": "Transition Cells",
+          "description": "Land cells within this distance of a corrected cell ease upward so the lift does not read as a wall. 0 = corrected cells only.",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        },
+        "transitionRiseMeters": {
+          "type": "number",
+          "title": "Transition Rise Meters",
+          "description": "Maximum surface rise per transition cell; caps the ramp slope.",
+          "minimum": 0.01,
+          "x-moyva-editorMinimum": 0.01
+        }
+      },
+      "additionalProperties": false,
+      "title": "Waterline Lift",
+      "description": "Waterline guard: lifts water-adjacent land that still sits below the actual water surface. While enabled it also raises intentionally submerged shore shelves; keep shore.submergedDepthMeters at 0."
+    },
+    "channelDetection": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "title": "Enabled"
+        },
+        "minRegionCells": {
+          "type": "integer",
+          "title": "Min Region Cells",
+          "description": "Water regions smaller than this many cells are ignored as channel endpoints.",
+          "minimum": 1.0,
+          "x-moyva-editorMinimum": 1.0
+        },
+        "maxCorridorLengthCells": {
+          "type": "integer",
+          "title": "Max Corridor Length Cells",
+          "description": "Maximum land corridor length in cells; longer crossings are rejected.",
+          "minimum": 2.0,
+          "x-moyva-editorMinimum": 2.0
+        },
+        "frontierMarginCells": {
+          "type": "integer",
+          "title": "Frontier Margin Cells",
+          "description": "Search bounds margin in cells beyond the pair's combined bounding box.",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        },
+        "maxVisitedCells": {
+          "type": "integer",
+          "title": "Max Visited Cells",
+          "description": "Cap on cells visited by one corridor search; bounds per-pair work.",
+          "minimum": 64.0,
+          "x-moyva-editorMinimum": 64.0
+        },
+        "maxPairEvaluations": {
+          "type": "integer",
+          "title": "Max Pair Evaluations",
+          "description": "Region pairs evaluated per map, closest Voronoi gap first.",
+          "minimum": 1.0,
+          "x-moyva-editorMinimum": 1.0
+        },
+        "minorCorrectionMaxCutMeters": {
+          "type": "number",
+          "title": "Minor Correction Max Cut Meters",
+          "description": "Deepest single-cell cut (meters) that still counts as a minor correction.",
+          "minimum": 0.01,
+          "x-moyva-editorMinimum": 0.01
+        },
+        "majorCorrectionMaxCutMeters": {
+          "type": "number",
+          "title": "Major Correction Max Cut Meters",
+          "description": "Deepest single-cell cut allowed at all; deeper saddles are rejected as ridges.",
+          "minimum": 0.01,
+          "x-moyva-editorMinimum": 0.01
+        },
+        "maxExcavationVolumeMeters": {
+          "type": "number",
+          "title": "Max Excavation Volume Meters",
+          "description": "Total estimated excavation volume (meters summed over cells) allowed per corridor.",
+          "minimum": 0.01,
+          "x-moyva-editorMinimum": 0.01
+        }
+      },
+      "additionalProperties": false,
+      "title": "Channel Detection",
+      "description": "Read-only detection of potential natural water channels between separate water regions; reports corridor candidates without mutating terrain or water."
     }
   }
 }

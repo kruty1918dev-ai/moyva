@@ -168,10 +168,16 @@ Shader "Moyva/FogOfWar/ScreenSpace"
              * автоматично розширює transition у межах одного пікселя.
              * Тому fog edge не мерехтить і не розсипається при zoom out.
              */
+            /*
+             * Capped: across depth discontinuities (tile walls, props in
+             * front of distant ground) fwidth jumps by whole cells, which
+             * widened the blend to ~50% and made edges flicker per frame.
+             */
             float2 gridFootprint =
-                max(
+                clamp(
                     fwidth(gridPosition),
-                    0.0001.xx);
+                    0.0001.xx,
+                    0.5.xx);
 
             float2 halfWidth =
                 max(
@@ -978,11 +984,18 @@ Shader "Moyva/FogOfWar/ScreenSpace"
                         0.0001,
                         surfaceEyeDepth);
 
+                /*
+                 * Sample slightly behind the visible surface along the view
+                 * ray. Tile side walls lie exactly on cell borders, so the
+                 * unbiased point flips between the two cells from frame to
+                 * frame; nudging into the surface assigns every wall pixel
+                 * to the tile that owns it.
+                 */
                 bool resolvedWorld =
                     validSurface > 0.5
                     && TryResolveWorldFromEyeDepth(
                         screenUv,
-                        surfaceEyeDepth,
+                        surfaceEyeDepth + 0.03,
                         worldPosition);
 
                 if (!resolvedWorld)

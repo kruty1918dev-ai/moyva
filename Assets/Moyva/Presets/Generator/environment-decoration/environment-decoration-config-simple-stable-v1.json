@@ -1,0 +1,165 @@
+{
+  "$schema": "../../Schemas/environment-decoration.schema.json",
+  "schema": "moyva.environment-decoration",
+  "model": "environment-decoration",
+  "version": 1,
+  "id": "environment-decoration-config-simple-stable-v1",
+  "enabled": true,
+  "globalDensity": 1.35,
+  "seedOffset": 0,
+  "maxObjectsPerTile": 4,
+  "clusterStrength": 0.0,
+  "clusterRadius": 3,
+  "typeDensities": {
+    "treeDensity": 0.2,
+    "bushDensity": 0.12,
+    "grassDensity": 0.4,
+    "flowerDensity": 0.1,
+    "rockDensity": 0.08,
+    "waterPlantDensity": 0.14
+  },
+  "biomeRules": {
+    "grassland": 1.2,
+    "forest": 1.8,
+    "rocky": 1.3,
+    "coast": 0.6,
+    "water": 0.0
+  },
+  "exclusions": {
+    "buildingExclusionRadius": 1,
+    "settlementExclusionRadius": 2,
+    "suppressWaterDecorations": true,
+    "shorelineExclusionCells": 1
+  },
+  "visualVariation": {
+    "enableRotation": true,
+    "enableScaleVariation": true,
+    "minScale": 0.9,
+    "maxScale": 1.1,
+    "maxPositionOffset": 0.15,
+    "alignToSurface": true
+  },
+  "footprint": {
+    "validateHeavyFootprints": true,
+    "maxShiftCells": 0.75,
+    "maxGroundDeltaMeters": 0.5,
+    "footprintShrink": 1.0,
+    "resolveOverlaps": true,
+    "overlapPadding": 1.05,
+    "keepSmallPropsInsideCell": true
+  },
+  "floating": {
+    "enabled": false
+  },
+  "assetPools": {
+    "tree": [
+      "sw-tree-single-a",
+      "sw-tree-single-b"
+    ],
+    "rock": [
+      "sw-rock-single-a",
+      "sw-rock-single-c",
+      "sw-rock-single-e"
+    ],
+    "grass": [
+      "sw-grass-cross-a",
+      "sw-grass-tri-a",
+      "sw-grass-tall-a",
+      "veg-grass-clump-a",
+      "veg-grass-clump-b"
+    ],
+    "tallgrass": [
+      "sw-grass-tall-a",
+      "sw-sedge-a",
+      "veg-grass-tall-b",
+      "veg-sedge-b"
+    ],
+    "fern": [
+      "sw-fern-a",
+      "veg-fern-b"
+    ],
+    "flower": [
+      "sw-flower-a",
+      "sw-flower-b"
+    ],
+    "reed": [
+      "sw-sedge-a",
+      "veg-sedge-b"
+    ],
+    "waterplant": [
+      "sw-waterlily-a"
+    ],
+    "bush": [
+      "veg-bush-a",
+      "veg-bush-b",
+      "veg-bush-c",
+      "veg-bush-d"
+    ]
+  },
+  "layers": [
+    {
+      "type": "grass",
+      "weight": 1.0,
+      "maxPerTile": 3,
+      "biomeBoost": {
+        "forest": 0.8,
+        "rocky": 0.4,
+        "coast": 0.4
+      },
+      "skipObjectCells": true,
+      "minScale": 0.9,
+      "maxScale": 1.2,
+      "yOffset": -0.02
+    },
+    {
+      "type": "tallgrass",
+      "weight": 0.4,
+      "maxPerTile": 2,
+      "waterAffinity": "prefer",
+      "waterRadius": 2,
+      "waterBoost": 2.0,
+      "skipObjectCells": true,
+      "minScale": 0.9,
+      "maxScale": 1.3,
+      "yOffset": -0.02
+    },
+    {
+      "type": "fern",
+      "weight": 0.35,
+      "maxPerTile": 2,
+      "forestAffinity": "any",
+      "minScale": 0.85,
+      "maxScale": 1.15,
+      "biomeBoost": {
+        "forest": 2.0,
+        "grassland": 0.5
+      },
+      "skipObjectCells": true,
+      "yOffset": -0.02
+    },
+    {
+      "type": "flower",
+      "weight": 0.2,
+      "maxPerTile": 2,
+      "biomeBoost": {
+        "grassland": 1.5,
+        "forest": 0.4
+      },
+      "skipObjectCells": true,
+      "minScale": 0.9,
+      "maxScale": 1.2,
+      "yOffset": -0.01
+    },
+    {
+      "type": "reed",
+      "weight": 0.45,
+      "maxPerTile": 2,
+      "waterAffinity": "require",
+      "waterRadius": 1,
+      "skipObjectCells": true,
+      "minScale": 0.9,
+      "maxScale": 1.25,
+      "yOffset": -0.02
+    }
+  ]
+}

@@ -166,6 +166,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         private void OnEnable()
         {
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.playModeStateChanged -= OnPreviewPlayModeChanged;
+            UnityEditor.EditorApplication.playModeStateChanged += OnPreviewPlayModeChanged;
+#endif
             if (_mountRoot == null)
                 _mountRoot = transform as RectTransform;
 
@@ -175,9 +179,22 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         private void OnDisable()
         {
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.playModeStateChanged -= OnPreviewPlayModeChanged;
+#endif
             if (!Application.isPlaying)
                 StopEditorPreview();
         }
+
+#if UNITY_EDITOR
+        private void OnPreviewPlayModeChanged(UnityEditor.PlayModeStateChange state)
+        {
+            // Tear down edit-mode Selectables before Unity resets their
+            // static registry for Play Mode, including no-domain-reload.
+            if (state == UnityEditor.PlayModeStateChange.ExitingEditMode)
+                StopEditorPreview();
+        }
+#endif
 
         private void OnValidate()
         {
@@ -219,6 +236,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         private void RefreshPreview(bool force)
         {
+#if UNITY_EDITOR
+            if (UnityEditor.EditorApplication.isPlayingOrWillChangePlaymode)
+                return;
+#endif
             RectTransform root = MountRoot;
             if (root == null || _cssAsset == null)
                 return;

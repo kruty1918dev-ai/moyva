@@ -108,7 +108,201 @@ namespace Kruty1918.Moyva.Generator.Runtime
             if (_config.Layers != null && _config.Layers.Length > 0)
                 GenerateLayers(worldData, seed, placements, stats);
 
+            placements = ResolvePlacementOverlaps(placements, worldData, stats);
             return new DecorationPlacementResult(placements);
+        }
+
+        private static readonly Vector2[] SubCellSlots =
+        {
+            Vector2.zero,
+            new Vector2(1f, 1f), new Vector2(-1f, -1f),
+            new Vector2(-1f, 1f), new Vector2(1f, -1f),
+            new Vector2(1f, 0f), new Vector2(-1f, 0f),
+            new Vector2(0f, 1f), new Vector2(0f, -1f),
+        };
+
+        /*
+         * Whole-map spacing pass. Structural props claim space first, then
+         * larger foliage, then ground cover; each later prop keeps its spot
+         * only if its top-down footprint clears every accepted one, else it
+         * tries a fixed set of sub-cell slots and is dropped when none fits.
+         * Order and slots are pure functions of the placement list, so the
+         * result stays deterministic and chunk-order independent.
+         */
+        private List<DecorationPlacement> ResolvePlacementOverlaps(
+            List<DecorationPlacement> placements,
+            GeneratedWorldData worldData,
+            DecorationPlacementStats stats)
+        {
+            FootprintRules rules = _config.Footprint;
+            if (rules == null
+                || (!rules.ResolveOverlaps && !rules.KeepSmallPropsInsideCell)
+                || placements.Count == 0)
+            {
+                return placements;
+            }
+
+            float cellSize = worldData.CellSize > 0.0001f ? worldData.CellSize : 1f;
+            int count = placements.Count;
+            var radius = new float[count];
+            var order = new int[count];
+            float maxRadius = 0f;
+            for (int i = 0; i < count; i++)
+            {
+                radius[i] = ResolvePlacementRadius(placements[i], cellSize, rules.FootprintShrink);
+                maxRadius = Mathf.Max(maxRadius, radius[i]);
+                order[i] = i;
+            }
+
+            Array.Sort(order, (a, b) =>
+            {
+                int pa = SpacingPriority(placements[a].Type);
+                int pb = SpacingPriority(placements[b].Type);
+                if (pa != pb)
+                    return pa.CompareTo(pb);
+                int byRadius = radius[b].CompareTo(radius[a]);
+                return byRadius != 0 ? byRadius : a.CompareTo(b);
+            });
+
+            float padding = Mathf.Max(0.1f, rules.OverlapPadding);
+            var buckets = new Dictionary<Vector2Int, List<int>>();
+            var acceptedPositions = new List<Vector2>(count);
+            var acceptedRadii = new List<float>(count);
+            var result = new List<DecorationPlacement>(count);
+
+            foreach (int index in order)
+            {
+                DecorationPlacement placement = placements[index];
+                float r = radius[index];
+                var cell = new Vector2(placement.TileX, placement.TileY);
+                var position = new Vector2(placement.Position.x, placement.Position.z);
+                bool small = r < 0.5f;
+                if (rules.KeepSmallPropsInsideCell && small)
+                    position = ClampInsideCell(position, cell, r);
+
+                if (rules.ResolveOverlaps
+                    && Overlaps(position, r, padding, maxRadius, buckets, acceptedPositions, acceptedRadii))
+                {
+                    bool found = false;
+                    if (small)
+                    {
+                        float reach = Mathf.Max(0f, 0.5f - r);
+                        for (int s = 0; s < SubCellSlots.Length && !found; s++)
+                        {
+                            Vector2 candidate = cell + SubCellSlots[s] * reach;
+                            if (!Overlaps(candidate, r, padding, maxRadius, buckets, acceptedPositions, acceptedRadii))
+                            {
+                                position = candidate;
+                                found = true;
+                            }
+                        }
+                    }
+
+                    if (!found)
+                    {
+                        stats?.Reject("overlap:" + placement.Type);
+                        continue;
+                    }
+                }
+
+                int accepted = acceptedPositions.Count;
+                acceptedPositions.Add(position);
+                acceptedRadii.Add(r);
+                var key = new Vector2Int(Mathf.FloorToInt(position.x), Mathf.FloorToInt(position.y));
+                if (!buckets.TryGetValue(key, out List<int> bucket))
+                    buckets[key] = bucket = new List<int>(4);
+                bucket.Add(accepted);
+
+                result.Add(new DecorationPlacement(
+                    placement.AssetId,
+                    new Vector3(position.x, placement.Position.y, position.y),
+                    placement.Rotation,
+                    placement.Scale,
+                    placement.TileX,
+                    placement.TileY,
+                    placement.YOffset,
+                    placement.Type));
+            }
+
+            return result;
+        }
+
+        private static Vector2 ClampInsideCell(Vector2 position, Vector2 cell, float radius)
+        {
+            float limit = Mathf.Max(0f, 0.5f - radius);
+            return new Vector2(
+                Mathf.Clamp(position.x, cell.x - limit, cell.x + limit),
+                Mathf.Clamp(position.y, cell.y - limit, cell.y + limit));
+        }
+
+        private static bool Overlaps(
+            Vector2 position,
+            float radius,
+            float padding,
+            float maxRadius,
+            Dictionary<Vector2Int, List<int>> buckets,
+            List<Vector2> positions,
+            List<float> radii)
+        {
+            int reach = Mathf.CeilToInt((radius + maxRadius) * padding) + 1;
+            int cx = Mathf.FloorToInt(position.x);
+            int cy = Mathf.FloorToInt(position.y);
+            for (int dx = -reach; dx <= reach; dx++)
+            for (int dy = -reach; dy <= reach; dy++)
+            {
+                if (!buckets.TryGetValue(new Vector2Int(cx + dx, cy + dy), out List<int> bucket))
+                    continue;
+                for (int i = 0; i < bucket.Count; i++)
+                {
+                    int other = bucket[i];
+                    float minDistance = (radius + radii[other]) * padding;
+                    if ((positions[other] - position).sqrMagnitude < minDistance * minDistance)
+                        return true;
+                }
+            }
+
+            return false;
+        }
+
+        private float ResolvePlacementRadius(DecorationPlacement placement, float cellSize, float shrink)
+        {
+            if (_placementResolver != null
+                && _objectRegistry.TryGetDefinition(placement.AssetId, out var definition)
+                && definition.VisualPrefab != null)
+            {
+                return _placementResolver.ResolveFootprintRadius(definition.VisualPrefab, placement.Scale, shrink)
+                       / cellSize;
+            }
+
+            switch (placement.Type)
+            {
+                case "tree": return 0.45f;
+                case "rock":
+                case "stump": return 0.3f;
+                case "bush":
+                case "sapling": return 0.35f;
+                default: return 0.2f;
+            }
+        }
+
+        private static int SpacingPriority(string type)
+        {
+            switch (type)
+            {
+                case "tree":
+                case "stump": return 0;
+                case "rock":
+                case "log": return 1;
+                case "bush":
+                case "sapling": return 2;
+                case "waterplant":
+                case "reed": return 3;
+                case "tallgrass":
+                case "fern": return 4;
+                case "grass":
+                case "flower": return 5;
+                default: return 6;
+            }
         }
 
         private float[,] GenerateDensityMap(GeneratedWorldData worldData, int seed)

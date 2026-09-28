@@ -394,6 +394,19 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             private static readonly ShaderTagId UniversalGBufferTag =
                 new ShaderTagId("UniversalGBuffer");
 
+            /*
+             * Alpha-cut decor (grass cards, foliage) must not reach the
+             * surface depth as full quads: the plain override material has
+             * no alpha clip or billboard, so transparent card texels would
+             * paint the card's own fog state over the ground behind it.
+             * Decor lives on its own queue and writes surface depth through
+             * a dedicated alpha-clipped pass instead.
+             */
+            private const int DecorQueue = 2490;
+
+            private static readonly ShaderTagId DecorSurfaceDepthTag =
+                new ShaderTagId("MoyvaFogSurfaceDepth");
+
             private readonly ProfilingSampler _surfaceDepthSampler =
                 new ProfilingSampler(
                     "Moyva Fog Surface Depth");
@@ -490,8 +503,24 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                         renderGraph,
                         cameraDescriptor);
 
-                RendererListHandle surfaceRendererList =
+                RendererListHandle surfaceBelowDecor =
                     CreateSurfaceRendererList(
+                        renderGraph,
+                        renderingData,
+                        cameraData,
+                        lightData,
+                        new RenderQueueRange(0, DecorQueue - 1));
+
+                RendererListHandle surfaceAboveDecor =
+                    CreateSurfaceRendererList(
+                        renderGraph,
+                        renderingData,
+                        cameraData,
+                        lightData,
+                        new RenderQueueRange(DecorQueue + 1, RenderQueueRange.maximumBound));
+
+                RendererListHandle decorSurface =
+                    CreateDecorSurfaceRendererList(
                         renderGraph,
                         renderingData,
                         cameraData,
@@ -499,7 +528,9 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
                 AddSurfaceDepthPass(
                     renderGraph,
-                    surfaceRendererList,
+                    surfaceBelowDecor,
+                    surfaceAboveDecor,
+                    decorSurface,
                     surfaceEyeDepth,
                     surfaceDepthAttachment);
 
@@ -579,7 +610,8 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 RenderGraph renderGraph,
                 UniversalRenderingData renderingData,
                 UniversalCameraData cameraData,
-                UniversalLightData lightData)
+                UniversalLightData lightData,
+                RenderQueueRange queueRange)
             {
                 DrawingSettings drawSettings =
                     RenderingUtils.CreateDrawingSettings(
@@ -608,7 +640,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
                 FilteringSettings filteringSettings =
                     new FilteringSettings(
-                        RenderQueueRange.all,
+                        queueRange,
                         _layerMask.value);
 
                 RendererListParams rendererListParams =
@@ -621,9 +653,37 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                     rendererListParams);
             }
 
+            private RendererListHandle CreateDecorSurfaceRendererList(
+                RenderGraph renderGraph,
+                UniversalRenderingData renderingData,
+                UniversalCameraData cameraData,
+                UniversalLightData lightData)
+            {
+                DrawingSettings drawSettings =
+                    RenderingUtils.CreateDrawingSettings(
+                        DecorSurfaceDepthTag,
+                        renderingData,
+                        cameraData,
+                        lightData,
+                        cameraData.defaultOpaqueSortFlags);
+
+                FilteringSettings filteringSettings =
+                    new FilteringSettings(
+                        new RenderQueueRange(DecorQueue, DecorQueue),
+                        _layerMask.value);
+
+                return renderGraph.CreateRendererList(
+                    new RendererListParams(
+                        renderingData.cullResults,
+                        drawSettings,
+                        filteringSettings));
+            }
+
             private void AddSurfaceDepthPass(
                 RenderGraph renderGraph,
                 RendererListHandle rendererList,
+                RendererListHandle secondRendererList,
+                RendererListHandle decorRendererList,
                 TextureHandle colorTarget,
                 TextureHandle depthTarget)
             {
@@ -636,11 +696,23 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                     passData.RendererList =
                         rendererList;
 
+                    passData.SecondRendererList =
+                        secondRendererList;
+
+                    passData.DecorRendererList =
+                        decorRendererList;
+
                     passData.DepthClearValue =
                         ResolveSurfaceDepthClearValue();
 
                     builder.UseRendererList(
                         rendererList);
+
+                    builder.UseRendererList(
+                        secondRendererList);
+
+                    builder.UseRendererList(
+                        decorRendererList);
 
                     builder.SetRenderAttachment(
                         colorTarget,
@@ -674,6 +746,12 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
                             context.cmd.DrawRendererList(
                                 data.RendererList);
+
+                            context.cmd.DrawRendererList(
+                                data.SecondRendererList);
+
+                            context.cmd.DrawRendererList(
+                                data.DecorRendererList);
                         });
                 }
             }
@@ -844,6 +922,8 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             private sealed class SurfacePassData
             {
                 public RendererListHandle RendererList;
+                public RendererListHandle SecondRendererList;
+                public RendererListHandle DecorRendererList;
                 public float DepthClearValue;
             }
 

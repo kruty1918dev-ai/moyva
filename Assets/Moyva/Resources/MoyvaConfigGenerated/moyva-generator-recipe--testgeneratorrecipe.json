@@ -90,10 +90,15 @@
     },
     "waterfalls": {
       "enabled": true,
-      "minDropLevels": 2,
+      "minDropLevels": 1,
+      "minDropMeters": 0.02,
+      "uvTileSizeMeters": 0.8,
+      "scrollSpeedScale": 1.0,
+      "speedReferenceDropMeters": 0.75,
+      "vfxSpeedScale": 1.0,
       "curtainMaterial": {
-        "$asset": "asset.material.stylizedwater3-waterfall.9092099d",
-        "editorPath": "Assets/ThirdParty/Stylized Water 3/Materials/StylizedWater3_Waterfall.mat",
+        "$asset": "asset.material.waterfall-simplestable.bc83a5f2",
+        "editorPath": "Assets/Moyva/Art/Materials/Waterfall_SimpleStable.mat",
         "required": true
       },
       "edgeFoamPrefab": {
@@ -125,7 +130,7 @@
     "bandCells": 1,
     "blendCells": 1,
     "shoreLiftMeters": 0.04,
-    "submergedDepthMeters": 0.5,
+    "submergedDepthMeters": 0.0,
     "risePerCellMeters": 0.2,
     "maxDropToWaterMeters": 0.9,
     "bandCoverage": 0.55,

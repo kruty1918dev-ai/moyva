@@ -7,7 +7,8 @@
     "Kruty1918.Moyva.EditorShared",
     "GiantGrey.TileWorldCreator",
     "Zenject",
-    "Kruty1918.JsonConfig"
+    "Kruty1918.JsonConfig",
+    "Kruty1918.Moyva.Jsonization.Editor"
   ],
   "includePlatforms": [
     "Editor"

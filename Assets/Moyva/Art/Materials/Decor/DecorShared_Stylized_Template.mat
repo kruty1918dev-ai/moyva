@@ -44,7 +44,7 @@ Material:
     - _ColorPosterizeSteps: 5
     - _ContactBlobMode: 0
     - _ContactCameraBackOffset: 0
-    - _ContactDarkness: 0.14
+    - _ContactDarkness: 0.35
     - _ContactLift: 0.018
     - _ContactLocalY: 0
     - _ContactProjectionScale: 1.2
@@ -68,6 +68,7 @@ Material:
     - _OutlineWidth: 0
     - _OutlineZTest: 4
     - _PosterizeStrength: 0.18
+    - _ReceivedShadowStrength: 1
     - _RimEnabled: 0
     - _RimIntensity: 0.35
     - _RimPower: 3

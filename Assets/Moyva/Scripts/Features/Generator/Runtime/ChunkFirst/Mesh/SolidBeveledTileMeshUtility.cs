@@ -20,76 +20,100 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         private const float TopInset = 0.0375f;
         private const float BevelDrop = 0.0375f;
 
-        private static Mesh _mesh;
+        private static readonly Mesh[] _meshes = new Mesh[16];
 
-        public static Mesh GetOrCreate()
+        public static Mesh GetOrCreate() => GetOrCreate(TileMeshOccludedSides.None);
+
+        /*
+         * flushSides marks edges whose neighbour is level or higher. Those
+         * edges get no bevel: the top runs out to the cell border so two
+         * level tiles meet in one continuous plane instead of a V-groove.
+         * Open (lower-neighbour) edges keep the bevel and its bottom contour
+         * for the closure skirt.
+         */
+        public static Mesh GetOrCreate(TileMeshOccludedSides flushSides)
         {
-            if (_mesh != null)
-                return _mesh;
+            int key = (int)flushSides & 15;
+            if (_meshes[key] != null)
+                return _meshes[key];
+
+            bool n = (flushSides & TileMeshOccludedSides.North) != 0;
+            bool e = (flushSides & TileMeshOccludedSides.East) != 0;
+            bool s = (flushSides & TileMeshOccludedSides.South) != 0;
+            bool w = (flushSides & TileMeshOccludedSides.West) != 0;
 
             float t = Half - TopInset;
             float h = Half;
             float d = BevelDrop;
+            float zn = n ? h : t;
+            float xe = e ? h : t;
+            float zs = s ? -h : -t;
+            float xw = w ? -h : -t;
 
             var positions = new List<Vector3>();
             var normals = new List<Vector3>();
             var uvs = new List<Vector2>();
             var triangles = new List<int>();
 
-            // One solid top face, inset from the perimeter.
+            // One solid top face, inset only on open sides.
             AddQuad(
                 positions, normals, uvs, triangles,
-                new Vector3(-t, 0f, -t),
-                new Vector3(-t, 0f, t),
-                new Vector3(t, 0f, t),
-                new Vector3(t, 0f, -t),
+                new Vector3(xw, 0f, zs),
+                new Vector3(xw, 0f, zn),
+                new Vector3(xe, 0f, zn),
+                new Vector3(xe, 0f, zs),
                 Vector3.up,
                 Vector2.zero);
 
-            // Bevel ring: one mitered trapezoid per side. The outer bottom
+            // Bevel ring: one trapezoid per open side, mitered against open
+            // neighbours and squared off against flush ones. The outer bottom
             // edges at y = -d form the authored bottom contour the closure
-            // skirt extrudes downward on open sides. uvOutward unfolds each
-            // face onto the plateau's UV plane so texel density stays uniform
-            // across the edge instead of stretching by sqrt(2) on the slope.
-            AddQuad(
-                positions, normals, uvs, triangles,
-                new Vector3(-t, 0f, t),
-                new Vector3(-h, -d, h),
-                new Vector3(h, -d, h),
-                new Vector3(t, 0f, t),
-                new Vector3(0f, TopInset, BevelDrop),
-                new Vector2(0f, 1f));
+            // skirt extrudes downward. uvOutward unfolds each face onto the
+            // plateau's UV plane so texel density stays uniform across the
+            // edge instead of stretching by sqrt(2) on the slope.
+            if (!n)
+                AddQuad(
+                    positions, normals, uvs, triangles,
+                    new Vector3(xw, 0f, t),
+                    new Vector3(-h, -d, h),
+                    new Vector3(h, -d, h),
+                    new Vector3(xe, 0f, t),
+                    new Vector3(0f, TopInset, BevelDrop),
+                    new Vector2(0f, 1f));
 
-            AddQuad(
-                positions, normals, uvs, triangles,
-                new Vector3(t, 0f, t),
-                new Vector3(h, -d, h),
-                new Vector3(h, -d, -h),
-                new Vector3(t, 0f, -t),
-                new Vector3(BevelDrop, TopInset, 0f),
-                new Vector2(1f, 0f));
+            if (!e)
+                AddQuad(
+                    positions, normals, uvs, triangles,
+                    new Vector3(t, 0f, zn),
+                    new Vector3(h, -d, h),
+                    new Vector3(h, -d, -h),
+                    new Vector3(t, 0f, zs),
+                    new Vector3(BevelDrop, TopInset, 0f),
+                    new Vector2(1f, 0f));
 
-            AddQuad(
-                positions, normals, uvs, triangles,
-                new Vector3(t, 0f, -t),
-                new Vector3(h, -d, -h),
-                new Vector3(-h, -d, -h),
-                new Vector3(-t, 0f, -t),
-                new Vector3(0f, TopInset, -BevelDrop),
-                new Vector2(0f, -1f));
+            if (!s)
+                AddQuad(
+                    positions, normals, uvs, triangles,
+                    new Vector3(xe, 0f, -t),
+                    new Vector3(h, -d, -h),
+                    new Vector3(-h, -d, -h),
+                    new Vector3(xw, 0f, -t),
+                    new Vector3(0f, TopInset, -BevelDrop),
+                    new Vector2(0f, -1f));
 
-            AddQuad(
-                positions, normals, uvs, triangles,
-                new Vector3(-t, 0f, -t),
-                new Vector3(-h, -d, -h),
-                new Vector3(-h, -d, h),
-                new Vector3(-t, 0f, t),
-                new Vector3(-BevelDrop, TopInset, 0f),
-                new Vector2(-1f, 0f));
+            if (!w)
+                AddQuad(
+                    positions, normals, uvs, triangles,
+                    new Vector3(-t, 0f, zs),
+                    new Vector3(-h, -d, -h),
+                    new Vector3(-h, -d, h),
+                    new Vector3(-t, 0f, zn),
+                    new Vector3(-BevelDrop, TopInset, 0f),
+                    new Vector2(-1f, 0f));
 
             var mesh = new Mesh
             {
-                name = "SolidBeveledTile",
+                name = key == 0 ? "SolidBeveledTile" : "SolidBeveledTile_flush" + key,
                 vertices = positions.ToArray(),
                 normals = normals.ToArray(),
                 uv = uvs.ToArray(),
@@ -98,8 +122,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             mesh.RecalculateBounds();
             mesh.RecalculateTangents();
 
-            _mesh = mesh;
-            return _mesh;
+            _meshes[key] = mesh;
+            return mesh;
         }
 
         private static void AddQuad(

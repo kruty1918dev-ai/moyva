@@ -42,16 +42,20 @@ namespace Kruty1918.Moyva.Visuals
             if (renderingData.cameraData.renderType == CameraRenderType.Overlay)
                 return;
 
-            if (_renderContactShadows && _contactShadowPass != null)
-            {
-                _contactShadowPass.Setup(_layerMask);
-                renderer.EnqueuePass(_contactShadowPass);
-            }
-
+            // Outline first: the contact pass writes the decor stencil ref on
+            // the ground to dedup blob shadows, and the outline pass tests
+            // NotEqual against it — drawing outlines first keeps the ring
+            // intact where a blob shadow lands under a plant base.
             if (_renderMeshOutlines && _outlinePass != null)
             {
                 _outlinePass.Setup(_layerMask);
                 renderer.EnqueuePass(_outlinePass);
+            }
+
+            if (_renderContactShadows && _contactShadowPass != null)
+            {
+                _contactShadowPass.Setup(_layerMask);
+                renderer.EnqueuePass(_contactShadowPass);
             }
         }
 

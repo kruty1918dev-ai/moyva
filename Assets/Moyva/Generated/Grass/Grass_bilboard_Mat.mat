@@ -40,12 +40,12 @@ Material:
     - _ColorPosterizeSteps: 5
     - _ContactBlobMode: 1
     - _ContactCameraBackOffset: 0.1
-    - _ContactDarkness: 0.1
+    - _ContactDarkness: 0.45
     - _ContactLift: 0.018
     - _ContactLocalY: 0
     - _ContactProjectionScale: 1.2
     - _ContactRadius: 0.46
-    - _ContactShadowEnabled: 0
+    - _ContactShadowEnabled: 1
     - _ContactSoftness: 0.7
     - _CullMode: 0
     - _DstBlend: 10
@@ -54,16 +54,17 @@ Material:
     - _LeafPlaneBalance: 0
     - _LeafPlaneShading: 1
     - _LeafPlaneSoftness: 0.25
-    - _LeafShadeStrength: 0.12
+    - _LeafShadeStrength: 0.16
     - _LightStepCount: 3
     - _LightStepStrength: 0.75
     - _LightStrength: 0.85
-    - _MinimumBrightness: 0.85
+    - _MinimumBrightness: 0.6
     - _OutlineEnabled: 1
     - _OutlineScreenWidthPx: 1.0
     - _OutlineWidth: 0
     - _OutlineZTest: 4
     - _PosterizeStrength: 0.18
+    - _ReceivedShadowStrength: 1
     - _RimEnabled: 0
     - _RimPower: 3
     - _ShadowSoftness: 0.08
@@ -72,7 +73,7 @@ Material:
     - _TextureFitClamp: 1
     - _TextureSaturation: 0.9
     - _TextureVolumeRoundness: 0.62
-    - _TextureVolumeStrength: 0.2
+    - _TextureVolumeStrength: 0.3
     - _ZWrite: 1
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
