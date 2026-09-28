@@ -70,22 +70,23 @@ namespace Kruty1918.Moyva.Generator.Editor
             Texture2D palette = BuildPalette();
 
             Material flat = BuildFlatMaterial(palette);
+            Material plantFlat = BuildPlantFlatMaterial(palette);
             Material bark = BuildBarkMaterial(LoadTexture(BarkTexturePath));
-            Material grassCardA = BuildCardMaterial("VegGrass_A", LoadTexture(GrassTexturePath), billboard: false, greenTint: true);
-            Material grassCardB = BuildCardMaterial("VegGrass_B", LoadTexture(GrassTexturePath), billboard: false, greenTint: true);
+            Material grassCardA = BuildCardMaterial("VegGrass_A", LoadTexture(GrassTexturePath), billboard: true, greenTint: true);
+            Material grassCardB = BuildCardMaterial("VegGrass_B", LoadTexture(GrassTexturePath), billboard: true, greenTint: true);
             Material[] bushMats =
             {
-                BuildCardMaterial("VegBush_A", LoadTexture(GrassFolder + "/bush_001.png"), billboard: false, greenTint: false),
-                BuildCardMaterial("VegBush_B", LoadTexture(GrassFolder + "/bush_002.png"), billboard: false, greenTint: false),
-                BuildCardMaterial("VegBush_C", LoadTexture(GrassFolder + "/bush_003.png"), billboard: false, greenTint: false),
-                BuildCardMaterial("VegBush_D", LoadTexture(GrassFolder + "/bush_004.png"), billboard: false, greenTint: false),
-                BuildCardMaterial("VegBush_Hedge", LoadTexture(GrassFolder + "/bush_005.png"), billboard: false, greenTint: false),
+                BuildCardMaterial("VegBush_A", LoadTexture(GrassFolder + "/bush_001.png"), billboard: true, greenTint: false),
+                BuildCardMaterial("VegBush_B", LoadTexture(GrassFolder + "/bush_002.png"), billboard: true, greenTint: false),
+                BuildCardMaterial("VegBush_C", LoadTexture(GrassFolder + "/bush_003.png"), billboard: true, greenTint: false),
+                BuildCardMaterial("VegBush_D", LoadTexture(GrassFolder + "/bush_004.png"), billboard: true, greenTint: false),
+                BuildCardMaterial("VegBush_Hedge", LoadTexture(GrassFolder + "/bush_005.png"), billboard: true, greenTint: false),
             };
 
             int created = 0;
             created += BuildCardPrefabs(grassCardA, grassCardB);
             created += BuildBushPrefabs(bushMats);
-            created += BuildFlatPrefabs(flat, bark);
+            created += BuildFlatPrefabs(flat, plantFlat, bark);
 
             AssetDatabase.SaveAssets();
             NormalizeDeterministicGuids();
@@ -173,6 +174,25 @@ namespace Kruty1918.Moyva.Generator.Editor
             mat.SetFloat("_ContactProjectionScale", 1.2f);
             mat.enableInstancing = true;
             return CreateOrUpdateAsset(mat, MaterialsFolder + "/VegFlat.mat");
+        }
+
+        private static Material BuildPlantFlatMaterial(Texture2D palette)
+        {
+            var mat = new Material(Shader.Find(DecorShaderName));
+            mat.name = "VegPlantFlat";
+            mat.SetTexture("_BaseMap", palette);
+            mat.SetColor("_BaseColor", Color.white);
+            mat.SetFloat("_AlphaClipEnabled", 0f);
+            mat.SetFloat("_BillboardEnabled", 1f);
+            mat.SetFloat("_CullMode", 0f);
+            mat.SetFloat("_TextureVolumeStrength", 0.3f);
+            mat.SetFloat("_LeafPlaneShading", 0.5f);
+            mat.SetFloat("_ContactBlobMode", 1f);
+            mat.SetFloat("_ContactShadowEnabled", 1f);
+            mat.SetFloat("_ContactRadius", 0.35f);
+            mat.SetFloat("_ContactProjectionScale", 1.2f);
+            mat.enableInstancing = true;
+            return CreateOrUpdateAsset(mat, MaterialsFolder + "/VegPlantFlat.mat");
         }
 
         /// <summary>
@@ -264,15 +284,15 @@ namespace Kruty1918.Moyva.Generator.Editor
             return n;
         }
 
-        private static int BuildFlatPrefabs(Material flat, Material bark)
+        private static int BuildFlatPrefabs(Material flat, Material plantFlat, Material bark)
         {
             int n = 0;
-            n += FlatPrefab("veg-fern-a", BuildFernMesh("veg_fern_a", 5, 0.42f, 0.10f, upright: 0), flat, true);
-            n += FlatPrefab("veg-fern-b", BuildFernMesh("veg_fern_b", 7, 0.50f, 0.09f, upright: 2), flat, true);
-            n += FlatPrefab("veg-sedge-a", BuildSedgeMesh("veg_sedge_a", 6, 0.58f, 0.045f), flat, false);
-            n += FlatPrefab("veg-sedge-b", BuildSedgeMesh("veg_sedge_b", 8, 0.46f, 0.04f), flat, false);
-            n += FlatPrefab("veg-flower-a", BuildFlowerMesh("veg_flower_a", 4, FlYellow), flat, false);
-            n += FlatPrefab("veg-flower-b", BuildFlowerMesh("veg_flower_b", 3, FlWhite), flat, false);
+            n += FlatPrefab("veg-fern-a", BuildFernMesh("veg_fern_a", 5, 0.42f, 0.10f, upright: 0), plantFlat, false);
+            n += FlatPrefab("veg-fern-b", BuildFernMesh("veg_fern_b", 7, 0.50f, 0.09f, upright: 2), plantFlat, false);
+            n += FlatPrefab("veg-sedge-a", BuildSedgeMesh("veg_sedge_a", 6, 0.58f, 0.045f), plantFlat, false);
+            n += FlatPrefab("veg-sedge-b", BuildSedgeMesh("veg_sedge_b", 8, 0.46f, 0.04f), plantFlat, false);
+            n += FlatPrefab("veg-flower-a", BuildFlowerMesh("veg_flower_a", 4, FlYellow), plantFlat, false);
+            n += FlatPrefab("veg-flower-b", BuildFlowerMesh("veg_flower_b", 3, FlWhite), plantFlat, false);
             n += FlatPrefab("veg-twig-a", BuildTwigMesh("veg_twig_a", false, barkUv: true), bark, false);
             n += FlatPrefab("veg-twig-b", BuildTwigMesh("veg_twig_b", true, barkUv: true), bark, false);
             n += FlatPrefab("veg-leafpatch-a", BuildDiscMesh("veg_leafpatch_a", 0.26f, 7, LitterYellow, 0.02f), flat, false);
@@ -280,9 +300,9 @@ namespace Kruty1918.Moyva.Generator.Editor
             n += FlatPrefab("veg-moss", BuildDiscMesh("veg_moss", 0.30f, 8, Moss, 0.025f), flat, false);
             n += FlatPrefab("veg-log", BuildLogMesh("veg_log", 0.72f, 0.09f, barkUv: true), bark, true);
             n += FlatPrefab("veg-pebble", BuildPebbleMesh("veg_pebble", 0.16f), flat, false);
-            n += FlatPrefab("veg-sapling-a", BuildSaplingMesh("veg_sapling_a", 0.55f, 0.18f, Leaf, blobSquash: 0.75f), flat, true);
-            n += FlatPrefab("veg-sapling-b", BuildSaplingMesh("veg_sapling_b", 0.70f, 0.22f, LeafDark, blobSquash: 1.1f), flat, true);
-            n += FlatPrefab("veg-sapling-c", BuildSaplingMesh("veg_sapling_c", 0.48f, 0.15f, LeafLight, blobSquash: 0.85f), flat, true);
+            n += FlatPrefab("veg-sapling-a", BuildSaplingMesh("veg_sapling_a", 0.55f, 0.18f, Leaf, blobSquash: 0.75f), plantFlat, false);
+            n += FlatPrefab("veg-sapling-b", BuildSaplingMesh("veg_sapling_b", 0.70f, 0.22f, LeafDark, blobSquash: 1.1f), plantFlat, false);
+            n += FlatPrefab("veg-sapling-c", BuildSaplingMesh("veg_sapling_c", 0.48f, 0.15f, LeafLight, blobSquash: 0.85f), plantFlat, false);
             return n;
         }
 

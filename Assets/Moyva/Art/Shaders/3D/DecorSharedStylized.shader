@@ -32,6 +32,9 @@ Shader "Moyva/3D/Decor Shared Stylized"
         _MinimumBrightness("Minimum Brightness", Range(0, 1)) = 0.68
         _ShadowTint("Self Shadow Tint", Color) = (0.52, 0.53, 0.48, 1)
         _ShadowSoftness("Self Shadow Softness", Range(0.001, 0.5)) = 0.08
+        _BaseOcclusion("Base Occlusion (dark roots)", Range(0, 1)) = 0.45
+        _OcclusionHeight("Occlusion Height (object units)", Range(0.01, 4)) = 0.55
+        _VolumeNormalBlend("Rounded Volume Normal Blend", Range(0, 1)) = 0.55
 
         [Header(Stylization)]
         _TextureSaturation("Texture Saturation", Range(0, 2)) = 0.9
@@ -170,6 +173,9 @@ Shader "Moyva/3D/Decor Shared Stylized"
                 half _ContactLocalY;
                 half _ContactLift;
                 half4 _ContactOffsetOS;
+                half _BaseOcclusion;
+                half _OcclusionHeight;
+                half _VolumeNormalBlend;
             CBUFFER_END
 
             float2 ApplyTextureFitUV(float2 uv)
@@ -287,7 +293,7 @@ Shader "Moyva/3D/Decor Shared Stylized"
                 float2 uv : TEXCOORD0;
                 float3 normalWS : TEXCOORD1;
                 float3 positionWS : TEXCOORD2;
-                float4 shadowCoord : TEXCOORD3;
+                float heightOS : TEXCOORD3;
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
@@ -305,11 +311,22 @@ Shader "Moyva/3D/Decor Shared Stylized"
                 float3 positionWS = lerp(positionInputs.positionWS, billboardPositionWS, billboardEnabled);
                 float3 normalWS = lerp(normalize(normalInputs.normalWS), GetBillboardForwardWS(billboardRightWS), billboardEnabled);
 
+                /*
+                 * Flat cards and low-poly foliage share one normal per face,
+                 * which lights every blade identically. Blending towards a
+                 * rounded normal (pivot -> vertex, biased upward) gives each
+                 * plant a lit crown and a shaded underside.
+                 */
+                float3 volumeOS = input.positionOS.xyz + float3(0.0, 0.35, 0.0);
+                float3 volumeWS = TransformObjectToWorldDir(
+                    dot(volumeOS, volumeOS) > 1e-6 ? normalize(volumeOS) : float3(0.0, 1.0, 0.0));
+                normalWS = normalize(lerp(normalize(normalWS), volumeWS, saturate(_VolumeNormalBlend)));
+
                 output.positionCS = TransformWorldToHClip(positionWS);
                 output.positionWS = positionWS;
-                output.normalWS = normalize(normalWS);
+                output.normalWS = normalWS;
                 output.uv = ApplyTextureFitUV(TRANSFORM_TEX(input.uv, _BaseMap));
-                output.shadowCoord = TransformWorldToShadowCoord(positionWS);
+                output.heightOS = input.positionOS.y;
                 return output;
             }
 
@@ -378,7 +395,9 @@ Shader "Moyva/3D/Decor Shared Stylized"
 
                 float normalLenSq = dot(input.normalWS, input.normalWS);
                 half3 normalWS = normalLenSq > 0.0001 ? normalize(input.normalWS) : half3(0.0, 1.0, 0.0);
-                Light mainLight = GetMainLight(input.shadowCoord);
+                // Per-pixel shadow coordinates: per-vertex coords pick the
+                // wrong cascade across large cards and drop received shadows.
+                Light mainLight = GetMainLight(TransformWorldToShadowCoord(input.positionWS));
                 half ndotl = saturate(dot(normalWS, mainLight.direction));
                 half lightRamp = smoothstep(0.5 - _ShadowSoftness, 0.5 + _ShadowSoftness, ndotl);
                 half shadowedRamp = lightRamp * mainLight.shadowAttenuation;
@@ -391,6 +410,9 @@ Shader "Moyva/3D/Decor Shared Stylized"
                 half directBrightness = lerp(0.72, 1.0, shadowedRamp);
                 half3 direct = mainLight.color * directTint * directBrightness * _LightStrength;
                 half3 color = albedo.rgb * saturate(minimumLight + (1.0 - minimumLight) * (ambient + direct));
+                // Roots sit in the plant's own shadow; the crown catches light.
+                half heightMask = saturate(input.heightOS / max(0.01, _OcclusionHeight));
+                color *= lerp(1.0 - saturate(_BaseOcclusion), 1.0, heightMask * heightMask * (3.0 - 2.0 * heightMask));
                 half3 viewDirWS = GetWorldSpaceNormalizeViewDir(input.positionWS);
                 half rim = pow(saturate(1.0 - dot(normalWS, viewDirWS)), _RimPower) * saturate(_RimEnabled);
                 color = saturate(color + _StylizedRimColor.rgb * _StylizedRimColor.a * rim);
@@ -473,6 +495,9 @@ Shader "Moyva/3D/Decor Shared Stylized"
                 half _ContactLocalY;
                 half _ContactLift;
                 half4 _ContactOffsetOS;
+                half _BaseOcclusion;
+                half _OcclusionHeight;
+                half _VolumeNormalBlend;
             CBUFFER_END
 
             float2 ApplyTextureFitUV(float2 uv)
@@ -652,6 +677,9 @@ Shader "Moyva/3D/Decor Shared Stylized"
                 half _ContactLocalY;
                 half _ContactLift;
                 half4 _ContactOffsetOS;
+                half _BaseOcclusion;
+                half _OcclusionHeight;
+                half _VolumeNormalBlend;
             CBUFFER_END
 
             float2 ApplyTextureFitUV(float2 uv)
@@ -841,6 +869,9 @@ Shader "Moyva/3D/Decor Shared Stylized"
                 half _ContactLocalY;
                 half _ContactLift;
                 half4 _ContactOffsetOS;
+                half _BaseOcclusion;
+                half _OcclusionHeight;
+                half _VolumeNormalBlend;
             CBUFFER_END
 
             float2 ApplyTextureFitUV(float2 uv)
@@ -1014,6 +1045,9 @@ Shader "Moyva/3D/Decor Shared Stylized"
                 half _ContactLocalY;
                 half _ContactLift;
                 half4 _ContactOffsetOS;
+                half _BaseOcclusion;
+                half _OcclusionHeight;
+                half _VolumeNormalBlend;
             CBUFFER_END
 
             float2 ApplyTextureFitUV(float2 uv)
@@ -1089,6 +1123,333 @@ Shader "Moyva/3D/Decor Shared Stylized"
                 clip(alpha - lerp(-0.001, _AlphaClipThreshold, saturate(_AlphaClipEnabled)));
 
                 return 0;
+            }
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "MoyvaFogSurfaceDepth"
+            Tags { "LightMode" = "MoyvaFogSurfaceDepth" }
+
+            Cull [_CullMode]
+            ZWrite On
+            ZTest LEqual
+            Blend Off
+
+            HLSLPROGRAM
+            #pragma target 3.0
+            #pragma vertex FogDepthVertex
+            #pragma fragment FogDepthFragment
+            #pragma multi_compile_instancing
+
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+
+            TEXTURE2D(_BaseMap);
+            SAMPLER(sampler_BaseMap);
+
+            CBUFFER_START(UnityPerMaterial)
+                float4 _BaseMap_ST;
+                half4 _BaseColor;
+                half _Alpha;
+                half _AlphaClipEnabled;
+                half _AlphaClipThreshold;
+                half _BillboardEnabled;
+                half4 _TextureFill;
+                half4 _TextureFillOffset;
+                half _TextureFitClamp;
+                half _TextureVolumeStrength;
+                half _TextureVolumeRoundness;
+                half4 _TextureVolumeLightColor;
+                half4 _TextureVolumeShadowColor;
+                half4 _TextureVolumeDirection;
+                half _TextureSaturation;
+                half _TextureContrast;
+                half _ColorPosterizeSteps;
+                half _PosterizeStrength;
+                half _LightStepCount;
+                half _LightStepStrength;
+                half _RimEnabled;
+                half4 _StylizedRimColor;
+                half _RimPower;
+                half _LeafPlaneShading;
+                half4 _LeafPlaneDirection;
+                half _LeafShadeStrength;
+                half _LeafLightStrength;
+                half _LeafPlaneSoftness;
+                half _LeafPlaneBalance;
+                half4 _ShadowTint;
+                half _AmbientStrength;
+                half _LightStrength;
+                half _MinimumBrightness;
+                half _ShadowSoftness;
+                half _OutlineEnabled;
+                half4 _OutlineColor;
+                half _OutlineWidth;
+                half _OutlineScreenWidthPx;
+                half _AlphaOutlineWidth;
+                half _AlphaOutlineScreenWidthPx;
+                half4 _ContactColor;
+                half _ContactShadowEnabled;
+                half _ContactBlobMode;
+                half4 _ContactBlobAspect;
+                half _ContactCameraBackOffset;
+                half _ContactDarkness;
+                half _ContactRadius;
+                half _ContactSoftness;
+                half _ContactProjectionScale;
+                half _ContactLocalY;
+                half _ContactLift;
+                half4 _ContactOffsetOS;
+                half _BaseOcclusion;
+                half _OcclusionHeight;
+                half _VolumeNormalBlend;
+            CBUFFER_END
+
+            float2 ApplyTextureFitUV(float2 uv)
+            {
+                float2 fill = max(abs(_TextureFill.xy), float2(0.001, 0.001));
+                return (uv - 0.5) / fill + 0.5 + _TextureFillOffset.xy;
+            }
+
+            half TextureBoundsMask(float2 uv)
+            {
+                half2 aboveMin = step(float2(0.0, 0.0), uv);
+                half2 belowMax = step(uv, float2(1.0, 1.0));
+                half inside = aboveMin.x * aboveMin.y * belowMax.x * belowMax.y;
+                return lerp(1.0, inside, saturate(_TextureFitClamp));
+            }
+
+            half4 SampleBaseMapFitted(float2 uv)
+            {
+                half mask = TextureBoundsMask(uv);
+                half4 tex = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, uv);
+                tex *= mask;
+                return tex;
+            }
+
+            float3 GetBillboardRightWS()
+            {
+                float3 rightWS = float3(UNITY_MATRIX_I_V._m00, 0.0, UNITY_MATRIX_I_V._m20);
+                float rightLenSq = dot(rightWS, rightWS);
+                return rightLenSq > 0.0001 ? normalize(rightWS) : float3(1.0, 0.0, 0.0);
+            }
+
+            float3 TransformBillboardPositionWS(float3 positionOS)
+            {
+                float3 pivotWS = TransformObjectToWorld(float3(0.0, 0.0, 0.0));
+                float rightScale = length(TransformObjectToWorld(float3(1.0, 0.0, 0.0)) - pivotWS);
+                float upScale = length(TransformObjectToWorld(float3(0.0, 1.0, 0.0)) - pivotWS);
+                float3 rightWS = GetBillboardRightWS();
+                return pivotWS + rightWS * positionOS.x * rightScale + float3(0.0, 1.0, 0.0) * positionOS.y * upScale;
+            }
+
+            struct Attributes
+            {
+                float4 positionOS : POSITION;
+                float2 uv : TEXCOORD0;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+            };
+
+            struct Varyings
+            {
+                float4 positionCS : SV_POSITION;
+                float2 uv : TEXCOORD0;
+                float eyeDepth : TEXCOORD1;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+            };
+
+            Varyings FogDepthVertex(Attributes input)
+            {
+                Varyings output;
+                UNITY_SETUP_INSTANCE_ID(input);
+                UNITY_TRANSFER_INSTANCE_ID(input, output);
+                half billboardEnabled = saturate(_BillboardEnabled);
+                float3 meshPositionWS = TransformObjectToWorld(input.positionOS.xyz);
+                float3 billboardPositionWS = TransformBillboardPositionWS(input.positionOS.xyz);
+                float3 positionWS = lerp(meshPositionWS, billboardPositionWS, billboardEnabled);
+                output.positionCS = TransformWorldToHClip(positionWS);
+                output.eyeDepth = max(0.0, -TransformWorldToView(positionWS).z);
+                output.uv = ApplyTextureFitUV(TRANSFORM_TEX(input.uv, _BaseMap));
+                return output;
+            }
+
+            float4 FogDepthFragment(Varyings input) : SV_Target
+            {
+                UNITY_SETUP_INSTANCE_ID(input);
+
+                half alpha = SampleBaseMapFitted(input.uv).a * _BaseColor.a * _Alpha;
+                clip(alpha - lerp(-0.001, _AlphaClipThreshold, saturate(_AlphaClipEnabled)));
+
+                return float4(input.eyeDepth, 0.0, 0.0, 1.0);
+            }
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "DepthNormals"
+            Tags { "LightMode" = "DepthNormals" }
+
+            Cull [_CullMode]
+            ZWrite [_ZWrite]
+
+            HLSLPROGRAM
+            #pragma target 3.0
+            #pragma vertex DepthNormalsVertex
+            #pragma fragment DepthNormalsFragment
+            #pragma multi_compile_instancing
+            #pragma multi_compile_fragment _ _GBUFFER_NORMALS_OCT
+
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Packing.hlsl"
+
+            TEXTURE2D(_BaseMap);
+            SAMPLER(sampler_BaseMap);
+
+            CBUFFER_START(UnityPerMaterial)
+                float4 _BaseMap_ST;
+                half4 _BaseColor;
+                half _Alpha;
+                half _AlphaClipEnabled;
+                half _AlphaClipThreshold;
+                half _BillboardEnabled;
+                half4 _TextureFill;
+                half4 _TextureFillOffset;
+                half _TextureFitClamp;
+                half _TextureVolumeStrength;
+                half _TextureVolumeRoundness;
+                half4 _TextureVolumeLightColor;
+                half4 _TextureVolumeShadowColor;
+                half4 _TextureVolumeDirection;
+                half _TextureSaturation;
+                half _TextureContrast;
+                half _ColorPosterizeSteps;
+                half _PosterizeStrength;
+                half _LightStepCount;
+                half _LightStepStrength;
+                half _RimEnabled;
+                half4 _StylizedRimColor;
+                half _RimPower;
+                half _LeafPlaneShading;
+                half4 _LeafPlaneDirection;
+                half _LeafShadeStrength;
+                half _LeafLightStrength;
+                half _LeafPlaneSoftness;
+                half _LeafPlaneBalance;
+                half4 _ShadowTint;
+                half _AmbientStrength;
+                half _LightStrength;
+                half _MinimumBrightness;
+                half _ShadowSoftness;
+                half _OutlineEnabled;
+                half4 _OutlineColor;
+                half _OutlineWidth;
+                half _OutlineScreenWidthPx;
+                half _AlphaOutlineWidth;
+                half _AlphaOutlineScreenWidthPx;
+                half4 _ContactColor;
+                half _ContactShadowEnabled;
+                half _ContactBlobMode;
+                half4 _ContactBlobAspect;
+                half _ContactCameraBackOffset;
+                half _ContactDarkness;
+                half _ContactRadius;
+                half _ContactSoftness;
+                half _ContactProjectionScale;
+                half _ContactLocalY;
+                half _ContactLift;
+                half4 _ContactOffsetOS;
+                half _BaseOcclusion;
+                half _OcclusionHeight;
+                half _VolumeNormalBlend;
+            CBUFFER_END
+
+            float2 ApplyTextureFitUV(float2 uv)
+            {
+                float2 fill = max(abs(_TextureFill.xy), float2(0.001, 0.001));
+                return (uv - 0.5) / fill + 0.5 + _TextureFillOffset.xy;
+            }
+
+            half TextureBoundsMask(float2 uv)
+            {
+                half2 aboveMin = step(float2(0.0, 0.0), uv);
+                half2 belowMax = step(uv, float2(1.0, 1.0));
+                half inside = aboveMin.x * aboveMin.y * belowMax.x * belowMax.y;
+                return lerp(1.0, inside, saturate(_TextureFitClamp));
+            }
+
+            half4 SampleBaseMapFitted(float2 uv)
+            {
+                half mask = TextureBoundsMask(uv);
+                half4 tex = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, uv);
+                tex *= mask;
+                return tex;
+            }
+
+            float3 GetBillboardRightWS()
+            {
+                float3 rightWS = float3(UNITY_MATRIX_I_V._m00, 0.0, UNITY_MATRIX_I_V._m20);
+                float rightLenSq = dot(rightWS, rightWS);
+                return rightLenSq > 0.0001 ? normalize(rightWS) : float3(1.0, 0.0, 0.0);
+            }
+
+            float3 TransformBillboardPositionWS(float3 positionOS)
+            {
+                float3 pivotWS = TransformObjectToWorld(float3(0.0, 0.0, 0.0));
+                float rightScale = length(TransformObjectToWorld(float3(1.0, 0.0, 0.0)) - pivotWS);
+                float upScale = length(TransformObjectToWorld(float3(0.0, 1.0, 0.0)) - pivotWS);
+                float3 rightWS = GetBillboardRightWS();
+                return pivotWS + rightWS * positionOS.x * rightScale + float3(0.0, 1.0, 0.0) * positionOS.y * upScale;
+            }
+
+            struct Attributes
+            {
+                float4 positionOS : POSITION;
+                float3 normalOS : NORMAL;
+                float2 uv : TEXCOORD0;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+            };
+
+            struct Varyings
+            {
+                float4 positionCS : SV_POSITION;
+                float2 uv : TEXCOORD0;
+                float3 normalWS : TEXCOORD1;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+            };
+
+            Varyings DepthNormalsVertex(Attributes input)
+            {
+                Varyings output;
+                UNITY_SETUP_INSTANCE_ID(input);
+                UNITY_TRANSFER_INSTANCE_ID(input, output);
+                half billboardEnabled = saturate(_BillboardEnabled);
+                float3 meshPositionWS = TransformObjectToWorld(input.positionOS.xyz);
+                float3 billboardPositionWS = TransformBillboardPositionWS(input.positionOS.xyz);
+                output.positionCS = TransformWorldToHClip(lerp(meshPositionWS, billboardPositionWS, billboardEnabled));
+                output.uv = ApplyTextureFitUV(TRANSFORM_TEX(input.uv, _BaseMap));
+                float3 rightWS = GetBillboardRightWS();
+                float3 billboardNormalWS = normalize(cross(float3(0.0, 1.0, 0.0), rightWS));
+                output.normalWS = lerp(TransformObjectToWorldNormal(input.normalOS), billboardNormalWS, billboardEnabled);
+                return output;
+            }
+
+            half4 DepthNormalsFragment(Varyings input) : SV_Target
+            {
+                UNITY_SETUP_INSTANCE_ID(input);
+
+                half alpha = SampleBaseMapFitted(input.uv).a * _BaseColor.a * _Alpha;
+                clip(alpha - lerp(-0.001, _AlphaClipThreshold, saturate(_AlphaClipEnabled)));
+
+                float3 normalWS = normalize(input.normalWS);
+            #if defined(_GBUFFER_NORMALS_OCT)
+                float2 octNormalWS = PackNormalOctQuadEncode(normalWS);
+                float2 remappedOctNormalWS = saturate(octNormalWS * 0.5 + 0.5);
+                return half4(PackFloat2To888(remappedOctNormalWS), 0.0);
+            #else
+                return half4(NormalizeNormalPerPixel(normalWS), 0.0);
+            #endif
             }
             ENDHLSL
         }

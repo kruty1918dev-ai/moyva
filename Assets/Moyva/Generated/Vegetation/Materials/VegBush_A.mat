@@ -35,7 +35,7 @@ Material:
     - _AlphaOutlineScreenWidthPx: 0
     - _AlphaOutlineWidth: 0
     - _AmbientStrength: 0.75
-    - _BillboardEnabled: 0
+    - _BillboardEnabled: 1
     - _ColorPosterizeSteps: 5
     - _ContactBlobMode: 1
     - _ContactCameraBackOffset: 0
@@ -56,8 +56,8 @@ Material:
     - _LeafShadeStrength: 0.12
     - _LightStepCount: 3
     - _LightStepStrength: 0.75
-    - _LightStrength: 0.85
-    - _MinimumBrightness: 0.85
+    - _LightStrength: 1
+    - _MinimumBrightness: 0.55
     - _OutlineEnabled: 1
     - _OutlineScreenWidthPx: 1
     - _OutlineWidth: 0
