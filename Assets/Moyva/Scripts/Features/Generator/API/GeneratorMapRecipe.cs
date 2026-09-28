@@ -48,6 +48,9 @@ namespace Kruty1918.Moyva.Generator.API
         [Tooltip("Waterline guard: lifts water-adjacent land that still sits below the actual water surface.")]
         public TerrainWaterlineLiftConfig WaterlineLift = new();
 
+        [Tooltip("Read-only detection of potential natural water channels between separate water regions.")]
+        public RecipeChannelDetectionConfig ChannelDetection = new();
+
         public IEnumerable<GeneratorMapLayer> OrderedEnabledLayers()
         {
             if (Layers == null)

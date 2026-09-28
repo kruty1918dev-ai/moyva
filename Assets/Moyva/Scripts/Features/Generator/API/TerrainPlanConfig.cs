@@ -187,6 +187,41 @@ namespace Kruty1918.Moyva.Generator.API
     }
 
     /// <summary>
+    /// Recipe-authored detection of potential natural water channels between
+    /// separate water regions. Read-only analysis over the finished logical
+    /// map — it reports corridor candidates but never mutates terrain or water.
+    /// </summary>
+    [System.Serializable]
+    public sealed class RecipeChannelDetectionConfig
+    {
+        public bool Enabled;
+
+        [Tooltip("Water regions smaller than this many cells are ignored as channel endpoints.")]
+        [Min(1)] public int MinRegionCells = 1;
+
+        [Tooltip("Maximum land corridor length in cells; longer crossings are rejected.")]
+        [Min(2)] public int MaxCorridorLengthCells = 48;
+
+        [Tooltip("Search bounds margin in cells beyond the pair's combined bounding box.")]
+        [Min(0)] public int FrontierMarginCells = 6;
+
+        [Tooltip("Cap on cells visited by one corridor search; bounds per-pair work.")]
+        [Min(64)] public int MaxVisitedCells = 8192;
+
+        [Tooltip("Region pairs evaluated per map, closest Voronoi gap first.")]
+        [Min(1)] public int MaxPairEvaluations = 64;
+
+        [Tooltip("Deepest single-cell cut (meters) that still counts as a minor correction.")]
+        [Min(0.01f)] public float MinorCorrectionMaxCutMeters = 0.6f;
+
+        [Tooltip("Deepest single-cell cut allowed at all; deeper saddles are rejected as ridges.")]
+        [Min(0.01f)] public float MajorCorrectionMaxCutMeters = 2.5f;
+
+        [Tooltip("Total estimated excavation volume (meters summed over cells) allowed per corridor.")]
+        [Min(0.01f)] public float MaxExcavationVolumeMeters = 8f;
+    }
+
+    /// <summary>
     /// Recipe-authored deterministic hydrology: priority-flood the relief field,
     /// accumulate D8 drainage, then mark lake depressions and river cells.
     /// Rivers drain to the configured sink layer mask (open water) or the map
