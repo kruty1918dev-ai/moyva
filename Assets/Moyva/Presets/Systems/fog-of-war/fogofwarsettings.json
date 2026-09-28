@@ -43,7 +43,7 @@
     "exploredSaturation": 0.45,
     "edgeSoftness": 0.2,
     "edgeNoiseStrength": 0.0,
-    "depthAwareEdgeEnabled": true,
+    "depthAwareEdgeEnabled": false,
     "useLegacyWorldCurtain": false,
     "depthAwareEdgeColor": {
       "r": 0.018,
