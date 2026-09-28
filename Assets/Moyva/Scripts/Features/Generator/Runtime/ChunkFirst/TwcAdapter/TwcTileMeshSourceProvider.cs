@@ -217,7 +217,9 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 tileHalfExtent: cellSize * 0.5f,
                 authoredClosurePolicy: AuthoredClosurePolicy.PreserveAuthored,
                 edgeBottoms: default,
-                tileGeometryMode: TileGeometryMode.SurfaceOnly,
+                // SurfaceOnly strips vertical triangles during chunk assembly.
+                // This authored backing face must survive that stage intact.
+                tileGeometryMode: TileGeometryMode.SolidTerrain,
                 generateMissingClosure: false);
             if (!side.IsValid)
                 return 0;
