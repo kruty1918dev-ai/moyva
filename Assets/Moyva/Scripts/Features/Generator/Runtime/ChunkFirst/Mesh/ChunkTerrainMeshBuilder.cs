@@ -64,6 +64,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         private readonly SeabedChunkMeshService _seabed;
         private readonly WaterfallChunkMeshService _waterfalls;
         private readonly ResolvedGenerationProfile _profile;
+        private readonly List<WaterfallChunkMeshService.Curtain> _waterfallCurtains =
+            new List<WaterfallChunkMeshService.Curtain>();
 
         public ChunkTerrainMeshBuilder(
             ChunkFirstRuntimeMeshRegistry meshRegistry,
@@ -153,23 +155,28 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 seabedAdded = true;
             }
 
+            /*
+             * Generated waterfall ribbons run in every profile — including
+             * simple-water, where they replace the flat backing quad on
+             * covered edges (the provider skips those via IsCovered).
+             */
             bool waterfallsAdded = false;
-            if (UseChunkWaterFields
-                && _waterfalls != null
-                && _waterfalls.IsActive
-                && _waterfalls.Config.Prefab == null
-                && _waterfalls.TryBuildChunkMesh(
-                    area.CoreRect,
-                    out Mesh waterfallMesh,
-                    out Material waterfallMaterial))
+            if (_waterfalls != null && _waterfalls.IsActive)
             {
-                _meshRegistry.Register(waterfallMesh);
-                AddSource(new TileMeshSource(
-                    waterfallMesh,
-                    new[] { waterfallMaterial },
-                    Matrix4x4.identity,
-                    tileGeometryMode: TileGeometryMode.SolidTerrain));
-                waterfallsAdded = true;
+                _waterfallCurtains.Clear();
+                int curtainCount = _waterfalls.CollectChunkMeshes(
+                    area.CoreRect, _waterfallCurtains);
+                for (int i = 0; i < curtainCount; i++)
+                {
+                    WaterfallChunkMeshService.Curtain curtain = _waterfallCurtains[i];
+                    _meshRegistry.Register(curtain.Mesh);
+                    AddSource(new TileMeshSource(
+                        curtain.Mesh,
+                        new[] { curtain.Material },
+                        Matrix4x4.identity,
+                        tileGeometryMode: TileGeometryMode.SolidTerrain));
+                }
+                waterfallsAdded = curtainCount > 0;
             }
 
             if (fragmentCount == 0 && !seabedAdded && !waterfallsAdded)

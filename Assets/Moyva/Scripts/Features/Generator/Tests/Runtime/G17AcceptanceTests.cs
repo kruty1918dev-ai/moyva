@@ -74,6 +74,8 @@ namespace Kruty1918.Moyva.Generator.Tests.Runtime
 
         private WaterfallChunkMeshService _service;
         private HydroStub _hydro;
+        private readonly List<WaterfallChunkMeshService.Curtain> _curtains =
+            new List<WaterfallChunkMeshService.Curtain>();
 
         [SetUp]
         public void SetUp()
@@ -89,6 +91,12 @@ namespace Kruty1918.Moyva.Generator.Tests.Runtime
                 },
             };
             _service = new WaterfallChunkMeshService(_hydro, null);
+        }
+
+        private int Collect(RectInt rect)
+        {
+            _curtains.Clear();
+            return _service.CollectChunkMeshes(rect, _curtains);
         }
 
         private void PrepareWithFall()
@@ -112,15 +120,19 @@ namespace Kruty1918.Moyva.Generator.Tests.Runtime
             Assert.IsTrue(_service.HasField);
             Assert.AreEqual(1, _service.Fronts.Count);
 
-            Assert.IsTrue(_service.TryBuildChunkMesh(
-                new RectInt(0, 0, 16, 16), out Mesh mesh, out Material mat));
+            Assert.AreEqual(1, Collect(new RectInt(0, 0, 16, 16)));
+            Mesh mesh = _curtains[0].Mesh;
+            Material mat = _curtains[0].Material;
             Assert.IsNotNull(mesh);
-            Assert.AreSame(_hydro.WaterfallConfig.CurtainMaterial, mat);
+            Assert.IsNotNull(mat);
+            // Bucket clone, not the authored asset: its scroll factor scales
+            // with sqrt(drop), so it must never mutate the template.
+            Assert.AreNotSame(_hydro.WaterfallConfig.CurtainMaterial, mat);
+            Track(mat);
 
             // A chunk that does not contain the anchor emits nothing —
             // curtains can't duplicate across borders.
-            Assert.IsFalse(_service.TryBuildChunkMesh(
-                new RectInt(0, 16, 16, 16), out _, out _));
+            Assert.AreEqual(0, Collect(new RectInt(0, 16, 16, 16)));
             Track(mesh);
         }
 
@@ -128,8 +140,8 @@ namespace Kruty1918.Moyva.Generator.Tests.Runtime
         public void Curtain_SpansRealDrop_LipTucked_BaseSubmerged()
         {
             PrepareWithFall();
-            Assert.IsTrue(_service.TryBuildChunkMesh(
-                new RectInt(0, 0, 16, 16), out Mesh mesh, out _));
+            Assert.AreEqual(1, Collect(new RectInt(0, 0, 16, 16)));
+            Mesh mesh = _curtains[0].Mesh;
             Track(mesh);
 
             float minY = float.MaxValue, maxY = float.MinValue;
@@ -156,8 +168,8 @@ namespace Kruty1918.Moyva.Generator.Tests.Runtime
         public void Curtain_IsDoubleSided_AndUvComplete()
         {
             PrepareWithFall();
-            Assert.IsTrue(_service.TryBuildChunkMesh(
-                new RectInt(0, 0, 16, 16), out Mesh mesh, out _));
+            Assert.AreEqual(1, Collect(new RectInt(0, 0, 16, 16)));
+            Mesh mesh = _curtains[0].Mesh;
             Track(mesh);
 
             bool plus = false, minus = false;
@@ -172,18 +184,45 @@ namespace Kruty1918.Moyva.Generator.Tests.Runtime
         }
 
         [Test]
+        public void Curtain_Uv_IsMetric_NotStretched()
+        {
+            PrepareWithFall();
+            Assert.AreEqual(1, Collect(new RectInt(0, 0, 16, 16)));
+            Mesh mesh = _curtains[0].Mesh;
+            Track(mesh);
+
+            float minU = float.MaxValue, maxU = float.MinValue;
+            float minV = float.MaxValue, maxV = float.MinValue;
+            foreach (var uv in mesh.uv)
+            {
+                minU = Mathf.Min(minU, uv.x);
+                maxU = Mathf.Max(maxU, uv.x);
+                minV = Mathf.Min(minV, uv.y);
+                maxV = Mathf.Max(maxV, uv.y);
+            }
+            // U spans the one-cell front width in meters, V spans the
+            // profile arc length — texture density stays constant whatever
+            // the drop, instead of squeezing one tile over the whole fall.
+            Assert.AreEqual(1f, maxU - minU, 0.01f, "u must span one cell width");
+            Assert.GreaterOrEqual(maxV - minV, 1f, "v must cover the full 1m drop");
+            Assert.Less(maxV - minV, 1.6f, "v must not stretch far past the arc");
+        }
+
+        [Test]
         public void Inactive_WithoutMaterial_OrWithoutHydrology()
         {
             _hydro.WaterfallConfig.CurtainMaterial = null;
             var noMat = new WaterfallChunkMeshService(_hydro, null);
             noMat.Prepare(new Dictionary<Vector2Int, ResolvedTileComposition>(), 8, 8, 1f);
             Assert.IsFalse(noMat.IsActive);
-            Assert.IsFalse(noMat.TryBuildChunkMesh(new RectInt(0, 0, 16, 16), out _, out _));
+            Assert.AreEqual(0, noMat.CollectChunkMeshes(
+                new RectInt(0, 0, 16, 16), _curtains));
 
             var noHydro = new WaterfallChunkMeshService(null, null);
             Assert.IsFalse(noHydro.IsActive);
             noHydro.Prepare(new Dictionary<Vector2Int, ResolvedTileComposition>(), 8, 8, 1f);
-            Assert.IsFalse(noHydro.TryBuildChunkMesh(new RectInt(0, 0, 16, 16), out _, out _));
+            Assert.AreEqual(0, noHydro.CollectChunkMeshes(
+                new RectInt(0, 0, 16, 16), _curtains));
         }
     }
 }

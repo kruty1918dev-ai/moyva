@@ -43,9 +43,9 @@
     "validateHeavyFootprints": true,
     "maxShiftCells": 0.75,
     "maxGroundDeltaMeters": 0.5,
-    "footprintShrink": 0.9,
+    "footprintShrink": 1.0,
     "resolveOverlaps": true,
-    "overlapPadding": 0.8,
+    "overlapPadding": 1.05,
     "keepSmallPropsInsideCell": true
   },
   "floating": {

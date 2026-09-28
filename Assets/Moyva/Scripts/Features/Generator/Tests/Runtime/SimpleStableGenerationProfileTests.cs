@@ -162,6 +162,46 @@ namespace Kruty1918.Moyva.Generator.Tests.Runtime
         }
 
         [Test]
+        public void WaterfallVfxAndMaterial_ResolveThroughRuntimeRecipe()
+        {
+            var recipe = JsonConfigRuntime.Get<GeneratorMapRecipe>("testgeneratorrecipe");
+            var falls = recipe.Hydrology.Waterfalls;
+            Assert.IsTrue(falls.Enabled);
+            Assert.NotNull(falls.EdgeFoamPrefab, "lip foam prefab must resolve");
+            Assert.NotNull(falls.ImpactSplashPrefab, "splash prefab must resolve");
+            Assert.NotNull(falls.MistPrefab, "mist prefab must resolve");
+            Assert.NotNull(falls.CurtainMaterial);
+            Assert.IsTrue(falls.CurtainMaterial.IsKeywordEnabled("_RIVER"));
+            Assert.IsFalse(falls.CurtainMaterial.IsKeywordEnabled("_WAVES"));
+            Assert.LessOrEqual(falls.MinDropMeters, 0.02f);
+            var water = GenerationProfileResolver.ResolveActive().WaterMaterial;
+            Assert.AreEqual(water.GetColor("_BaseColor"), falls.CurtainMaterial.GetColor("_BaseColor"));
+            Assert.AreEqual(1f, water.GetFloat("_ZWrite"));
+        }
+
+        [Test]
+        public void BillboardVegetation_UsesSingleGroundedPlaneWithoutRealShadows()
+        {
+            string folder = "Assets/Moyva/Generated/Vegetation/Prefabs";
+            int count = 0;
+            foreach (string guid in UnityEditor.AssetDatabase.FindAssets("t:Prefab", new[] { folder }))
+            {
+                var prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(UnityEditor.AssetDatabase.GUIDToAssetPath(guid));
+                var renderer = prefab.GetComponent<MeshRenderer>();
+                var material = renderer.sharedMaterial;
+                if (!material.HasProperty("_BillboardEnabled") || material.GetFloat("_BillboardEnabled") < 0.5f)
+                    continue;
+                count++;
+                var mesh = prefab.GetComponent<MeshFilter>().sharedMesh;
+                Assert.AreEqual(4, mesh.vertexCount, prefab.name);
+                Assert.AreEqual(0f, mesh.bounds.size.z, 0.0001f, prefab.name);
+                Assert.AreEqual(0f, mesh.bounds.min.y, 0.0001f, prefab.name);
+                Assert.AreEqual(UnityEngine.Rendering.ShadowCastingMode.Off, renderer.shadowCastingMode, prefab.name);
+            }
+            Assert.GreaterOrEqual(count, 20);
+        }
+
+        [Test]
         public void SimpleWaterQuad_IsSingleFlatCellQuad()
         {
             Mesh mesh = SimpleWaterQuadMeshUtility.GetOrCreate();

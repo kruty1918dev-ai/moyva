@@ -45,6 +45,9 @@ namespace Kruty1918.Moyva.Generator.API
         [Tooltip("Shoreline band: re-type water-adjacent land to the shore tile and grade heights toward the waterline.")]
         public TerrainShoreConfig Shore = new();
 
+        [Tooltip("Waterline guard: lifts water-adjacent land that still sits below the actual water surface.")]
+        public TerrainWaterlineLiftConfig WaterlineLift = new();
+
         public IEnumerable<GeneratorMapLayer> OrderedEnabledLayers()
         {
             if (Layers == null)

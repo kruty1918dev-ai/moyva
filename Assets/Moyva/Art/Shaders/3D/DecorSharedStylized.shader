@@ -35,6 +35,7 @@ Shader "Moyva/3D/Decor Shared Stylized"
         _BaseOcclusion("Base Occlusion (dark roots)", Range(0, 1)) = 0.45
         _OcclusionHeight("Occlusion Height (object units)", Range(0.01, 4)) = 0.55
         _VolumeNormalBlend("Rounded Volume Normal Blend", Range(0, 1)) = 0.55
+        _ReceivedShadowStrength("Received Cast Shadow Strength", Range(0, 1)) = 1
 
         [Header(Stylization)]
         _TextureSaturation("Texture Saturation", Range(0, 2)) = 0.9
@@ -176,6 +177,7 @@ Shader "Moyva/3D/Decor Shared Stylized"
                 half _BaseOcclusion;
                 half _OcclusionHeight;
                 half _VolumeNormalBlend;
+                half _ReceivedShadowStrength;
             CBUFFER_END
 
             float2 ApplyTextureFitUV(float2 uv)
@@ -400,16 +402,24 @@ Shader "Moyva/3D/Decor Shared Stylized"
                 Light mainLight = GetMainLight(TransformWorldToShadowCoord(input.positionWS));
                 half ndotl = saturate(dot(normalWS, mainLight.direction));
                 half lightRamp = smoothstep(0.5 - _ShadowSoftness, 0.5 + _ShadowSoftness, ndotl);
-                half shadowedRamp = lightRamp * mainLight.shadowAttenuation;
+                half shadowAttenuation = mainLight.shadowAttenuation;
+                half shadowedRamp = lightRamp * shadowAttenuation;
                 shadowedRamp = ApplyStylizedLightSteps(shadowedRamp);
 
                 half3 minimumLight = half3(_MinimumBrightness, _MinimumBrightness, _MinimumBrightness);
                 half3 ambient = max(SampleSH(normalWS), half3(0.0, 0.0, 0.0)) * _AmbientStrength;
                 half3 shadowTint = lerp(half3(1.0, 1.0, 1.0), _ShadowTint.rgb, saturate(_ShadowTint.a));
                 half3 directTint = lerp(shadowTint, half3(1.0, 1.0, 1.0), shadowedRamp);
-                half directBrightness = lerp(0.72, 1.0, shadowedRamp);
+                half directBrightness = lerp(_MinimumBrightness, 1.0, shadowedRamp);
                 half3 direct = mainLight.color * directTint * directBrightness * _LightStrength;
                 half3 color = albedo.rgb * saturate(minimumLight + (1.0 - minimumLight) * (ambient + direct));
+                /*
+                 * Cast shadows sit outside the brightness floor: the floor
+                 * keeps self-shading soft, but a tree/terrain shadow must
+                 * still darken the plant like it darkens the ground.
+                 */
+                half receivedShadow = 1.0 - (1.0 - shadowAttenuation) * saturate(_ReceivedShadowStrength);
+                color *= lerp(half3(1.0, 1.0, 1.0), shadowTint, 1.0 - receivedShadow);
                 // Roots sit in the plant's own shadow; the crown catches light.
                 half heightMask = saturate(input.heightOS / max(0.01, _OcclusionHeight));
                 color *= lerp(1.0 - saturate(_BaseOcclusion), 1.0, heightMask * heightMask * (3.0 - 2.0 * heightMask));
@@ -430,6 +440,15 @@ Shader "Moyva/3D/Decor Shared Stylized"
             ZWrite Off
             ZTest LEqual
             Blend DstColor Zero
+
+            // One blob per pixel: crossed card quads project the same spot,
+            // and overlapping plants must not stack darkness like decals.
+            Stencil
+            {
+                Ref [_EntityStencilRef]
+                Comp NotEqual
+                Pass Replace
+            }
 
             HLSLPROGRAM
             #pragma target 3.0
@@ -498,6 +517,7 @@ Shader "Moyva/3D/Decor Shared Stylized"
                 half _BaseOcclusion;
                 half _OcclusionHeight;
                 half _VolumeNormalBlend;
+                half _ReceivedShadowStrength;
             CBUFFER_END
 
             float2 ApplyTextureFitUV(float2 uv)
@@ -680,6 +700,7 @@ Shader "Moyva/3D/Decor Shared Stylized"
                 half _BaseOcclusion;
                 half _OcclusionHeight;
                 half _VolumeNormalBlend;
+                half _ReceivedShadowStrength;
             CBUFFER_END
 
             float2 ApplyTextureFitUV(float2 uv)
@@ -872,6 +893,7 @@ Shader "Moyva/3D/Decor Shared Stylized"
                 half _BaseOcclusion;
                 half _OcclusionHeight;
                 half _VolumeNormalBlend;
+                half _ReceivedShadowStrength;
             CBUFFER_END
 
             float2 ApplyTextureFitUV(float2 uv)
@@ -1048,6 +1070,7 @@ Shader "Moyva/3D/Decor Shared Stylized"
                 half _BaseOcclusion;
                 half _OcclusionHeight;
                 half _VolumeNormalBlend;
+                half _ReceivedShadowStrength;
             CBUFFER_END
 
             float2 ApplyTextureFitUV(float2 uv)
@@ -1204,6 +1227,7 @@ Shader "Moyva/3D/Decor Shared Stylized"
                 half _BaseOcclusion;
                 half _OcclusionHeight;
                 half _VolumeNormalBlend;
+                half _ReceivedShadowStrength;
             CBUFFER_END
 
             float2 ApplyTextureFitUV(float2 uv)
@@ -1363,6 +1387,7 @@ Shader "Moyva/3D/Decor Shared Stylized"
                 half _BaseOcclusion;
                 half _OcclusionHeight;
                 half _VolumeNormalBlend;
+                half _ReceivedShadowStrength;
             CBUFFER_END
 
             float2 ApplyTextureFitUV(float2 uv)

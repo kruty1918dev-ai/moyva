@@ -361,6 +361,21 @@ namespace Kruty1918.Moyva.Generator.Tests.Runtime
         }
 
         [Test]
+        public void GroundedY_LowerNeighbourDoesNotBuryPlantInAnchorTile()
+        {
+            var prop = MakeProp(new Vector3(0f, 0.5f, 0f), 0.5f);
+            try
+            {
+                var resolver = new EnvironmentObjectPlacementResolver();
+                float y = resolver.ResolveGroundedY(prop, new Vector3(1.4f, 0f, 1f),
+                    Quaternion.identity, Vector3.one, 1f,
+                    cell => cell.x == 1 ? 0.8f : 0.2f, 0.8f);
+                Assert.AreEqual(0.8f, y, 0.0001f);
+            }
+            finally { Object.DestroyImmediate(prop); }
+        }
+
+        [Test]
         public void Footprint_OverlappingInvalidCell_RejectedWithoutShift()
         {
             var prop = MakeProp(Vector3.zero, 1f); // 2x2 cells footprint

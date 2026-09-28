@@ -1954,32 +1954,18 @@
               "x-moyva-editorMinimum": 1.0
             },
             "minDropMeters": {
-              "type": "number", "minimum": 0,
-              "description": "Positive values override the level threshold with the actual rendered drop in meters."
-            },
-            "prefab": {
-              "type": ["object", "null"],
-              "title": "Waterfall Prefab",
-              "description": "Stylized Water 3 waterfall prefab fitted to each drop front.",
-              "properties": {
-                "$asset": {"type": "string"},
-                "editorPath": {"type": "string"},
-                "required": {"type": "boolean", "default": true}
-              },
-              "required": ["$asset"]
-            },
-            "widthScale": {
-              "type": "number", "title": "Width Scale", "minimum": 0.1
-            },
-            "heightScale": {
-              "type": "number", "title": "Height Scale", "minimum": 0.1
+              "type": "number",
+              "title": "Min Drop Meters",
+              "description": "Minimum rendered drop in meters. A positive value overrides MinDropLevels, including small visual elevation steps.",
+              "minimum": 0.0,
+              "x-moyva-editorMinimum": 0.0
             },
             "curtainMaterial": {
               "type": [
                 "object",
                 "null"
               ],
-              "description": "Front curtain material. The SW3 waterfall material scrolls foam downward in world space; falls back to the water preset material when unset.",
+              "description": "Front curtain material. The SW3 river-mode material scrolls foam down the curtain via its animation direction vector; falls back to no curtain when unset.",
               "properties": {
                 "$asset": {
                   "type": "string",
@@ -1998,6 +1984,34 @@
                 "$asset"
               ],
               "title": "Curtain Material"
+            },
+            "uvTileSizeMeters": {
+              "type": "number",
+              "title": "Uv Tile Size Meters",
+              "description": "Curtain UV density: meters of ribbon arc length covered by one UV tile. Keeps foam scale constant across different drops and widths.",
+              "minimum": 0.05,
+              "x-moyva-editorMinimum": 0.05
+            },
+            "scrollSpeedScale": {
+              "type": "number",
+              "title": "Scroll Speed Scale",
+              "description": "Base multiplier on the curtain material's animation direction (scroll speed) at the reference drop.",
+              "minimum": 0.0,
+              "x-moyva-editorMinimum": 0.0
+            },
+            "speedReferenceDropMeters": {
+              "type": "number",
+              "title": "Speed Reference Drop Meters",
+              "description": "Drop height in meters where the scroll multiplier equals ScrollSpeedScale. Effective speed scales with sqrt(drop / reference), matching free-fall velocity.",
+              "minimum": 0.01,
+              "x-moyva-editorMinimum": 0.01
+            },
+            "vfxSpeedScale": {
+              "type": "number",
+              "title": "Vfx Speed Scale",
+              "description": "Multiplier on VFX particle start speeds, scaling with sqrt(drop / reference) like the curtain scroll.",
+              "minimum": 0.0,
+              "x-moyva-editorMinimum": 0.0
             },
             "edgeFoamPrefab": {
               "type": [
@@ -2221,6 +2235,51 @@
       "additionalProperties": false,
       "title": "Shore",
       "description": "Shoreline band: re-type water-adjacent land to the shore tile and grade heights toward the waterline."
+    },
+    "waterlineLift": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "title": "Enabled"
+        },
+        "liftMeters": {
+          "type": "number",
+          "title": "Lift Meters",
+          "description": "Clearance above the highest adjacent water surface in meters. Should exceed the render profile's water surface offset.",
+          "minimum": 0.005,
+          "maximum": 0.5,
+          "x-moyva-editorMinimum": 0.005,
+          "x-moyva-editorMaximum": 0.5
+        },
+        "terraceJoinMeters": {
+          "type": "number",
+          "title": "Terrace Join Meters",
+          "description": "Snap the corrected surface to a stable neighbouring land terrace when it sits within this many meters above the required clearance; avoids thin half-step platforms. 0 disables.",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        },
+        "transitionCells": {
+          "type": "integer",
+          "title": "Transition Cells",
+          "description": "Land cells within this distance of a corrected cell ease upward so the lift does not read as a wall. 0 = corrected cells only.",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        },
+        "transitionRiseMeters": {
+          "type": "number",
+          "title": "Transition Rise Meters",
+          "description": "Maximum surface rise per transition cell; caps the ramp slope.",
+          "minimum": 0.01,
+          "x-moyva-editorMinimum": 0.01
+        }
+      },
+      "additionalProperties": false,
+      "title": "Waterline Lift",
+      "description": "Waterline guard: lifts water-adjacent land that still sits below the actual water surface. While enabled it also raises intentionally submerged shore shelves; keep shore.submergedDepthMeters at 0."
     }
   }
 }

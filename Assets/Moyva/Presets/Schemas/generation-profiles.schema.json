@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://moyva.local/schemas/generation-profiles.schema.json",
   "title": "Moyva — Generation Profiles Config",
-  "description": "JSON source of truth для Kruty1918.Moyva.Generator.API.GenerationProfilesConfig. Обирає візуальну композицію генерації: режим терену, режим води та документ декорацій.",
+  "description": "JSON source of truth для Kruty1918.Moyva.Generator.API.GenerationProfilesConfig. Згенеровано з фактичного Unity serialization contract; runtime читає JSON напряму.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -27,74 +27,134 @@
     "id": {
       "type": "string",
       "minLength": 1,
-      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "title": "Стабільний ID",
+      "description": "Стабільний ідентифікатор. Використовуйте дефіси; ID не залежить від filename або C# class name."
     },
     "model": {
       "const": "generation-profiles"
     },
+    "migration": {
+      "type": "object",
+      "additionalProperties": true
+    },
     "defaultProfileId": {
-      "type": "string",
-      "minLength": 1,
-      "description": "ID активного профілю генерації; нові світи та візуальні перезбирання сейвів використовують його."
+      "type": [
+        "string",
+        "null"
+      ],
+      "title": "Default Profile Id"
     },
     "profiles": {
-      "type": "array",
+      "type": [
+        "array",
+        "null"
+      ],
       "items": {
-        "type": "object",
-        "required": ["id"],
+        "type": [
+          "object",
+          "null"
+        ],
         "properties": {
           "id": {
-            "type": "string",
-            "minLength": 1
+            "type": [
+              "string",
+              "null"
+            ],
+            "title": "Id"
           },
           "enabled": {
             "type": "boolean",
-            "default": true
+            "title": "Enabled"
           },
           "terrain": {
-            "type": "object",
+            "type": [
+              "object",
+              "null"
+            ],
             "properties": {
               "singleSolidTile": {
                 "type": "boolean",
-                "default": true,
-                "description": "Один суцільний скошений тайл на клітинку замість dual-grid фрагментів."
+                "title": "Single Solid Tile"
               }
-            }
+            },
+            "additionalProperties": false,
+            "title": "Terrain"
           },
           "water": {
-            "type": "object",
+            "type": [
+              "object",
+              "null"
+            ],
             "properties": {
               "mode": {
-                "enum": ["full", "simpleQuad"],
-                "default": "simpleQuad",
-                "description": "simpleQuad: один плоский квад на водну клітинку; full: авторські шари (wash, водоспади, seabed)."
+                "type": "string",
+                "pattern": "^(?:-?\\d+|(?:Full|SimpleQuad))$",
+                "x-enumNames": [
+                  "Full",
+                  "SimpleQuad"
+                ],
+                "x-flags": false,
+                "title": "Mode"
               },
               "material": {
-                "type": "object",
-                "description": "$asset-посилання на матеріал простої води (Water_SimpleStable.mat)."
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+                "properties": {
+                  "$asset": {
+                    "type": "string",
+                    "title": "Asset ID"
+                  },
+                  "editorPath": {
+                    "type": "string",
+                    "description": "Editor-only path для діагностики/регенерації catalog."
+                  },
+                  "required": {
+                    "type": "boolean",
+                    "default": true
+                  }
+                },
+                "required": [
+                  "$asset"
+                ],
+                "title": "Material"
               },
               "surfaceOffsetMeters": {
                 "type": "number",
-                "default": -0.05
+                "title": "Surface Offset Meters"
               },
               "emitBed": {
                 "type": "boolean",
-                "default": true,
-                "description": "Пісочне дно-псевдоколона під квадом води."
+                "title": "Emit Bed"
               }
-            }
+            },
+            "additionalProperties": false,
+            "title": "Water"
           },
           "decorations": {
-            "type": "object",
+            "type": [
+              "object",
+              "null"
+            ],
             "properties": {
               "configId": {
-                "type": "string",
-                "description": "ID документа moyva.environment-decoration, який заміщує типовий конфіг декорацій для профілю."
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "title": "Config Id"
               }
-            }
+            },
+            "additionalProperties": false,
+            "title": "Decorations"
           }
-        }
-      }
+        },
+        "additionalProperties": false
+      },
+      "title": "Profiles"
     }
   }
 }

@@ -159,6 +159,34 @@ namespace Kruty1918.Moyva.Generator.API
     }
 
     /// <summary>
+    /// Waterline guard: after shoreline planning, any land cell adjacent to
+    /// water but still below the actual neighbouring water surface is lifted
+    /// just above it, so no dry tile renders under a water sheet. The pass
+    /// never retypes tiles and never lowers cells — it raises the minimum
+    /// needed and eases a narrow ring inward so the lift reads as a bank.
+    /// Note: while this guard is enabled it also raises intentionally
+    /// submerged shore shelves back above the waterline; keep
+    /// <see cref="TerrainShoreConfig.SubmergedDepthMeters"/> at 0.
+    /// </summary>
+    [System.Serializable]
+    public sealed class TerrainWaterlineLiftConfig
+    {
+        public bool Enabled = true;
+
+        [Tooltip("Clearance above the highest adjacent water surface in meters. Should exceed the render profile's water surface offset.")]
+        [Range(0.005f, 0.5f)] public float LiftMeters = 0.05f;
+
+        [Tooltip("Snap the corrected surface to a stable neighbouring land terrace when it sits within this many meters above the required clearance; avoids thin half-step platforms. 0 disables.")]
+        [Min(0f)] public float TerraceJoinMeters = 0.25f;
+
+        [Tooltip("Land cells within this distance of a corrected cell ease upward so the lift does not read as a wall. 0 = corrected cells only.")]
+        [Min(0)] public int TransitionCells = 1;
+
+        [Tooltip("Maximum surface rise per transition cell; caps the ramp slope.")]
+        [Min(0.01f)] public float TransitionRiseMeters = 0.5f;
+    }
+
+    /// <summary>
     /// Recipe-authored deterministic hydrology: priority-flood the relief field,
     /// accumulate D8 drainage, then mark lake depressions and river cells.
     /// Rivers drain to the configured sink layer mask (open water) or the map
@@ -250,11 +278,13 @@ namespace Kruty1918.Moyva.Generator.API
     }
 
     /// <summary>
-    /// Waterfall fronts: curtain meshes on the Stylized Water 3 waterfall
-    /// material (world-space UV scroll runs downward on any geometry) plus
-    /// the package's edge/splash/mist VFX prefabs. The drop threshold is
-    /// expressed in terrain-height-step units so it follows the level grid
-    /// instead of an absolute meter constant.
+    /// Waterfall fronts: generated per-front curtain ribbons on the
+    /// Stylized Water 3 river material (mesh-UV scroll driven by the
+    /// material's animation direction) plus the package's edge/splash/mist
+    /// VFX prefabs. Geometry, UV density and scroll speed come from each
+    /// detected front, so no authored waterfall mesh is scaled to fit.
+    /// The drop threshold is expressed in terrain-height-step units so it
+    /// follows the level grid instead of an absolute meter constant.
     /// </summary>
     [System.Serializable]
     public sealed class RecipeWaterfallConfig
@@ -267,14 +297,17 @@ namespace Kruty1918.Moyva.Generator.API
         [Tooltip("Minimum rendered drop in meters. A positive value overrides MinDropLevels, including small visual elevation steps.")]
         [Min(0f)] public float MinDropMeters;
 
-        [Tooltip("Front curtain material. The SW3 waterfall material scrolls foam downward in world space; falls back to the water preset material when unset.")]
+        [Tooltip("Front curtain material. The SW3 river-mode material scrolls foam down the curtain via its animation direction vector; falls back to no curtain when unset.")]
         public Material CurtainMaterial;
 
-        [Tooltip("Stylized Water 3 waterfall prefab used for each water-level front. Its mesh and particle children are scaled to the detected width and drop.")]
-        public GameObject Prefab;
+        [Tooltip("Curtain UV density: meters of ribbon arc length covered by one UV tile. Keeps foam scale constant across different drops and widths.")]
+        [Min(0.05f)] public float UvTileSizeMeters = 1f;
 
-        [Min(0.1f)] public float WidthScale = 1f;
-        [Min(0.1f)] public float HeightScale = 1f;
+        [Tooltip("Base multiplier on the curtain material's animation direction (scroll speed) at the reference drop.")]
+        [Min(0f)] public float ScrollSpeedScale = 1f;
+
+        [Tooltip("Drop height in meters where the scroll multiplier equals ScrollSpeedScale. Effective speed scales with sqrt(drop / reference), matching free-fall velocity.")]
+        [Min(0.01f)] public float SpeedReferenceDropMeters = 0.75f;
 
         [Tooltip("Foam strip prefab placed along the fall lip (Stylized Water 3 'Waterfall Edge').")]
         public GameObject EdgeFoamPrefab;
@@ -296,5 +329,8 @@ namespace Kruty1918.Moyva.Generator.API
 
         [Tooltip("Cap on per-instance particle counts so SW3 prefabs stay inside the mobile budget.")]
         [Min(1)] public int MaxParticlesPerVfx = 60;
+
+        [Tooltip("Multiplier on VFX particle start speeds, scaling with sqrt(drop / reference) like the curtain scroll.")]
+        [Min(0f)] public float VfxSpeedScale = 1f;
     }
 }

@@ -170,8 +170,10 @@ namespace Kruty1918.Moyva.Generator.Editor
             mat.SetFloat("_TextureVolumeStrength", 0.15f);
             mat.SetFloat("_LeafPlaneShading", 0.3f);
             mat.SetFloat("_ContactBlobMode", 1f);
+            mat.SetFloat("_ContactDarkness", 0.35f);
             mat.SetFloat("_ContactRadius", 0.35f);
             mat.SetFloat("_ContactProjectionScale", 1.2f);
+            mat.SetFloat("_ReceivedShadowStrength", 1f);
             mat.enableInstancing = true;
             return CreateOrUpdateAsset(mat, MaterialsFolder + "/VegFlat.mat");
         }
@@ -185,12 +187,15 @@ namespace Kruty1918.Moyva.Generator.Editor
             mat.SetFloat("_AlphaClipEnabled", 0f);
             mat.SetFloat("_BillboardEnabled", 1f);
             mat.SetFloat("_CullMode", 0f);
+            mat.SetFloat("_MinimumBrightness", 0.62f);
             mat.SetFloat("_TextureVolumeStrength", 0.3f);
             mat.SetFloat("_LeafPlaneShading", 0.5f);
             mat.SetFloat("_ContactBlobMode", 1f);
             mat.SetFloat("_ContactShadowEnabled", 1f);
+            mat.SetFloat("_ContactDarkness", 0.45f);
             mat.SetFloat("_ContactRadius", 0.35f);
             mat.SetFloat("_ContactProjectionScale", 1.2f);
+            mat.SetFloat("_ReceivedShadowStrength", 1f);
             mat.enableInstancing = true;
             return CreateOrUpdateAsset(mat, MaterialsFolder + "/VegPlantFlat.mat");
         }
@@ -212,8 +217,10 @@ namespace Kruty1918.Moyva.Generator.Editor
             mat.SetFloat("_TextureVolumeStrength", 0.15f);
             mat.SetFloat("_LeafPlaneShading", 0.3f);
             mat.SetFloat("_ContactBlobMode", 1f);
+            mat.SetFloat("_ContactDarkness", 0.3f);
             mat.SetFloat("_ContactRadius", 0.35f);
             mat.SetFloat("_ContactProjectionScale", 1.2f);
+            mat.SetFloat("_ReceivedShadowStrength", 1f);
             mat.enableInstancing = true;
             return CreateOrUpdateAsset(mat, MaterialsFolder + "/VegBark.mat");
         }
@@ -230,12 +237,15 @@ namespace Kruty1918.Moyva.Generator.Editor
             mat.SetFloat("_CullMode", 0f);
             mat.SetFloat("_ZWrite", 1f);
             mat.SetFloat("_AmbientStrength", 0.75f);
-            mat.SetFloat("_MinimumBrightness", 0.85f);
+            mat.SetFloat("_MinimumBrightness", 0.6f);
             mat.SetFloat("_LeafPlaneShading", 1f);
-            mat.SetFloat("_TextureVolumeStrength", 0.2f);
+            mat.SetFloat("_LeafShadeStrength", 0.16f);
+            mat.SetFloat("_TextureVolumeStrength", 0.3f);
             mat.SetFloat("_ContactBlobMode", 1f);
+            mat.SetFloat("_ContactDarkness", 0.45f);
             mat.SetFloat("_ContactRadius", 0.46f);
             mat.SetFloat("_ContactProjectionScale", 1.2f);
+            mat.SetFloat("_ReceivedShadowStrength", 1f);
             mat.SetFloat("_OutlineEnabled", 1f);
             mat.SetFloat("_OutlineScreenWidthPx", 1f);
             mat.renderQueue = 2490;
@@ -310,7 +320,11 @@ namespace Kruty1918.Moyva.Generator.Editor
             => WritePrefab(id, mesh, mat, castShadows);
 
         private static int FlatPrefab(string id, Mesh mesh, Material mat, bool castShadows)
-            => WritePrefab(id, mesh, mat, castShadows);
+        {
+            if (mat.HasProperty("_BillboardEnabled") && mat.GetFloat("_BillboardEnabled") > 0.5f)
+                mat = MoyvaVegetationBillboardBaker.Bake(mesh, mat, TexturesFolder, MaterialsFolder);
+            return WritePrefab(id, mesh, mat, castShadows);
+        }
 
         private static int WritePrefab(string id, Mesh mesh, Material mat, bool castShadows)
         {
@@ -580,19 +594,16 @@ namespace Kruty1918.Moyva.Generator.Editor
         private static Mesh BuildCrossMesh(string name, int planes, float w, float h, float leanDeg)
         {
             var mb = new MB();
-            for (int i = 0; i < planes; i++)
-                mb.Card(w, h, 180f / planes * i, Vector3.zero, leanDeg);
+            // Flattening several crossed planes in the billboard shader
+            // makes them coplanar and causes flicker. Keep one actual plane.
+            mb.Card(w, h, 0f, Vector3.zero, 0f);
             return mb.Bake(name);
         }
 
         private static Mesh BuildClumpMesh(string name, int planes, float spread, float h)
         {
             var mb = new MB();
-            mb.Card(spread * 0.55f, h, 0f, Vector3.zero, 0f);
-            mb.Card(spread * 0.5f, h * 0.92f, 70f, new Vector3(-spread * 0.22f, 0, 0.05f), 6f);
-            mb.Card(spread * 0.5f, h * 0.85f, -65f, new Vector3(spread * 0.22f, 0, -0.04f), -6f);
-            if (planes > 3)
-                mb.Card(spread * 0.4f, h * 0.7f, 30f, new Vector3(0, 0, spread * 0.18f), 4f);
+            mb.Card(spread * 0.8f, h, 0f, Vector3.zero, 0f);
             return mb.Bake(name);
         }
 

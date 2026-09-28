@@ -7,13 +7,15 @@ using Zenject;
 namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
 {
     /// <summary>
-    /// Places the Stylized Water 3 waterfall prefab (or legacy lip foam,
-    /// impact splashes and mist) at the fronts detected by
-    /// <see cref="WaterfallChunkMeshService"/>. Instances live under a
-    /// per-chunk "Waterfalls" root so chunk culling applies and a rebuild
-    /// clears them with the chunk. Prefabs are scaled moderately: the edge
-    /// emitter widens with the front, splash/mist get a uniform factor, and
-    /// per-system particle caps stay inside the mobile budget.
+    /// Places the Stylized Water 3 particle prefabs (lip foam, impact
+    /// splashes, mist) on the fronts detected by
+    /// <see cref="WaterfallChunkMeshService"/>, matching each instance to
+    /// that front's generated ribbon: the edge emitter sits on the tucked
+    /// lip, splashes and mist sit on the ribbon's impact curl above the
+    /// lower sheet, and start speeds scale with sqrt(drop) like the
+    /// curtain's scroll. Instances live under a per-chunk "Waterfalls"
+    /// root so chunk culling applies; every renderer registers with the
+    /// visual chunk registry across all chunks the front touches.
     /// </summary>
     internal sealed class WaterfallVfxSpawner
     {
@@ -21,15 +23,19 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
 
         private readonly IMapChunkLayoutService _layout;
         private readonly IMapVisualChunkRootService _roots;
+        private readonly IMapVisualChunkRegistry _registry;
+        private readonly List<MapChunkCoord> _frontChunks = new();
         private readonly Dictionary<MapChunkCoord, Transform> _spawnRoots
             = new Dictionary<MapChunkCoord, Transform>();
 
         public WaterfallVfxSpawner(
             [InjectOptional] IMapChunkLayoutService layout = null,
-            [InjectOptional] IMapVisualChunkRootService roots = null)
+            [InjectOptional] IMapVisualChunkRootService roots = null,
+            [InjectOptional] IMapVisualChunkRegistry registry = null)
         {
             _layout = layout;
             _roots = roots;
+            _registry = registry;
         }
 
         /// <summary>
@@ -48,10 +54,10 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
 
             var config = falls.Config;
             int budget = Mathf.Max(0, config.MaxVfxPerMap);
-            if (config.Prefab == null && (budget == 0
+            if (budget == 0
                 || (config.EdgeFoamPrefab == null
                     && config.ImpactSplashPrefab == null
-                    && config.MistPrefab == null)))
+                    && config.MistPrefab == null))
             {
                 return 0;
             }
@@ -62,6 +68,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 / Mathf.Max(1, config.MinDropLevels);
             float vfxScale = Mathf.Clamp(config.VfxScale, 0.1f, 4f);
             int maxParticles = Mathf.Max(1, config.MaxParticlesPerVfx);
+            float speedReference = Mathf.Max(0.01f, config.SpeedReferenceDropMeters);
 
             // Largest fronts receive particles first; every front keeps its
             // waterfall mesh when the particle budget is exhausted.
@@ -81,96 +88,65 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 var dir = new Vector3(front.Dir.x, 0f, front.Dir.y).normalized;
                 var rotation = Quaternion.LookRotation(dir, Vector3.up);
                 Vector3 center = front.Center * cs;
-                var lipPos = new Vector3(center.x, front.TopY - 0.05f, center.z);
+                float bow = WaterfallChunkMeshService.BowFactor(front.Drop);
+
+                // Lip foam rides the ribbon's crest nose; splashes and mist
+                // sit on the impact curl where the tail dives under the
+                // lower sheet — both offsets mirror the ribbon profile.
+                var lipPos = new Vector3(
+                    center.x + dir.x * 0.05f * cs,
+                    front.TopY - 0.06f,
+                    center.z + dir.z * 0.05f * cs);
                 var basePos = new Vector3(
-                    center.x + dir.x * 0.15f * cs,
-                    front.BottomY + 0.05f,
-                    center.z + dir.z * 0.15f * cs);
+                    center.x + dir.x * 0.22f * cs * bow,
+                    front.BottomY + 0.03f,
+                    center.z + dir.z * 0.22f * cs * bow);
                 string id = $"{front.Anchor.x}_{front.Anchor.y}_{front.Dir.x}_{front.Dir.y}";
                 float frontWidth = front.WidthCells * cs;
-
-                if (config.Prefab != null)
-                {
-                    SpawnWaterfallPrefab(config, root, id, center, rotation,
-                        frontWidth, front.Drop, front.TopY, maxParticles,
-                        spawned < budget);
-                    spawned++;
-                    continue;
-                }
+                float speedScale = Mathf.Clamp(
+                    config.VfxSpeedScale * Mathf.Sqrt(front.Drop / speedReference),
+                    0.25f, 6f);
 
                 if (spawned < budget)
                     spawned += SpawnOne(
                         config.EdgeFoamPrefab, root, $"wfall_edge_{id}", lipPos, rotation,
-                        Vector3.one * vfxScale, frontWidth, maxParticles);
+                        Vector3.one * vfxScale, frontWidth, maxParticles,
+                        speedScale, front);
                 if (spawned < budget)
                     spawned += SpawnOne(
                         config.ImpactSplashPrefab, root, $"wfall_splash_{id}", basePos, rotation,
-                        Vector3.one * vfxScale, frontWidth, maxParticles);
+                        Vector3.one * vfxScale, frontWidth, maxParticles,
+                        speedScale, front);
                 if (front.Drop >= mistDrop && spawned < budget)
                 {
                     spawned += SpawnOne(
                         config.MistPrefab, root, $"wfall_mist_{id}", basePos, rotation,
                         Vector3.one * vfxScale,
-                        Mathf.Max(2f, frontWidth), maxParticles);
+                        Mathf.Max(2f, frontWidth), maxParticles,
+                        speedScale, front);
                 }
             }
             return spawned;
         }
 
-        private static void SpawnWaterfallPrefab(
-            RecipeWaterfallConfig config,
-            Transform parent,
-            string id,
-            Vector3 center,
-            Quaternion rotation,
-            float width,
-            float drop,
-            float topY,
-            int maxParticles,
-            bool emitParticles)
+        private void RegisterFront(GameObject instance, WaterfallFieldPlanner.Front front)
         {
-            MeshFilter sourceMesh = config.Prefab.GetComponent<MeshFilter>();
-            if (sourceMesh == null || sourceMesh.sharedMesh == null)
+            if (_registry == null)
                 return;
-
-            Bounds bounds = sourceMesh.sharedMesh.bounds;
-            if (bounds.size.x <= 0.0001f || bounds.size.y <= 0.0001f)
-                return;
-
-            var instance = Object.Instantiate(config.Prefab, parent, false);
-            instance.name = $"wfall_{id}";
-            float sx = width * Mathf.Max(0.1f, config.WidthScale) / bounds.size.x;
-            float sy = drop * Mathf.Max(0.1f, config.HeightScale) / bounds.size.y;
-            // Keep the prefab's authored foam motion and scale the full
-            // waterfall, including its lip and impact emitters, as one unit.
-            // Authored splashes sit several units forward of the lip. Their
-            // depth must follow the drop scale, while X follows front width.
-            instance.transform.localScale = new Vector3(sx, sy, sy);
-            instance.transform.localRotation = rotation;
-            // Anchor the mesh's actual lip, not its whole curved volume's
-            // centre, which is forward of the upper sheet on SW3 prefabs.
-            Vector3 localTop = new Vector3(bounds.center.x, bounds.max.y, bounds.min.z);
-            instance.transform.localPosition =
-                new Vector3(center.x, topY + Mathf.Min(0.01f, drop * 0.05f), center.z)
-                - rotation * Vector3.Scale(localTop, instance.transform.localScale);
-
-            var waterfallRenderer = instance.GetComponent<MeshRenderer>();
-            if (waterfallRenderer != null)
+            _frontChunks.Clear();
+            foreach (var edge in front.Edges)
             {
-                if (config.CurtainMaterial != null)
-                    waterfallRenderer.sharedMaterial = config.CurtainMaterial;
-                waterfallRenderer.shadowCastingMode =
-                    UnityEngine.Rendering.ShadowCastingMode.Off;
+                AddChunk(edge.Cell);
+                AddChunk(edge.Lower);
             }
+            foreach (var renderer in instance.GetComponentsInChildren<Renderer>(true))
+                _registry.Register(renderer, _frontChunks);
+        }
 
-            foreach (var system in instance.GetComponentsInChildren<ParticleSystem>(true))
-            {
-                var main = system.main;
-                if (main.maxParticles > maxParticles)
-                    main.maxParticles = maxParticles;
-                if (!emitParticles)
-                    system.gameObject.SetActive(false);
-            }
+        private void AddChunk(Vector2Int cell)
+        {
+            if (_layout.TryGetChunkCoord(cell, out var coord) && !_frontChunks.Contains(coord))
+                _frontChunks.Add(coord);
         }
 
         public void Clear()
@@ -217,7 +193,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         /// system's local space, so it compensates the uniform transform
         /// scale to land exactly on the requested world width.
         /// </summary>
-        private static int SpawnOne(
+        private int SpawnOne(
             GameObject prefab,
             Transform parent,
             string name,
@@ -225,7 +201,9 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             Quaternion rotation,
             Vector3 scale,
             float shapeWidth,
-            int maxParticles)
+            int maxParticles,
+            float speedScale,
+            WaterfallFieldPlanner.Front front)
         {
             if (prefab == null)
                 return 0;
@@ -238,8 +216,14 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             for (int i = 0; i < systems.Length; i++)
             {
                 var main = systems[i].main;
+                // SW3 emitters author in Local scaling: Hierarchy keeps
+                // particle size and velocity consistent with VfxScale on
+                // drops much smaller than the prefab's 20m source.
+                main.scalingMode = ParticleSystemScalingMode.Hierarchy;
                 if (main.maxParticles > maxParticles)
                     main.maxParticles = maxParticles;
+                if (Mathf.Abs(speedScale - 1f) > 0.01f)
+                    ScaleStartSpeed(systems[i], speedScale);
                 if (shapeWidth > 0f)
                 {
                     var shape = systems[i].shape;
@@ -248,7 +232,30 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                     shape.scale = s;
                 }
             }
+            RegisterFront(instance, front);
             return 1;
+        }
+
+        /*
+         * Scales startSpeed across every curve mode so splash and mist
+         * launch speed follows the same sqrt(drop) physics as the curtain
+         * scroll — taller pours visibly hit harder and faster.
+         */
+        private static void ScaleStartSpeed(ParticleSystem system, float factor)
+        {
+            var main = system.main;
+            var speed = main.startSpeed;
+            if (speed.mode == ParticleSystemCurveMode.Constant
+                || speed.mode == ParticleSystemCurveMode.TwoConstants)
+            {
+                speed.constantMin *= factor;
+                speed.constantMax *= factor;
+            }
+            else
+            {
+                speed.curveMultiplier *= factor;
+            }
+            main.startSpeed = speed;
         }
     }
 }

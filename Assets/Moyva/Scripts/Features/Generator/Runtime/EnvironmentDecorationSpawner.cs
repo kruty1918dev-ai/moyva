@@ -204,6 +204,9 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 placement.Position.y,
                 placement.Position.z * cellSize);
             Quaternion localRotation = placement.Rotation;
+            bool billboard = EnvironmentObjectPlacementResolver.IsCameraBillboard(definition.VisualPrefab);
+            if (billboard)
+                localRotation = Quaternion.identity;
             if (_terrainLevels != null
                 && _terrainLevels.TryGetSurfaceHeight(cell, out float surfaceY))
             {
@@ -211,6 +214,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 // boulders and logs stay upright so trees never lie
                 // horizontally on slopes.
                 if (_alignToSurface
+                    && !billboard
                     && AlignsToSurface(placement.Type)
                     && _terrainLevels.TryGetSurfaceNormal(cell, cellSize, out Vector3 normal)
                     && normal.y < 0.9999f)
@@ -218,9 +222,9 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     localRotation = Quaternion.FromToRotation(Vector3.up, normal) * localRotation;
                 }
 
-                // Ground the prefab's lowest transformed point on the lowest
+                // Ground the prefab's lowest transformed point on the highest
                 // terrain under its footprint, not the pivot on the anchor
-                // cell — this keeps rocks from floating over slopes.
+                // cell so lower neighbours cannot bury the model.
                 localPosition.y = (_placementResolver != null
                     ? _placementResolver.ResolveGroundedY(
                         definition.VisualPrefab,
@@ -231,7 +235,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                         SurfaceHeightOrNaN,
                         surfaceY,
                         _footprintShrink)
-                    : surfaceY) + placement.YOffset;
+                    : surfaceY) + (billboard ? Mathf.Max(0f, placement.YOffset) : placement.YOffset);
             }
             instance.transform.localPosition = localPosition;
             instance.transform.localRotation = localRotation;

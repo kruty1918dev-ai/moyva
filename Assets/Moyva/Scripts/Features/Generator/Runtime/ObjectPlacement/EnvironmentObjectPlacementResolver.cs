@@ -121,15 +121,14 @@ namespace Kruty1918.Moyva.Generator.Runtime
             float ez = Mathf.Abs(local.center.z) + local.extents.z;
             float sx = Mathf.Abs(scale.x) * ex;
             float sz = Mathf.Abs(scale.z) * ez;
-            return Mathf.Sqrt(sx * sx + sz * sz) * 0.7071f * Mathf.Clamp(shrink, 0.1f, 1f);
+            return Mathf.Sqrt(sx * sx + sz * sz) * Mathf.Clamp(shrink, 0.1f, 1f);
         }
 
         /// <summary>
         /// Grounding height for a prop whose pivot may sit above or below the
         /// model's lower bound. The prop's lowest transformed point lands on
-        /// the lowest terrain surface under its footprint, so rocks rest on
-        /// the ground instead of floating over a slope the offset carried
-        /// them onto.
+        /// the highest supporting terrain surface under its footprint so a
+        /// lower neighbour cannot pull the model into the anchor tile.
         /// </summary>
         public float ResolveGroundedY(
             GameObject prefab,
@@ -144,7 +143,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             Bounds localBounds = ResolveLocalBounds(prefab);
             float minLocalY = ResolveTransformedMinY(localBounds, rotation, scale);
 
-            float minSurface = float.MaxValue;
+            float maxSurface = float.MinValue;
             bool any = false;
             foreach (Vector2Int cell in CoveredCells(
                          localBounds, worldPosition, rotation, scale, cellSize, footprintShrink))
@@ -154,13 +153,25 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     : float.NaN;
                 if (float.IsNaN(h) || float.IsInfinity(h))
                     continue;
-                if (h < minSurface)
-                    minSurface = h;
+                if (h > maxSurface)
+                    maxSurface = h;
                 any = true;
             }
 
-            float surface = any ? minSurface : fallbackSurfaceY;
+            float surface = any ? maxSurface : fallbackSurfaceY;
             return surface - minLocalY;
+        }
+
+        internal static bool IsCameraBillboard(GameObject prefab)
+        {
+            if (prefab == null)
+                return false;
+            foreach (Renderer renderer in prefab.GetComponentsInChildren<Renderer>(true))
+                foreach (Material material in renderer.sharedMaterials)
+                    if (material != null && material.HasProperty("_BillboardEnabled")
+                        && material.GetFloat("_BillboardEnabled") > 0.5f)
+                        return true;
+            return false;
         }
 
         private bool IsFootprintValid(

@@ -294,6 +294,7 @@
             "fog-of-war",
             "game-session-config",
             "gameplay-motion",
+            "generation-profiles",
             "generation-rules",
             "generator-map-recipe",
             "graphics-startup-settings",

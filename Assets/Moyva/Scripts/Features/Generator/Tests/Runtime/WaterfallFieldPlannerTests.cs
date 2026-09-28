@@ -75,6 +75,43 @@ namespace Kruty1918.Moyva.Generator.Tests.Runtime
         }
 
         [Test]
+        public void SmallRenderedDrop_ProducesFront()
+        {
+            var g = new Grid(3, 3);
+            g.Water(1, 1, 0.42f);
+            g.Water(1, 2, 0.20f);
+            var field = g.Build(0.02f);
+            Assert.AreEqual(1, field.Fronts.Count);
+            Assert.AreEqual(0.22f, field.Fronts[0].Drop, 0.0001f);
+        }
+
+        [Test]
+        public void SquareSheets_TouchingOnlyAtCorner_DoNotCreateFloatingCurtain()
+        {
+            var g = new Grid(3, 3);
+            g.Water(1, 1, 0.92f);
+            g.Water(2, 2, 0.20f);
+            var field = WaterfallFieldPlanner.Build(3, 3, 1f,
+                g.Sheet, g.Surf, g.Target, 0.02f, cardinalEdgesOnly: true);
+            Assert.IsEmpty(field.Fronts);
+        }
+
+        [Test]
+        public void AdjacentSmallDropsAtDifferentLevels_KeepSeparateLips()
+        {
+            var g = new Grid(4, 3);
+            g.Water(1, 1, 0.42f);
+            g.Water(2, 1, 0.47f);
+            g.Water(1, 2, 0.20f);
+            g.Water(2, 2, 0.20f);
+            var field = g.Build(0.02f);
+            int northFronts = 0;
+            foreach (var front in field.Fronts)
+                if (front.Dir == Vector2Int.up) { northFronts++; Assert.AreEqual(1, front.WidthCells); }
+            Assert.AreEqual(2, northFronts);
+        }
+
+        [Test]
         public void DeepBedUnderFlatWater_ProducesNoFronts()
         {
             // Bed depth is not a surface drop: a flat water surface over a

@@ -14,7 +14,6 @@ Material:
   m_ValidKeywords:
   - _DISTANCE_NORMALS
   - _ENVIRONMENTREFLECTIONS_OFF
-  - _INTERSECTION_FOAM
   - _NORMALMAP
   - _SURFACE_FOAM_SINGLE
   - _TRANSLUCENCY
@@ -165,16 +164,16 @@ Material:
     - _Cutoff: 0.5
     - _Depth: 0.94
     - _DepthExp: 1
-    - _DepthHorizontal: 1.0
+    - _DepthHorizontal: 1
     - _DepthMode: 0
     - _DepthTexture: 1
-    - _DepthVertical: 4.0
+    - _DepthVertical: 4
     - _DisableDepthTexture: 0
     - _DistanceFoamTiling: 0.2
     - _DistanceNormalsOn: 1
     - _DistanceNormalsTiling: 0.05
     - _DstBlend: 0
-    - _EdgeFade: 8
+    - _EdgeFade: 0.001
     - _EnableDirectionalCaustics: 0
     - _EnvironmentReflections: 1
     - _EnvironmentReflectionsOn: 0
@@ -210,7 +209,7 @@ Material:
     - _IntersectionClipping: 1
     - _IntersectionDistortion: 0.146
     - _IntersectionFalloff: 1
-    - _IntersectionFoamOn: 1
+    - _IntersectionFoamOn: 0
     - _IntersectionLength: 3.85
     - _IntersectionRippleDist: 32
     - _IntersectionRippleSpeed: 1
@@ -251,7 +250,7 @@ Material:
     - _ReflectionDistortion: 0.146
     - _ReflectionFresnel: 6
     - _ReflectionLighting: 1
-    - _ReflectionStrength: 1
+    - _ReflectionStrength: 0
     - _Reflectivity: 1
     - _RefractionAmount: 0.05
     - _RefractionChromaticAberration: 1
@@ -285,8 +284,8 @@ Material:
     - _SunReflectionDistortion: 0.762
     - _SunReflectionPerturbance: 0.386
     - _SunReflectionSharp: 0
-    - _SunReflectionSize: 0.932
-    - _SunReflectionStrength: 10
+    - _SunReflectionSize: 0.3
+    - _SunReflectionStrength: 0.25
     - _Surface: 0
     - _TEXTURE_INTERSECTIONOn: 0
     - _Texture_IntersectionOn: 1
@@ -317,7 +316,7 @@ Material:
     - _WorkflowMode: 1
     - _WorldSpaceUV: 1
     - _ZClip: 1
-    - _ZWrite: 0
+    - _ZWrite: 1
     m_Colors:
     - _BaseColor: {r: 0.07, g: 0.36, b: 0.55, a: 1}
     - _Color: {r: 0.5, g: 0.5, b: 0.5, a: 1}

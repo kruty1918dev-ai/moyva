@@ -163,22 +163,24 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             results.Add(meshSource);
             int added = 1;
             float offset = Mathf.Min(0f, _profile.WaterSurfaceOffset);
-            added += AddSimpleWaterSide(composition.NorthSurfaceHeight, Vector3.forward, 0f, position, waterY, offset, cellSize, materials, sample, results);
-            added += AddSimpleWaterSide(composition.EastSurfaceHeight, Vector3.right, 90f, position, waterY, offset, cellSize, materials, sample, results);
-            added += AddSimpleWaterSide(composition.SouthSurfaceHeight, Vector3.back, 180f, position, waterY, offset, cellSize, materials, sample, results);
-            added += AddSimpleWaterSide(composition.WestSurfaceHeight, Vector3.left, 270f, position, waterY, offset, cellSize, materials, sample, results);
+            added += AddSimpleWaterSide(composition.NorthSurfaceHeight, composition.Cell, Vector3.forward, 0f, position, waterY, offset, cellSize, materials, sample, results);
+            added += AddSimpleWaterSide(composition.EastSurfaceHeight, composition.Cell, Vector3.right, 90f, position, waterY, offset, cellSize, materials, sample, results);
+            added += AddSimpleWaterSide(composition.SouthSurfaceHeight, composition.Cell, Vector3.back, 180f, position, waterY, offset, cellSize, materials, sample, results);
+            added += AddSimpleWaterSide(composition.WestSurfaceHeight, composition.Cell, Vector3.left, 270f, position, waterY, offset, cellSize, materials, sample, results);
             return added;
         }
 
         /*
          * This backing face seals the drop from either camera direction.
-         * The authored waterfall prefab sits in front of it on wet-to-wet
-         * fronts; dry cliff edges keep the same backing without particles.
+         * The generated waterfall ribbon owns wet-to-wet fronts (its lip
+         * tuck and base curl replace the flat quad); dry cliff edges keep
+         * the same backing without particles.
          */
         private const float SimpleWaterMinDrop = 0.02f;
 
-        private static int AddSimpleWaterSide(
+        private int AddSimpleWaterSide(
             float neighborSurface,
+            Vector2Int cell,
             Vector3 outward,
             float yaw,
             Vector3 cellPosition,
@@ -189,6 +191,14 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             TileLayerSample sample,
             List<TileMeshSource> results)
         {
+            var dir = new Vector2Int(
+                Mathf.RoundToInt(outward.x), Mathf.RoundToInt(outward.z));
+            if (dir != Vector2Int.zero && _waterfalls != null
+                && _waterfalls.IsCovered(cell, dir))
+            {
+                return 0;
+            }
+
             if (!IsFinite(neighborSurface))
                 return 0;
 
@@ -200,10 +210,10 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 return 0;
 
             float bottom = neighborSurface + offset - 0.04f;
-            float top = waterY + 0.02f;
+            float top = waterY;
             float drop = top - bottom;
 
-            Vector3 edge = cellPosition + outward * (cellSize * 0.5f + 0.008f);
+            Vector3 edge = cellPosition + outward * (cellSize * 0.5f);
             edge.y = top;
             var side = new TileMeshSource(
                 SimpleWaterQuadMeshUtility.GetOrCreateSide(),
@@ -877,17 +887,20 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             }
 
             TileMeshOccludedSides occludedSides = ResolveOccludedSides(composition);
-            Mesh mesh = SolidBeveledTileMeshUtility.GetOrCreate(occludedSides);
+            // A beveled boundary can drop below a slightly lower neighbour
+            // whose side is culled. A full footprint top plus the canonical
+            // delta skirt stays closed at every height, including corners.
+            Mesh mesh = SolidBeveledTileMeshUtility.GetOrCreate(
+                TileMeshOccludedSides.North | TileMeshOccludedSides.East
+                | TileMeshOccludedSides.South | TileMeshOccludedSides.West);
             if (mesh == null)
                 return false;
 
             var sample = composition.MainTerrain;
             float cellSize = ResolveCellSize();
-            Vector3 scale = fillPrefab.transform.localScale;
-            if (buildLayer != null && buildLayer.scaleTileToCellSize)
-                scale *= cellSize;
-            Vector3 scaleOffset = buildLayer != null ? buildLayer.scaleOffset : Vector3.one;
-            scale = new Vector3(scale.x * scaleOffset.x, scale.y * scaleOffset.y, scale.z * scaleOffset.z);
+            // This mesh is generated in unit cell space, independent of the
+            // authored prefab's import scale and decorative scale offsets.
+            Vector3 scale = new Vector3(cellSize, 1f, cellSize);
 
             var position = new Vector3(
                 composition.Cell.x * cellSize,

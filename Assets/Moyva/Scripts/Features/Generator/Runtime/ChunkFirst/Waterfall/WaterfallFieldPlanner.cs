@@ -105,7 +105,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             bool[,] waterSheet,
             float[,] surfaces,
             bool[,] waterTarget,
-            float minDropMeters)
+            float minDropMeters,
+            bool cardinalEdgesOnly = false)
         {
             var field = new Field
             {
@@ -137,7 +138,9 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                     continue;
 
                 var cell = new Vector2Int(x, y);
-                for (int i = 0; i < Dirs.Length; i++)
+                // Square water quads share faces only across cardinal edges.
+                // Diagonally touching sheets share a point, not a pour width.
+                for (int i = 0; i < (cardinalEdgesOnly ? 4 : Dirs.Length); i++)
                 {
                     var d = Dirs[i];
                     var lower = new Vector2Int(x + d.x, y + d.y);
