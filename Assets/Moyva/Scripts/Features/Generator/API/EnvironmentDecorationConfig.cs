@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Kruty1918.JsonConfig;
+using Kruty1918.SpriteGrounding;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.API
@@ -76,6 +77,12 @@ namespace Kruty1918.Moyva.Generator.API
         /// Analytic wave floating for water-authored props and water flora.
         /// </summary>
         public WaterFloatRules Floating = new();
+
+        /// <summary>
+        /// Alpha-card grounding: visible-bounds analysis, support point and
+        /// optional trimmed mesh bounds for card-decorated props.
+        /// </summary>
+        public SpriteGroundingRules SpriteGrounding = new();
 
         /// <summary>
         /// Asset variant pools for each environment type.
@@ -480,5 +487,47 @@ namespace Kruty1918.Moyva.Generator.API
         /// flush on slopes instead of staying world-upright.
         /// </summary>
         public bool AlignToSurface = true;
+    }
+
+    /// <summary>
+    /// Tuning for sprite/card grounding via the Kruty1918.SpriteGrounding
+    /// package: alpha-carded props ground on their visible content instead
+    /// of the quad edges, and the support point (not the quad centre) lands
+    /// on the placement anchor.
+    /// </summary>
+    [Serializable]
+    public sealed class SpriteGroundingRules
+    {
+        /// <summary>Master switch. False keeps legacy mesh-bounds grounding.</summary>
+        public bool Enabled = true;
+
+        /// <summary>
+        /// Alpha cutoff for visible-content detection. Matched against the
+        /// material's _AlphaClipThreshold when present.
+        /// </summary>
+        [Range(0f, 1f)]
+        public float AlphaThreshold = 0.35f;
+
+        /// <summary>Pixel margin kept around the detected visible rect.</summary>
+        [Min(0)]
+        public int PaddingPixels = 1;
+
+        /// <summary>Which part of the silhouette roots at the anchor.</summary>
+        public SupportPointMode SupportMode = SupportPointMode.LowestRowCentroid;
+
+        /// <summary>Bottom rows scanned by LowestRowCentroid support solving.</summary>
+        [Min(1)]
+        public int SupportBandRows = 8;
+
+        /// <summary>
+        /// Give spawned card instances a shared bounds-refit mesh copy so
+        /// renderer bounds match the visible content (better culling and
+        /// footprint math). Source mesh assets are never mutated.
+        /// </summary>
+        public bool RefitMeshBounds = true;
+
+        /// <summary>Extra sink below the resolved surface in meters.</summary>
+        [Min(0f)]
+        public float SinkMeters = 0f;
     }
 }

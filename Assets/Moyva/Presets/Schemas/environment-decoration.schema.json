@@ -396,6 +396,57 @@
       "additionalProperties": false,
       "title": "Floating"
     },
+    "spriteGrounding": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "title": "Enabled"
+        },
+        "alphaThreshold": {
+          "type": "number",
+          "title": "Alpha Threshold",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 1.0
+        },
+        "paddingPixels": {
+          "type": "integer",
+          "title": "Padding Pixels",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        },
+        "supportMode": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "title": "Support Mode"
+        },
+        "supportBandRows": {
+          "type": "integer",
+          "title": "Support Band Rows",
+          "minimum": 1.0,
+          "x-moyva-editorMinimum": 1.0
+        },
+        "refitMeshBounds": {
+          "type": "boolean",
+          "title": "Refit Mesh Bounds"
+        },
+        "sinkMeters": {
+          "type": "number",
+          "title": "Sink Meters",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        }
+      },
+      "additionalProperties": false,
+      "title": "Sprite Grounding"
+    },
     "assetPools": {
       "type": [
         "object",

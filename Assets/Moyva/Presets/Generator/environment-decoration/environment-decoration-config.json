@@ -71,6 +71,15 @@
       }
     ]
   },
+  "spriteGrounding": {
+    "enabled": true,
+    "alphaThreshold": 0.35,
+    "paddingPixels": 1,
+    "supportMode": "lowestRowCentroid",
+    "supportBandRows": 8,
+    "refitMeshBounds": true,
+    "sinkMeters": 0.0
+  },
   "layers": [
     {
       "type": "grass",

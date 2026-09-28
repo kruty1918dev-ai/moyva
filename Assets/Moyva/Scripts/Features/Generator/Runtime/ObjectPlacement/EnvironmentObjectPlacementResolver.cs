@@ -15,6 +15,13 @@ namespace Kruty1918.Moyva.Generator.Runtime
     internal sealed class EnvironmentObjectPlacementResolver
     {
         private readonly Dictionary<GameObject, Bounds> _localBoundsCache = new();
+        private readonly SpriteCardGroundingService _cardGrounding;
+
+        public EnvironmentObjectPlacementResolver(
+            [Zenject.InjectOptional] SpriteCardGroundingService cardGrounding = null)
+        {
+            _cardGrounding = cardGrounding;
+        }
 
         public readonly struct Request
         {
@@ -246,6 +253,15 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
             if (_localBoundsCache.TryGetValue(prefab, out Bounds cached))
                 return cached;
+
+            // Alpha-carded props ground on their visible content, not the
+            // quad edges — the spawner keeps authored bounds when absent.
+            if (_cardGrounding != null
+                && _cardGrounding.TryGetFrame(prefab, out var cardFrame))
+            {
+                _localBoundsCache[prefab] = cardFrame.VisibleLocalBounds;
+                return cardFrame.VisibleLocalBounds;
+            }
 
             var renderers = prefab.GetComponentsInChildren<Renderer>(true);
             if (renderers == null || renderers.Length == 0)

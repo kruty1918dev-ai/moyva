@@ -28,6 +28,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
         private readonly Dictionary<MapChunkCoord, Transform> _decorationRoots = new Dictionary<MapChunkCoord, Transform>();
         private readonly List<MapChunkCoord> _singleChunkBuffer = new List<MapChunkCoord>(1);
         private readonly HashSet<Vector2Int> _clearedDecorationCells = new HashSet<Vector2Int>();
+        private readonly HashSet<GameObject> _prefabSet = new HashSet<GameObject>();
+        private readonly SpriteCardGroundingService _cardGrounding;
 
         public EnvironmentDecorationSpawner(
             IMapObjectRegistryService objectRegistry,
@@ -38,7 +40,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
             [Zenject.InjectOptional] EnvironmentObjectPlacementResolver placementResolver = null,
             [Zenject.InjectOptional] IMapVisualChunkRegistry chunkRegistry = null,
             [Zenject.InjectOptional] IGraphicsSettingsService graphicsSettings = null,
-            [Zenject.InjectOptional] IWaterFloatService waterFloats = null)
+            [Zenject.InjectOptional] IWaterFloatService waterFloats = null,
+            [Zenject.InjectOptional] SpriteCardGroundingService cardGrounding = null)
         {
             _objectRegistry = objectRegistry ?? throw new ArgumentNullException(nameof(objectRegistry));
             _layout = layout ?? throw new ArgumentNullException(nameof(layout));
@@ -48,6 +51,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             _chunkRegistry = chunkRegistry;
             _graphicsSettings = graphicsSettings;
             _waterFloats = waterFloats;
+            _cardGrounding = cardGrounding;
             _defaultFloatRadius = config?.Floating?.DefaultSampleRadius ?? 0.3f;
             _alignToSurface = config?.VisualVariation?.AlignToSurface ?? true;
             _footprintShrink = config?.Footprint?.FootprintShrink ?? 0.9f;
@@ -65,6 +69,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
             if (placementResult == null || placementResult.Count == 0)
                 return 0;
 
+            PrewarmCardFrames(placementResult);
+
             int spawned = 0;
 
             foreach (var placement in placementResult.Placements)
@@ -74,6 +80,30 @@ namespace Kruty1918.Moyva.Generator.Runtime
             }
 
             return spawned;
+        }
+
+        /// <summary>
+        /// One pass over the placement set analyzing each unique card prefab
+        /// texture once, before any instance is placed. All results are
+        /// applied synchronously in placement order afterwards, so spawn
+        /// output never depends on batch timing.
+        /// </summary>
+        private void PrewarmCardFrames(DecorationPlacementResult placementResult)
+        {
+            if (_cardGrounding == null || !_cardGrounding.Enabled)
+                return;
+
+            _cardGrounding.BeginBuild();
+            _prefabSet.Clear();
+            foreach (var placement in placementResult.Placements)
+            {
+                if (_objectRegistry.TryGetDefinition(placement.AssetId, out var definition)
+                    && definition.VisualPrefab != null)
+                {
+                    _prefabSet.Add(definition.VisualPrefab);
+                }
+            }
+            _cardGrounding.Prewarm(_prefabSet);
         }
 
         /// <summary>
@@ -192,9 +222,18 @@ namespace Kruty1918.Moyva.Generator.Runtime
             if (!_layout.TryGetChunkCoord(cell, out var coord))
                 return false;
 
+            bool hasCardFrame = _cardGrounding != null
+                && _cardGrounding.TryGetFrame(
+                    definition.VisualPrefab, out var cardFrame);
+
             Transform root = GetDecorationRoot(coord);
             var instance = UnityEngine.Object.Instantiate(definition.VisualPrefab, root, false);
             instance.name = $"{definition.Id}_{placement.TileX}_{placement.TileY}";
+
+            // Bounds-refit card meshes tighten renderer bounds to the
+            // visible content before any bounds-based math reads them.
+            if (hasCardFrame)
+                _cardGrounding.ApplyRefitMeshes(instance, cardFrame);
 
             // Placement positions are authored in cell units; convert to world
             // units so offsets stay proportional at any cell size.
@@ -218,6 +257,16 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     localRotation = Quaternion.FromToRotation(Vector3.up, normal) * localRotation;
                 }
 
+                // Card props anchor at their resolved support point (where
+                // the silhouette roots), not the quad centre.
+                if (hasCardFrame)
+                {
+                    Vector3 supportWorld = localRotation
+                        * Vector3.Scale(cardFrame.SupportLocal, placement.Scale);
+                    localPosition.x -= supportWorld.x;
+                    localPosition.z -= supportWorld.z;
+                }
+
                 // Ground the prefab's lowest transformed point on the lowest
                 // terrain under its footprint, not the pivot on the anchor
                 // cell — this keeps rocks from floating over slopes.
@@ -231,7 +280,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
                         SurfaceHeightOrNaN,
                         surfaceY,
                         _footprintShrink)
-                    : surfaceY) + placement.YOffset;
+                    : surfaceY) + placement.YOffset
+                    - (hasCardFrame ? _cardGrounding.SinkMeters : 0f);
             }
             instance.transform.localPosition = localPosition;
             instance.transform.localRotation = localRotation;

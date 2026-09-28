@@ -22,6 +22,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         private readonly Dictionary<MapChunkCoord, Transform> _objectRoots = new Dictionary<MapChunkCoord, Transform>();
         private readonly Dictionary<Vector2Int, List<GameObject>> _propsByCell = new Dictionary<Vector2Int, List<GameObject>>();
         private readonly HashSet<Vector2Int> _clearedPropCells = new HashSet<Vector2Int>();
+        private readonly SpriteCardGroundingService _cardGrounding;
 
         public ChunkFirstObjectSpawner(
             ITileWorldCreatorBuildEnvironment environment,
@@ -31,7 +32,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             [Zenject.InjectOptional] ITerrainPlacementPolicy placementPolicy = null,
             [Zenject.InjectOptional] EnvironmentObjectPlacementResolver placementResolver = null,
             [Zenject.InjectOptional] EnvironmentDecorationConfig decorationConfig = null,
-            [Zenject.InjectOptional] IWaterFloatService waterFloats = null)
+            [Zenject.InjectOptional] IWaterFloatService waterFloats = null,
+            [Zenject.InjectOptional] SpriteCardGroundingService cardGrounding = null)
         {
             _environment = environment;
             _layout = layout;
@@ -42,6 +44,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             _footprintRules = decorationConfig?.Footprint ?? new FootprintRules();
             _floatRules = decorationConfig?.Floating ?? new WaterFloatRules();
             _waterFloats = waterFloats;
+            _cardGrounding = cardGrounding;
         }
 
         public int Spawn(GeneratedWorldData worldData)
@@ -235,6 +238,19 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 sample.SurfaceHeight,
                 cell.y * cellSize);
 
+            bool hasCardFrame = sample.LayerKind != LayerKind.Building
+                && _placementResolver != null
+                && _cardGrounding != null
+                && _cardGrounding.TryGetFrame(prefab, out var cardFrame);
+            // Card props anchor at the silhouette support point (where the
+            // visible stems root), not the quad centre.
+            if (hasCardFrame)
+            {
+                Vector3 support = rotation * cardFrame.SupportLocal;
+                position.x -= support.x;
+                position.z -= support.z;
+            }
+
             // Props sit fully on valid cells: the transformed footprint —
             // crown and LOD meshes included — must not overlap water or
             // spawn-blocked terrain. A prop that does not fit shifts within
@@ -277,12 +293,15 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                     cellSize,
                     c => SurfaceHeightOrNaN(map, c),
                     sample.SurfaceHeight,
-                    _footprintRules.FootprintShrink);
+                    _footprintRules.FootprintShrink)
+                    - (hasCardFrame ? _cardGrounding.SinkMeters : 0f);
             }
 
             Transform root = GetObjectRoot(coord);
             var instance = Object.Instantiate(prefab, root, false);
             instance.name = $"{prefab.name}_{hash:x8}";
+            if (hasCardFrame)
+                _cardGrounding.ApplyRefitMeshes(instance, cardFrame);
             instance.transform.localPosition = position;
             if (sample.LayerKind != LayerKind.Building)
             {
@@ -420,6 +439,19 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 // Legacy flat-map path gets the same footprint guarantee as
                 // the logical-stack path when the map is available.
                 LogicalTileMap logicalMap = worldData?.LogicalTileMap;
+                bool hasCardFrame = skipWaterCells
+                    && logicalMap != null
+                    && _placementResolver != null
+                    && _footprintRules.ValidateHeavyFootprints
+                    && !IsWaterObjectId(id)
+                    && _cardGrounding != null
+                    && _cardGrounding.TryGetFrame(prefab, out var cardFrame);
+                if (hasCardFrame)
+                {
+                    Vector3 support = rotation * cardFrame.SupportLocal;
+                    position.x -= support.x;
+                    position.z -= support.z;
+                }
                 if (skipWaterCells
                     && logicalMap != null
                     && _placementResolver != null
@@ -451,13 +483,16 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                         cellSize,
                         c => SurfaceHeightOrNaN(logicalMap, c),
                         0f,
-                        _footprintRules.FootprintShrink);
+                        _footprintRules.FootprintShrink)
+                        - (hasCardFrame ? _cardGrounding.SinkMeters : 0f);
                 }
 
                 Transform root = GetObjectRoot(coord);
                 uint hash = ChunkFirstStableHash.ObjectVariant(seed, cell, id, 0, prefab.name);
                 var instance = Object.Instantiate(prefab, root, false);
                 instance.name = $"{prefab.name}_{hash:x8}";
+                if (hasCardFrame)
+                    _cardGrounding.ApplyRefitMeshes(instance, cardFrame);
                 instance.transform.localPosition = position;
                 if (skipWaterCells)
                 {
