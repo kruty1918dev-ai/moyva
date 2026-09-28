@@ -1949,9 +1949,26 @@
             "minDropLevels": {
               "type": "integer",
               "title": "Min Drop Levels",
-              "description": "Minimum surface drop between an upper water cell and its lower water neighbour, in terrain-height-step units. Two levels is the recommended starting threshold.",
+              "description": "Minimum surface drop between neighbouring water cells, in terrain-height-step units. One level shows every visible water drop.",
               "minimum": 1.0,
               "x-moyva-editorMinimum": 1.0
+            },
+            "prefab": {
+              "type": ["object", "null"],
+              "title": "Waterfall Prefab",
+              "description": "Stylized Water 3 waterfall prefab fitted to each drop front.",
+              "properties": {
+                "$asset": {"type": "string"},
+                "editorPath": {"type": "string"},
+                "required": {"type": "boolean", "default": true}
+              },
+              "required": ["$asset"]
+            },
+            "widthScale": {
+              "type": "number", "title": "Width Scale", "minimum": 0.1
+            },
+            "heightScale": {
+              "type": "number", "title": "Height Scale", "minimum": 0.1
             },
             "curtainMaterial": {
               "type": [

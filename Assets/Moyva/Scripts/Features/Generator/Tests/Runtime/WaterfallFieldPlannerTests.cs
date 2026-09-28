@@ -62,6 +62,19 @@ namespace Kruty1918.Moyva.Generator.Tests.Runtime
         }
 
         [Test]
+        public void OneLevelWaterDrop_ProducesFrontAtConfiguredThreshold()
+        {
+            var g = new Grid(3, 3);
+            g.Water(1, 1, 2f);
+            g.Water(1, 2, 1f);
+
+            var field = g.Build(minDrop: 1f);
+
+            Assert.AreEqual(1, field.Fronts.Count);
+            Assert.AreEqual(1f, field.Fronts[0].Drop);
+        }
+
+        [Test]
         public void DeepBedUnderFlatWater_ProducesNoFronts()
         {
             // Bed depth is not a surface drop: a flat water surface over a

@@ -7,8 +7,8 @@ using Zenject;
 namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
 {
     /// <summary>
-    /// Places the Stylized Water 3 waterfall VFX prefabs (lip foam, impact
-    /// splashes, mist) at the fronts detected by
+    /// Places the Stylized Water 3 waterfall prefab (or legacy lip foam,
+    /// impact splashes and mist) at the fronts detected by
     /// <see cref="WaterfallChunkMeshService"/>. Instances live under a
     /// per-chunk "Waterfalls" root so chunk culling applies and a rebuild
     /// clears them with the chunk. Prefabs are scaled moderately: the edge
@@ -48,10 +48,10 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
 
             var config = falls.Config;
             int budget = Mathf.Max(0, config.MaxVfxPerMap);
-            if (budget == 0
+            if (config.Prefab == null && (budget == 0
                 || (config.EdgeFoamPrefab == null
                     && config.ImpactSplashPrefab == null
-                    && config.MistPrefab == null))
+                    && config.MistPrefab == null)))
             {
                 return 0;
             }
@@ -63,12 +63,13 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             float vfxScale = Mathf.Clamp(config.VfxScale, 0.1f, 4f);
             int maxParticles = Mathf.Max(1, config.MaxParticlesPerVfx);
 
-            // Largest fronts get the budget first.
+            // Largest fronts receive particles first; every front keeps its
+            // waterfall mesh when the particle budget is exhausted.
             var fronts = new List<WaterfallFieldPlanner.Front>(falls.Fronts);
             fronts.Sort((a, b) => (b.Drop * b.WidthCells).CompareTo(a.Drop * a.WidthCells));
 
             int spawned = 0;
-            for (int i = 0; i < fronts.Count && spawned < budget; i++)
+            for (int i = 0; i < fronts.Count; i++)
             {
                 var front = fronts[i];
                 if (!_layout.TryGetChunkCoord(front.Anchor, out var coord))
@@ -88,6 +89,15 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 string id = $"{front.Anchor.x}_{front.Anchor.y}_{front.Dir.x}_{front.Dir.y}";
                 float frontWidth = front.WidthCells * cs;
 
+                if (config.Prefab != null)
+                {
+                    SpawnWaterfallPrefab(config, root, id, center, rotation,
+                        frontWidth, front.Drop, front.TopY, maxParticles,
+                        spawned < budget);
+                    spawned++;
+                    continue;
+                }
+
                 if (spawned < budget)
                     spawned += SpawnOne(
                         config.EdgeFoamPrefab, root, $"wfall_edge_{id}", lipPos, rotation,
@@ -105,6 +115,60 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 }
             }
             return spawned;
+        }
+
+        private static void SpawnWaterfallPrefab(
+            RecipeWaterfallConfig config,
+            Transform parent,
+            string id,
+            Vector3 center,
+            Quaternion rotation,
+            float width,
+            float drop,
+            float topY,
+            int maxParticles,
+            bool emitParticles)
+        {
+            MeshFilter sourceMesh = config.Prefab.GetComponent<MeshFilter>();
+            if (sourceMesh == null || sourceMesh.sharedMesh == null)
+                return;
+
+            Bounds bounds = sourceMesh.sharedMesh.bounds;
+            if (bounds.size.x <= 0.0001f || bounds.size.y <= 0.0001f)
+                return;
+
+            var instance = Object.Instantiate(config.Prefab, parent, false);
+            instance.name = $"wfall_{id}";
+            float sx = width * Mathf.Max(0.1f, config.WidthScale) / bounds.size.x;
+            float sy = drop * Mathf.Max(0.1f, config.HeightScale) / bounds.size.y;
+            // Keep the prefab's authored foam motion and scale the full
+            // waterfall, including its lip and impact emitters, as one unit.
+            // Authored splashes sit several units forward of the lip. Their
+            // depth must follow the drop scale, while X follows front width.
+            instance.transform.localScale = new Vector3(sx, sy, sy);
+            instance.transform.localRotation = rotation;
+            Vector3 localTop = new Vector3(bounds.center.x, bounds.max.y, bounds.center.z);
+            instance.transform.localPosition =
+                new Vector3(center.x, topY + 0.02f, center.z)
+                - rotation * Vector3.Scale(localTop, instance.transform.localScale);
+
+            var waterfallRenderer = instance.GetComponent<MeshRenderer>();
+            if (waterfallRenderer != null)
+            {
+                if (config.CurtainMaterial != null)
+                    waterfallRenderer.sharedMaterial = config.CurtainMaterial;
+                waterfallRenderer.shadowCastingMode =
+                    UnityEngine.Rendering.ShadowCastingMode.Off;
+            }
+
+            foreach (var system in instance.GetComponentsInChildren<ParticleSystem>(true))
+            {
+                var main = system.main;
+                if (main.maxParticles > maxParticles)
+                    main.maxParticles = maxParticles;
+                if (!emitParticles)
+                    system.gameObject.SetActive(false);
+            }
         }
 
         public void Clear()

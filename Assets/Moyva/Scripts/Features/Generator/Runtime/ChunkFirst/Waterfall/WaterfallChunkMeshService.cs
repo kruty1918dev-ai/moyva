@@ -52,15 +52,15 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         }
 
         /// <summary>
-        /// True when the recipe enables waterfalls and a curtain material is
-        /// assigned. When false the legacy stretched strips keep rendering.
+        /// True when the recipe enables waterfalls and supplies an authored
+        /// prefab or a generated-curtain material.
         /// </summary>
         public bool IsActive
             => _hydrology != null
                && _hydrology.HasHydrology
                && _config != null
                && _config.Enabled
-               && _config.CurtainMaterial != null;
+               && (_config.CurtainMaterial != null || _config.Prefab != null);
 
         public bool HasField => _field != null;
 

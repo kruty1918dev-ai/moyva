@@ -261,11 +261,17 @@ namespace Kruty1918.Moyva.Generator.API
     {
         public bool Enabled = true;
 
-        [Tooltip("Minimum surface drop between an upper water cell and its lower water neighbour, in terrain-height-step units. Two levels is the recommended starting threshold.")]
+        [Tooltip("Minimum surface drop between neighbouring water cells, in terrain-height-step units. One level shows every visible water drop.")]
         [Min(1)] public int MinDropLevels = 2;
 
         [Tooltip("Front curtain material. The SW3 waterfall material scrolls foam downward in world space; falls back to the water preset material when unset.")]
         public Material CurtainMaterial;
+
+        [Tooltip("Stylized Water 3 waterfall prefab used for each water-level front. Its mesh and particle children are scaled to the detected width and drop.")]
+        public GameObject Prefab;
+
+        [Min(0.1f)] public float WidthScale = 1f;
+        [Min(0.1f)] public float HeightScale = 1f;
 
         [Tooltip("Foam strip prefab placed along the fall lip (Stylized Water 3 'Waterfall Edge').")]
         public GameObject EdgeFoamPrefab;
