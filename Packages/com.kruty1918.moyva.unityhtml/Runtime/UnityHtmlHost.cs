@@ -588,18 +588,18 @@ namespace UnityHTML.Runtime
 
 #if UNITY_EDITOR
         // uGUI tracks live Selectables in statics (s_Selectables/s_SelectableCount)
-        // that RuntimeInitializeOnLoadMethod resets on every domain load. When a
-        // domain reload tears down [ExecuteAlways] preview anchors, OnDisable ->
-        // Unmount -> DestroyImmediate cascades Selectable.OnDisable into that
-        // already-drained registry (IndexOutOfRangeException). The unload drops
-        // these DontSave objects anyway, so explicit destruction is skipped once
-        // beforeAssemblyReload has fired.
+        // that reset on every domain load. When a domain reload tears down the
+        // [ExecuteAlways] preview anchors, OnDisable -> Unmount -> DestroyImmediate
+        // cascades Selectable.OnDisable into that already-drained registry
+        // (IndexOutOfRangeException). The unload drops these DontSave objects
+        // anyway, so explicit destruction is skipped once beforeAssemblyReload
+        // has fired. Subscribed in the static constructor: it runs before any
+        // Unmount in this domain can run (RuntimeInitializeOnLoadMethod does not
+        // fire on plain script-compilation reloads).
         private static bool s_editorDomainUnloadInProgress;
 
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterAssembliesLoaded)]
-        private static void TrackEditorDomainUnload()
+        static UnityHtmlHost()
         {
-            s_editorDomainUnloadInProgress = false;
             UnityEditor.AssemblyReloadEvents.beforeAssemblyReload -= OnBeforeEditorAssemblyReload;
             UnityEditor.AssemblyReloadEvents.beforeAssemblyReload += OnBeforeEditorAssemblyReload;
         }
