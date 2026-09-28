@@ -884,6 +884,110 @@
     "editorPath": "Assets/Moyva/Generated/Vegetation/Prefabs/veg-sapling-c.prefab",
     "required": true
    }
+  },
+  {
+   "id": "sw-tree-single-a",
+   "visualPrefab": {
+    "$asset": "asset.game-object.sw-tree-single-a.03b22c40",
+    "editorPath": "Assets/Moyva/Prefabs/Environment/SimpleStable/sw-tree-single-a.prefab",
+    "required": true
+   }
+  },
+  {
+   "id": "sw-tree-single-b",
+   "visualPrefab": {
+    "$asset": "asset.game-object.sw-tree-single-b.145cf70d",
+    "editorPath": "Assets/Moyva/Prefabs/Environment/SimpleStable/sw-tree-single-b.prefab",
+    "required": true
+   }
+  },
+  {
+   "id": "sw-rock-single-a",
+   "visualPrefab": {
+    "$asset": "asset.game-object.sw-rock-single-a.7ecf8dd9",
+    "editorPath": "Assets/Moyva/Prefabs/Environment/SimpleStable/sw-rock-single-a.prefab",
+    "required": true
+   }
+  },
+  {
+   "id": "sw-rock-single-c",
+   "visualPrefab": {
+    "$asset": "asset.game-object.sw-rock-single-c.56e98167",
+    "editorPath": "Assets/Moyva/Prefabs/Environment/SimpleStable/sw-rock-single-c.prefab",
+    "required": true
+   }
+  },
+  {
+   "id": "sw-rock-single-e",
+   "visualPrefab": {
+    "$asset": "asset.game-object.sw-rock-single-e.cc53e388",
+    "editorPath": "Assets/Moyva/Prefabs/Environment/SimpleStable/sw-rock-single-e.prefab",
+    "required": true
+   }
+  },
+  {
+   "id": "sw-grass-cross-a",
+   "visualPrefab": {
+    "$asset": "asset.game-object.sw-grass-cross-a.36447d44",
+    "editorPath": "Assets/Moyva/Prefabs/Environment/SimpleStable/sw-grass-cross-a.prefab",
+    "required": true
+   }
+  },
+  {
+   "id": "sw-grass-tri-a",
+   "visualPrefab": {
+    "$asset": "asset.game-object.sw-grass-tri-a.b0f6ace3",
+    "editorPath": "Assets/Moyva/Prefabs/Environment/SimpleStable/sw-grass-tri-a.prefab",
+    "required": true
+   }
+  },
+  {
+   "id": "sw-grass-tall-a",
+   "visualPrefab": {
+    "$asset": "asset.game-object.sw-grass-tall-a.68339450",
+    "editorPath": "Assets/Moyva/Prefabs/Environment/SimpleStable/sw-grass-tall-a.prefab",
+    "required": true
+   }
+  },
+  {
+   "id": "sw-fern-a",
+   "visualPrefab": {
+    "$asset": "asset.game-object.sw-fern-a.f39b10b4",
+    "editorPath": "Assets/Moyva/Prefabs/Environment/SimpleStable/sw-fern-a.prefab",
+    "required": true
+   }
+  },
+  {
+   "id": "sw-flower-a",
+   "visualPrefab": {
+    "$asset": "asset.game-object.sw-flower-a.978aef1d",
+    "editorPath": "Assets/Moyva/Prefabs/Environment/SimpleStable/sw-flower-a.prefab",
+    "required": true
+   }
+  },
+  {
+   "id": "sw-flower-b",
+   "visualPrefab": {
+    "$asset": "asset.game-object.sw-flower-b.0f3d25fa",
+    "editorPath": "Assets/Moyva/Prefabs/Environment/SimpleStable/sw-flower-b.prefab",
+    "required": true
+   }
+  },
+  {
+   "id": "sw-sedge-a",
+   "visualPrefab": {
+    "$asset": "asset.game-object.sw-sedge-a.fd3447b8",
+    "editorPath": "Assets/Moyva/Prefabs/Environment/SimpleStable/sw-sedge-a.prefab",
+    "required": true
+   }
+  },
+  {
+   "id": "sw-waterlily-a",
+   "visualPrefab": {
+    "$asset": "asset.game-object.sw-waterlily-a.019b7bd4",
+    "editorPath": "Assets/Moyva/Prefabs/Environment/SimpleStable/sw-waterlily-a.prefab",
+    "required": true
+   }
   }
  ],
  "migration": {

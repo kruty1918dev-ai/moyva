@@ -28,6 +28,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         private readonly IRecipeHydrologyMap _hydrology;
         private readonly SeabedChunkMeshService _seabed;
         private readonly WaterfallChunkMeshService _waterfalls;
+        private readonly ResolvedGenerationProfile _profile;
         private readonly Dictionary<string, TilesBuildLayer> _buildLayerByGuid = new Dictionary<string, TilesBuildLayer>(System.StringComparer.Ordinal);
         private readonly Dictionary<GameObject, PrefabMeshTemplate[]> _meshTemplatesByPrefab =
             new Dictionary<GameObject, PrefabMeshTemplate[]>();
@@ -38,7 +39,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             [InjectOptional] ITerrainPassageMap passages = null,
             [InjectOptional] IRecipeHydrologyMap hydrology = null,
             [InjectOptional] SeabedChunkMeshService seabed = null,
-            [InjectOptional] WaterfallChunkMeshService waterfalls = null)
+            [InjectOptional] WaterfallChunkMeshService waterfalls = null,
+            [InjectOptional] ResolvedGenerationProfile profile = null)
         {
             _environment = environment;
             _atlas = atlas;
@@ -46,6 +48,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             _hydrology = hydrology;
             _seabed = seabed;
             _waterfalls = waterfalls;
+            _profile = profile;
         }
 
         public int CollectMeshSources(ResolvedTileComposition composition, List<TileMeshSource> results)
@@ -63,6 +66,23 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             TilesBuildLayer buildLayer = ResolveBuildLayer(sample);
             TilePreset preset = ResolvePreset(buildLayer, sample, composition.Cell, GlobalSeed.Current)
                                 ?? ResolveAtlasPreset(sample);
+
+            /*
+             * simple-stable-v1 water: every surface-only cell emits exactly
+             * one flat quad at its authored water height — no wash sheets,
+             * waterfall strips or dual fragments, so nothing can float above
+             * dry land or tear open along a drop edge.
+             */
+            if (_profile != null
+                && _profile.SimpleWater
+                && sample.TileGeometryMode == TileGeometryMode.SurfaceOnly)
+            {
+                added += CollectSimpleWaterSource(composition, preset, results);
+                if (_profile.WaterEmitBed)
+                    added += CollectWaterBedSource(composition, sample, buildLayer, results);
+                return added;
+            }
+
             if (preset == null)
                 return added;
 
@@ -70,7 +90,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 ? CollectDualGridSources(composition, buildLayer, preset, results)
                 : CollectNormalGridSource(composition, buildLayer, preset, results);
             if (composition.HasWaterSurface
-                && sample.TileGeometryMode != TileGeometryMode.SurfaceOnly)
+                && sample.TileGeometryMode != TileGeometryMode.SurfaceOnly
+                && !(_profile != null && _profile.SimpleWater))
             {
                 added += CollectShoreWaterSource(composition, results);
             }
@@ -88,6 +109,150 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                     added += CollectWaterBedSource(composition, sample, buildLayer, results);
             }
             return added;
+        }
+
+        /*
+         * The profile's whole water surface: one shared 1x1 quad centred on
+         * the cell at the authored water height plus the profile offset.
+         * SurfaceOnly geometry means no authored walls or generated closure;
+         * the bed column underneath (when enabled) keeps the underwater void
+         * sealed for transparent materials.
+         */
+        private int CollectSimpleWaterSource(
+            ResolvedTileComposition composition,
+            TilePreset preset,
+            List<TileMeshSource> results)
+        {
+            var sample = composition.MainTerrain;
+            if (!IsFinite(sample.SurfaceHeight))
+                return 0;
+
+            float cellSize = ResolveCellSize();
+            if (cellSize <= 0.0001f)
+                return 0;
+
+            float waterY = sample.SurfaceHeight + _profile.WaterSurfaceOffset;
+            var position = new Vector3(
+                composition.Cell.x * cellSize,
+                waterY,
+                composition.Cell.y * cellSize);
+            var scale = new Vector3(cellSize, 1f, cellSize);
+            Material[] materials = _profile.WaterMaterial != null
+                ? new[] { _profile.WaterMaterial }
+                : ResolveAuthoredWaterMaterials(preset);
+            if (materials == null || materials.Length == 0 || materials[0] == null)
+                return 0;
+
+            var meshSource = new TileMeshSource(
+                SimpleWaterQuadMeshUtility.GetOrCreate(),
+                materials,
+                Matrix4x4.TRS(position, Quaternion.identity, scale),
+                sample.LayerId,
+                sample.LayerName,
+                visibleBottomY: float.NaN,
+                occludedSides: TileMeshOccludedSides.None,
+                tileCenterXZ: new Vector2(position.x, position.z),
+                tileHalfExtent: cellSize * 0.5f,
+                authoredClosurePolicy: AuthoredClosurePolicy.PreserveAuthored,
+                edgeBottoms: default,
+                tileGeometryMode: TileGeometryMode.SurfaceOnly,
+                generateMissingClosure: false);
+            if (!meshSource.IsValid)
+                return 0;
+
+            results.Add(meshSource);
+            int added = 1;
+            float offset = Mathf.Min(0f, _profile.WaterSurfaceOffset);
+            added += AddSimpleWaterSide(composition.NorthSurfaceHeight, Vector3.forward, 0f, position, waterY, offset, cellSize, materials, sample, results);
+            added += AddSimpleWaterSide(composition.EastSurfaceHeight, Vector3.right, 90f, position, waterY, offset, cellSize, materials, sample, results);
+            added += AddSimpleWaterSide(composition.SouthSurfaceHeight, Vector3.back, 180f, position, waterY, offset, cellSize, materials, sample, results);
+            added += AddSimpleWaterSide(composition.WestSurfaceHeight, Vector3.left, 270f, position, waterY, offset, cellSize, materials, sample, results);
+            return added;
+        }
+
+        /*
+         * This backing face seals the drop from either camera direction.
+         * The authored waterfall prefab sits in front of it on wet-to-wet
+         * fronts; dry cliff edges keep the same backing without particles.
+         */
+        private const float SimpleWaterMinDrop = 0.02f;
+
+        private static int AddSimpleWaterSide(
+            float neighborSurface,
+            Vector3 outward,
+            float yaw,
+            Vector3 cellPosition,
+            float waterY,
+            float offset,
+            float cellSize,
+            Material[] materials,
+            TileLayerSample sample,
+            List<TileMeshSource> results)
+        {
+            if (!IsFinite(neighborSurface))
+                return 0;
+
+            // Sink the lower edge into the neighbour and tuck the upper edge
+            // under the surface. The overlap covers subpixel cracks when
+            // the camera views a drop from either direction.
+            float surfaceDrop = waterY - (neighborSurface + offset);
+            if (surfaceDrop <= SimpleWaterMinDrop)
+                return 0;
+
+            float bottom = neighborSurface + offset - 0.04f;
+            float top = waterY + 0.02f;
+            float drop = top - bottom;
+
+            Vector3 edge = cellPosition + outward * (cellSize * 0.5f + 0.008f);
+            edge.y = top;
+            var side = new TileMeshSource(
+                SimpleWaterQuadMeshUtility.GetOrCreateSide(),
+                materials,
+                Matrix4x4.TRS(edge, Quaternion.Euler(0f, yaw, 0f), new Vector3(cellSize, drop, 1f)),
+                sample.LayerId,
+                sample.LayerName,
+                visibleBottomY: float.NaN,
+                occludedSides: TileMeshOccludedSides.None,
+                tileCenterXZ: new Vector2(cellPosition.x, cellPosition.z),
+                tileHalfExtent: cellSize * 0.5f,
+                authoredClosurePolicy: AuthoredClosurePolicy.PreserveAuthored,
+                edgeBottoms: default,
+                tileGeometryMode: TileGeometryMode.SurfaceOnly,
+                generateMissingClosure: false);
+            if (!side.IsValid)
+                return 0;
+
+            results.Add(side);
+            return 1;
+        }
+
+        /*
+         * Fallback chain for the simple quad when the profile assigns no
+         * material: the layer preset's material override first, then the fill
+         * prefab's own material — the same surface the legacy water tile
+         * would have rendered with.
+         */
+        private Material[] ResolveAuthoredWaterMaterials(TilePreset preset)
+        {
+            if (preset == null)
+                return null;
+
+            Material materialOverride = preset.GetMaterialOverride();
+            if (materialOverride != null)
+                return new[] { materialOverride };
+
+            var fillType = preset.gridtype == TilePreset.GridType.dual
+                ? TilePreset.TileType.DUALGRD_fill
+                : TilePreset.TileType.NRMGRD_fill;
+            GameObject fillPrefab = preset.GetTile(fillType, out _, out _);
+            if (fillPrefab != null
+                && TryGetMeshTemplates(fillPrefab, out PrefabMeshTemplate[] templates)
+                && templates != null && templates.Length > 0)
+            {
+                return templates[0].ResolveMaterials(null);
+            }
+
+            return null;
         }
 
         /*
@@ -555,6 +720,20 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             TilePreset preset,
             List<TileMeshSource> results)
         {
+            /*
+             * simple-stable-v1 terrain: one generated solid beveled tile per
+             * cell, same contract as the dual-grid replacement — a single
+             * continuous top and perimeter bevel, no authored seams.
+             */
+            int before = results.Count;
+            if (_profile != null
+                && _profile.SingleSolidTile
+                && composition.MainTerrain.TileGeometryMode == TileGeometryMode.SolidTerrain
+                && TryAddSolidTileSource(composition, buildLayer, preset, results))
+            {
+                return results.Count - before;
+            }
+
             int configuration = BuildNormalConfiguration(composition);
             var tileType = ResolveTileType(preset.gridtype, configuration, out int yRotation);
             if (tileType == TilePreset.TileType.none)
@@ -695,7 +874,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 return false;
             }
 
-            Mesh mesh = SolidBeveledTileMeshUtility.GetOrCreate();
+            TileMeshOccludedSides occludedSides = ResolveOccludedSides(composition);
+            Mesh mesh = SolidBeveledTileMeshUtility.GetOrCreate(occludedSides);
             if (mesh == null)
                 return false;
 
@@ -721,11 +901,11 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 sample.LayerId,
                 sample.LayerName,
                 visibleBottomY: ResolveVisibleBottomY(composition),
-                occludedSides: ResolveOccludedSides(composition),
+                occludedSides: occludedSides,
                 tileCenterXZ: new Vector2(position.x, position.z),
                 tileHalfExtent: Mathf.Max(scale.x, scale.z) * 0.5f,
                 authoredClosurePolicy: AuthoredClosurePolicy.PreserveAuthored,
-                edgeBottoms: ResolveEdgeBottoms(composition),
+                edgeBottoms: ResolveSolidEdgeBottoms(composition),
                 tileGeometryMode: sample.TileGeometryMode,
                 generateMissingClosure: true);
             if (!meshSource.IsValid)
@@ -733,6 +913,30 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
 
             results.Add(meshSource);
             return true;
+        }
+
+        /*
+         * Under simple water the flat quad sits at the water cell's surface
+         * plus a negative offset, so a wall ending exactly at the neighbour
+         * surface left an open strip above the water plane. Open-side walls
+         * therefore run a fixed overlap below the neighbour surface: into the
+         * water they dive under the quad, against lower land they end hidden
+         * inside the neighbour's solid column.
+         */
+        private const float SimpleWaterWallOverlap = 0.35f;
+
+        private TileMeshEdgeBottoms ResolveSolidEdgeBottoms(ResolvedTileComposition composition)
+        {
+            TileMeshEdgeBottoms bottoms = ResolveEdgeBottoms(composition);
+            if (_profile == null || !_profile.SimpleWater)
+                return bottoms;
+
+            float overlap = SimpleWaterWallOverlap - Mathf.Min(0f, _profile.WaterSurfaceOffset);
+            return new TileMeshEdgeBottoms(
+                bottoms.North - overlap,
+                bottoms.East - overlap,
+                bottoms.South - overlap,
+                bottoms.West - overlap);
         }
 
         private void TryAddDualGridSource(

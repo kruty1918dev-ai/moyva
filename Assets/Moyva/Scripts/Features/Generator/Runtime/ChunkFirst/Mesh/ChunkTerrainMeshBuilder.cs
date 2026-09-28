@@ -63,16 +63,26 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 new HashSet<TileSurfaceOnlyMeshKey>();
         private readonly SeabedChunkMeshService _seabed;
         private readonly WaterfallChunkMeshService _waterfalls;
+        private readonly ResolvedGenerationProfile _profile;
 
         public ChunkTerrainMeshBuilder(
             ChunkFirstRuntimeMeshRegistry meshRegistry,
             [InjectOptional] SeabedChunkMeshService seabed = null,
-            [InjectOptional] WaterfallChunkMeshService waterfalls = null)
+            [InjectOptional] WaterfallChunkMeshService waterfalls = null,
+            [InjectOptional] ResolvedGenerationProfile profile = null)
         {
             _meshRegistry = meshRegistry;
             _seabed = seabed;
             _waterfalls = waterfalls;
+            _profile = profile;
         }
+
+        /*
+         * simple-stable-v1 renders water as per-cell quads; the map-wide
+         * seabed and generated curtain meshes stay off. The shared fall
+         * field is still prepared for the authored waterfall prefabs.
+         */
+        private bool UseChunkWaterFields => !(_profile != null && _profile.SimpleWater);
 
         public int Build(
             Transform chunkRoot,
@@ -95,17 +105,18 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
              * provider checks IsActive to decide whether per-cell water-bed
              * columns still need to render.
              */
-            if (_seabed != null || _waterfalls != null)
+            if ((UseChunkWaterFields && _seabed != null) || _waterfalls != null)
             {
                 ResolveMapDimensions(
                     resolvedCells,
                     out int mapWidth,
                     out int mapHeight);
-                _seabed?.Prepare(
-                    resolvedCells,
-                    mapWidth,
-                    mapHeight,
-                    area.CellSize);
+                if (UseChunkWaterFields)
+                    _seabed?.Prepare(
+                        resolvedCells,
+                        mapWidth,
+                        mapHeight,
+                        area.CellSize);
                 _waterfalls?.Prepare(
                     resolvedCells,
                     mapWidth,
@@ -125,7 +136,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                     meshSource);
 
             bool seabedAdded = false;
-            if (_seabed != null
+            if (UseChunkWaterFields
+                && _seabed != null
                 && _seabed.IsActive
                 && _seabed.TryBuildChunkMesh(
                     area.CoreRect,
@@ -142,8 +154,10 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             }
 
             bool waterfallsAdded = false;
-            if (_waterfalls != null
+            if (UseChunkWaterFields
+                && _waterfalls != null
                 && _waterfalls.IsActive
+                && _waterfalls.Config.Prefab == null
                 && _waterfalls.TryBuildChunkMesh(
                     area.CoreRect,
                     out Mesh waterfallMesh,

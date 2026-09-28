@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moyva.local/schemas/generation-profiles.schema.json",
+  "title": "Moyva — Generation Profiles Config",
+  "description": "JSON source of truth для Kruty1918.Moyva.Generator.API.GenerationProfilesConfig. Обирає візуальну композицію генерації: режим терену, режим води та документ декорацій.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "id",
+    "model"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "title": "JSON Schema"
+    },
+    "schema": {
+      "const": "moyva.generation-profiles"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "model": {
+      "const": "generation-profiles"
+    },
+    "defaultProfileId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "ID активного профілю генерації; нові світи та візуальні перезбирання сейвів використовують його."
+    },
+    "profiles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "enabled": {
+            "type": "boolean",
+            "default": true
+          },
+          "terrain": {
+            "type": "object",
+            "properties": {
+              "singleSolidTile": {
+                "type": "boolean",
+                "default": true,
+                "description": "Один суцільний скошений тайл на клітинку замість dual-grid фрагментів."
+              }
+            }
+          },
+          "water": {
+            "type": "object",
+            "properties": {
+              "mode": {
+                "enum": ["full", "simpleQuad"],
+                "default": "simpleQuad",
+                "description": "simpleQuad: один плоский квад на водну клітинку; full: авторські шари (wash, водоспади, seabed)."
+              },
+              "material": {
+                "type": "object",
+                "description": "$asset-посилання на матеріал простої води (Water_SimpleStable.mat)."
+              },
+              "surfaceOffsetMeters": {
+                "type": "number",
+                "default": -0.05
+              },
+              "emitBed": {
+                "type": "boolean",
+                "default": true,
+                "description": "Пісочне дно-псевдоколона під квадом води."
+              }
+            }
+          },
+          "decorations": {
+            "type": "object",
+            "properties": {
+              "configId": {
+                "type": "string",
+                "description": "ID документа moyva.environment-decoration, який заміщує типовий конфіг декорацій для профілю."
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

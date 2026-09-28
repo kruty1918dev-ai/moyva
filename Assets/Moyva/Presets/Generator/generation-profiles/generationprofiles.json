@@ -1,0 +1,30 @@
+{
+  "$schema": "../../Schemas/generation-profiles.schema.json",
+  "schema": "moyva.generation-profiles",
+  "model": "generation-profiles",
+  "version": 1,
+  "id": "generation-profiles",
+  "defaultProfileId": "simple-stable-v1",
+  "profiles": [
+    {
+      "id": "simple-stable-v1",
+      "enabled": true,
+      "terrain": {
+        "singleSolidTile": true
+      },
+      "water": {
+        "mode": "simpleQuad",
+        "material": {
+          "$asset": "asset.material.water-simplestable.efd5702d",
+          "editorPath": "Assets/Moyva/Art/Materials/Water_SimpleStable.mat",
+          "required": false
+        },
+        "surfaceOffsetMeters": -0.05,
+        "emitBed": false
+      },
+      "decorations": {
+        "configId": "environment-decoration-config-simple-stable-v1"
+      }
+    }
+  ]
+}

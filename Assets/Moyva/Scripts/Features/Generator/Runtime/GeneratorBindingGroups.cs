@@ -73,6 +73,16 @@ namespace Kruty1918.Moyva.Generator
             TileWorldCreatorIdMappingSO mapping,
             TileWorldCreatorBuildOptions options)
         {
+            // Resolved once per container so the chunk-first build, water
+            // sources and decoration bindings all share one frozen profile.
+            var generationProfile = GenerationProfileResolver.ResolveActive();
+            if (generationProfile != null)
+            {
+                container.BindInstance(generationProfile).AsSingle();
+                Debug.Log(
+                    $"[GeneratorBindings] Active generation profile: {generationProfile.Id}");
+            }
+
             TileWorldCreatorHeightProjectionFeatureBindings.Install(container);
             TileWorldCreatorTerrainSideWallFeatureBindings.Install(container);
             if (manager == null || mapping == null)
@@ -129,21 +139,39 @@ namespace Kruty1918.Moyva.Generator
                     .AsSingle();
             }
 
-            // Bind environment decoration system
-            BindEnvironmentDecorationSystem(container);
+            // Bind environment decoration system. The active profile is
+            // re-read from JSON (cached) rather than resolved through the
+            // container — resolving during install trips Zenject's
+            // resolve-before-install warning.
+            BindEnvironmentDecorationSystem(container, GenerationProfileResolver.ResolveActive());
 
             container.BindInterfacesAndSelfTo<MapVisualInstantiator>()
                 .AsSingle()
                 .NonLazy();
         }
 
-        private static void BindEnvironmentDecorationSystem(DiContainer container)
+        private static void BindEnvironmentDecorationSystem(
+            DiContainer container,
+            ResolvedGenerationProfile profile)
         {
             // Load decoration config from JSON
             EnvironmentDecorationConfig decorationConfig = null;
             try
             {
-                decorationConfig = Kruty1918.JsonConfig.JsonConfigRuntime.Get<EnvironmentDecorationConfig>("environment-decoration-config");
+                // The active generation profile may swap the whole decoration
+                // document (allowlisted pools, fixed densities) instead of
+                // tuning the legacy config in place.
+                string configId = !string.IsNullOrWhiteSpace(profile?.DecorationConfigId)
+                    ? profile.DecorationConfigId
+                    : "environment-decoration-config";
+
+                decorationConfig = Kruty1918.JsonConfig.JsonConfigRuntime.Get<EnvironmentDecorationConfig>(configId);
+                if (decorationConfig == null
+                    && !string.Equals(configId, "environment-decoration-config", System.StringComparison.Ordinal))
+                {
+                    decorationConfig = Kruty1918.JsonConfig.JsonConfigRuntime
+                        .Get<EnvironmentDecorationConfig>("environment-decoration-config");
+                }
             }
             catch (System.Exception ex)
             {
