@@ -110,6 +110,21 @@ namespace Kruty1918.Moyva.Generator.Runtime
         }
 
         /// <summary>
+        /// Rotation-independent top-down radius (world units) of the prop's
+        /// full renderer bounds: the pivot-to-farthest-corner distance on XZ,
+        /// shrunk by <paramref name="shrink"/>.
+        /// </summary>
+        public float ResolveFootprintRadius(GameObject prefab, Vector3 scale, float shrink = 1f)
+        {
+            Bounds local = ResolveLocalBounds(prefab);
+            float ex = Mathf.Abs(local.center.x) + local.extents.x;
+            float ez = Mathf.Abs(local.center.z) + local.extents.z;
+            float sx = Mathf.Abs(scale.x) * ex;
+            float sz = Mathf.Abs(scale.z) * ez;
+            return Mathf.Sqrt(sx * sx + sz * sz) * 0.7071f * Mathf.Clamp(shrink, 0.1f, 1f);
+        }
+
+        /// <summary>
         /// Grounding height for a prop whose pivot may sit above or below the
         /// model's lower bound. The prop's lowest transformed point lands on
         /// the lowest terrain surface under its footprint, so rocks rest on

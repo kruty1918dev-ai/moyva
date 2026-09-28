@@ -451,6 +451,55 @@ namespace Kruty1918.Moyva.Generator.Tests.Runtime
                 "layer must never exceed maxPerTile on one cell");
         }
 
+        [Test]
+        public void ResolveOverlaps_NoTwoFootprintsIntersectAndSmallPropsStayInCell()
+        {
+            AddLayerPool("grass", "veg-grass-a", "veg-grass-b");
+            _config.Layers = new[] { Layer("grass", weight: 3f, maxPerTile: 4) };
+            _config.Footprint = new FootprintRules
+            {
+                ResolveOverlaps = true,
+                OverlapPadding = 1f,
+                KeepSmallPropsInsideCell = true
+            };
+            var world = CreateWorld(10, 10, 42);
+
+            var unresolved = new EnvironmentDecorationGenerator(
+                new EnvironmentDecorationConfig
+                {
+                    Enabled = true,
+                    GlobalDensity = _config.GlobalDensity,
+                    MaxObjectsPerTile = _config.MaxObjectsPerTile,
+                    ClusterStrength = _config.ClusterStrength,
+                    ClusterRadius = _config.ClusterRadius,
+                    TypeDensities = _config.TypeDensities,
+                    Exclusions = _config.Exclusions,
+                    VisualVariation = _config.VisualVariation,
+                    AssetPools = _config.AssetPools,
+                    Layers = _config.Layers
+                },
+                _registry).Generate(world);
+            var result = NewGenerator().Generate(world);
+
+            Assert.Greater(result.Count, 0);
+            Assert.LessOrEqual(result.Count, unresolved.Count);
+            const float radius = 0.2f; // fallback footprint without a resolver
+            var p = result.Placements;
+            for (int i = 0; i < p.Length; i++)
+            {
+                Assert.LessOrEqual(Mathf.Abs(p[i].Position.x - p[i].TileX), 0.5f - radius + 1e-4f);
+                Assert.LessOrEqual(Mathf.Abs(p[i].Position.z - p[i].TileY), 0.5f - radius + 1e-4f);
+                for (int j = i + 1; j < p.Length; j++)
+                {
+                    float d = new Vector2(p[i].Position.x - p[j].Position.x, p[i].Position.z - p[j].Position.z).magnitude;
+                    Assert.GreaterOrEqual(d, radius * 2f - 1e-4f, $"placements {i} and {j} overlap");
+                }
+            }
+
+            var again = NewGenerator().Generate(world);
+            Assert.AreEqual(result.Count, again.Count, "spacing pass is deterministic");
+        }
+
         private EnvironmentDecorationGenerator NewGenerator()
             => new EnvironmentDecorationGenerator(_config, _registry);
     }

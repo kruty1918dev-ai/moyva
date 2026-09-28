@@ -289,6 +289,22 @@
           "maximum": 1.0,
           "x-moyva-editorMinimum": 0.3,
           "x-moyva-editorMaximum": 1.0
+        },
+        "resolveOverlaps": {
+          "type": "boolean",
+          "title": "Resolve Overlaps"
+        },
+        "overlapPadding": {
+          "type": "number",
+          "title": "Overlap Padding",
+          "minimum": 0.3,
+          "maximum": 2.0,
+          "x-moyva-editorMinimum": 0.3,
+          "x-moyva-editorMaximum": 2.0
+        },
+        "keepSmallPropsInsideCell": {
+          "type": "boolean",
+          "title": "Keep Small Props Inside Cell"
         }
       },
       "additionalProperties": false,

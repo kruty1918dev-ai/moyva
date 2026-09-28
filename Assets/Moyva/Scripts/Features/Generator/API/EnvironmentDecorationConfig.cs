@@ -244,6 +244,27 @@ namespace Kruty1918.Moyva.Generator.API
         /// </summary>
         [Range(0.3f, 1f)]
         public float FootprintShrink = 0.9f;
+
+        /// <summary>
+        /// Whole-map spacing pass: props whose top-down footprints would
+        /// intersect an already accepted prop (trees and rocks first) are
+        /// moved to a free sub-cell slot or dropped, so plants never grow
+        /// into each other or into other models.
+        /// </summary>
+        public bool ResolveOverlaps = false;
+
+        /// <summary>
+        /// Scales the sum of two footprint radii when testing overlap.
+        /// Below 1 lets foliage edges touch; above 1 adds breathing room.
+        /// </summary>
+        [Range(0.3f, 2f)]
+        public float OverlapPadding = 0.85f;
+
+        /// <summary>
+        /// Keeps small props (footprint under half a cell) fully inside their
+        /// anchor cell so they never overhang a drop and read as floating.
+        /// </summary>
+        public bool KeepSmallPropsInsideCell = false;
     }
 
     /// <summary>
