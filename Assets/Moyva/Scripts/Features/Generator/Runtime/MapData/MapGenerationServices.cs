@@ -33,6 +33,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
         LogicalTileMap LastLogicalMap { get; }
         TerrainPassagePlan LastPassages { get; }
         RecipeHydrologyPlan LastHydrology { get; }
+        WaterChannelCandidatePlan LastChannelCandidates { get; }
         float LastCellSize { get; }
         bool TryGetLastBaseMapWorldBounds(out Bounds bounds);
     }
@@ -51,6 +52,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
         public LogicalTileMap LastLogicalMap { get; private set; }
         public TerrainPassagePlan LastPassages { get; private set; }
         public RecipeHydrologyPlan LastHydrology { get; private set; }
+        public WaterChannelCandidatePlan LastChannelCandidates { get; private set; }
         public float LastCellSize { get; private set; } = 1f;
 
         public bool TryGetLastBaseMapWorldBounds(out Bounds bounds)
@@ -68,6 +70,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             LastLogicalMap = result.LogicalMap;
             LastPassages = result.TerrainPassages;
             LastHydrology = result.Hydrology;
+            LastChannelCandidates = result.ChannelCandidates;
             LastCellSize = result.CellSize > 0.0001f ? result.CellSize : 1f;
             _hasLastBaseMapWorldBounds = result.HasBaseMapWorldBounds;
             _lastBaseMapWorldBounds = result.BaseMapWorldBounds;
@@ -109,6 +112,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
         public LogicalTileMap LogicalMap;
         public TerrainPassagePlan TerrainPassages;
         public RecipeHydrologyPlan Hydrology;
+        public WaterChannelCandidatePlan ChannelCandidates;
         public IReadOnlyList<CompiledLayerMap> CompiledLayers;
         public float CellSize = 1f;
         public bool HasBaseMapWorldBounds;
@@ -380,11 +384,20 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 reliefField,
                 seed,
                 hydrology);
+            // Read-only analysis on the finished logical map: terrain, water
+            // and surface heights are final here, scene objects do not exist
+            // yet, and the returned plan never feeds back into generation.
+            WaterChannelCandidatePlan channelCandidates =
+                WaterChannelCandidatePlanner.Build(
+                    logicalMap,
+                    MergeWaterIds(request.Recipe),
+                    request.Recipe?.ChannelDetection);
             _terrainHeightPublisher.Publish(logicalMap.SurfaceHeights);
             _hydrologyStore?.Replace(hydrology);
             var result = CreateResult(logicalMap, compiled, cellSize, hasBounds, bounds);
             result.TerrainPassages = passages;
             result.Hydrology = hydrology;
+            result.ChannelCandidates = channelCandidates;
             return result;
         }
 
@@ -418,6 +431,25 @@ namespace Kruty1918.Moyva.Generator.Runtime
             return request.Manager.configuration.cellSize > 0.0001f
                 ? request.Manager.configuration.cellSize
                 : 1f;
+        }
+
+        /// <summary>
+        /// Water detection for channel analysis follows the same convention as
+        /// the waterline guard: shared water-like ids plus shore-only extras.
+        /// </summary>
+        private static string[] MergeWaterIds(GeneratorMapRecipe recipe)
+        {
+            string[] primary = recipe?.SharedGeneratorSettings?.WaterLikeTileIds;
+            string[] extra = recipe?.Shore?.WaterTileIds;
+            if (extra == null || extra.Length == 0)
+                return primary;
+            if (primary == null || primary.Length == 0)
+                return extra;
+
+            var merged = new string[primary.Length + extra.Length];
+            System.Array.Copy(primary, merged, primary.Length);
+            System.Array.Copy(extra, 0, merged, primary.Length, extra.Length);
+            return merged;
         }
     }
 }
