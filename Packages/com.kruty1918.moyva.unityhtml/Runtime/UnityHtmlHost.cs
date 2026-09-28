@@ -591,11 +591,13 @@ namespace UnityHTML.Runtime
         // that reset on every domain load. When a domain reload tears down the
         // [ExecuteAlways] preview anchors, OnDisable -> Unmount -> DestroyImmediate
         // cascades Selectable.OnDisable into that already-drained registry
-        // (IndexOutOfRangeException). The unload drops these DontSave objects
-        // anyway, so explicit destruction is skipped once beforeAssemblyReload
-        // has fired. Subscribed in the static constructor: it runs before any
-        // Unmount in this domain can run (RuntimeInitializeOnLoadMethod does not
-        // fire on plain script-compilation reloads).
+        // (IndexOutOfRangeException). Skipping explicit destruction is safe:
+        // play-mode unloads drop these DontSave objects, and after plain
+        // compilation reloads the remount's cleanup destroys survivors whose
+        // non-serialized m_EnableCalled reset makes their OnDisable a no-op.
+        // Subscribed in the static constructor: it runs before any Unmount in
+        // this domain can run (RuntimeInitializeOnLoadMethod does not fire on
+        // plain script-compilation reloads).
         private static bool s_editorDomainUnloadInProgress;
 
         static UnityHtmlHost()
