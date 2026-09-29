@@ -213,6 +213,32 @@ namespace Kruty1918.Moyva.Generator.Tests.Runtime
         }
 
         [Test]
+        public void LimitedBudget_CoversBothFallsBeforeAddingSecondaryEffects()
+        {
+            _hydro.WaterfallConfig.MaxVfxPerMap = 2;
+            var cells = new Dictionary<Vector2Int, ResolvedTileComposition>();
+            foreach (int row in new[] { 3, 8 })
+            foreach (int column in new[] { 3, 4 })
+            {
+                var cell = new Vector2Int(column, row);
+                cells[cell] = new ResolvedTileComposition(cell, WaterSheet(column == 3 ? 5f : 4f),
+                    default, true, false, "budget");
+                _hydro.Water.Add(cell);
+            }
+            _falls.Prepare(cells, 32, 32, 1f);
+            Assert.AreEqual(2, _spawner.Spawn(_falls));
+            var root = _roots.Roots[new MapChunkCoord(0, 0)].Find("Waterfalls");
+            foreach (Transform child in root)
+            {
+                StringAssert.StartsWith("wfall_splash_", child.name);
+                var system = child.GetComponent<ParticleSystem>();
+                Assert.Greater(system.particleCount, 0, "Effects must be visible immediately after generation.");
+                Assert.GreaterOrEqual(system.main.startSize.constantMax * system.transform.lossyScale.x,
+                    0.16f, "Tile-scale effects must remain readable from the gameplay camera.");
+            }
+        }
+
+        [Test]
         public void ParticleSystems_AreCapped()
         {
             PrepareFall();
@@ -223,6 +249,54 @@ namespace Kruty1918.Moyva.Generator.Tests.Runtime
                 foreach (var ps in child.GetComponentsInChildren<ParticleSystem>(true))
                     Assert.LessOrEqual(ps.main.maxParticles, 60,
                         "per-system particle count must respect the budget");
+            }
+        }
+
+        [Test]
+        public void LargeAuthoredParticles_FitCellWithoutShrinkingEmitterWidth()
+        {
+            var prefab = _hydro.WaterfallConfig.ImpactSplashPrefab;
+            var authored = prefab.GetComponent<ParticleSystem>().main;
+            authored.startSize = new ParticleSystem.MinMaxCurve(4f, 8f);
+            PrepareFall();
+            _spawner.Spawn(_falls);
+            var root = _roots.Roots[new MapChunkCoord(0, 0)].Find("Waterfalls");
+            foreach (Transform child in root)
+            {
+                var ps = child.GetComponent<ParticleSystem>();
+                Assert.LessOrEqual(ps.main.startSize.constantMax * ps.transform.lossyScale.x,
+                    0.3f, "Particles must be smaller than one tile.");
+                Assert.AreEqual(1f, ps.shape.scale.x * ps.transform.lossyScale.x, 0.001f,
+                    "The emitter must still cover the entire front.");
+                Assert.AreEqual(ParticleSystemScalingMode.Hierarchy, ps.main.scalingMode);
+            }
+            Assert.AreEqual(8f, prefab.GetComponent<ParticleSystem>().main.startSize.constantMax,
+                "Spawning must not mutate the source prefab.");
+        }
+
+        [Test]
+        public void Sw3Particles_StayNearTheirWaterfallAfterSimulation()
+        {
+            const string folder = "Assets/ThirdParty/Stylized Water 3/Prefabs/Particles/";
+            _hydro.WaterfallConfig.EdgeFoamPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(folder + "Waterfall Edge.prefab");
+            _hydro.WaterfallConfig.ImpactSplashPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(folder + "Waterfall Impact Splashes.prefab");
+            _hydro.WaterfallConfig.MistPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(folder + "WaterfallMist.prefab");
+            _hydro.WaterfallConfig.MistMinDropLevels = 1;
+            PrepareFall();
+            Assert.AreEqual(3, _spawner.Spawn(_falls));
+            var root = _roots.Roots[new MapChunkCoord(0, 0)].Find("Waterfalls");
+            foreach (var system in root.GetComponentsInChildren<ParticleSystem>())
+            {
+                system.Simulate(3f, false, true);
+                var particles = new ParticleSystem.Particle[system.main.maxParticles];
+                int count = system.GetParticles(particles);
+                Assert.Greater(count, 0, system.name);
+                for (int i = 0; i < count; i++)
+                {
+                    var delta = system.transform.TransformVector(particles[i].position);
+                    Assert.Less(delta.magnitude, 1.1f,
+                        system.name + " must not scatter particles metres away from a one-cell fall.");
+                }
             }
         }
 

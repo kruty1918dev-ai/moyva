@@ -1965,7 +1965,7 @@
                 "object",
                 "null"
               ],
-              "description": "Front curtain material. The SW3 river-mode material scrolls foam down the curtain via its animation direction vector; falls back to no curtain when unset.",
+              "description": "Front curtain material with downstream flow UVs; no curtain when unset.",
               "properties": {
                 "$asset": {
                   "type": "string",
@@ -1984,6 +1984,31 @@
                 "$asset"
               ],
               "title": "Curtain Material"
+            },
+            "curtainPrefab": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "description": "Readable SW3 waterfall mesh prefab used as the source for generated curtains. Particle children are spawned separately through the VFX budget.",
+              "properties": {
+                "$asset": {
+                  "type": "string",
+                  "title": "Asset ID"
+                },
+                "editorPath": {
+                  "type": "string",
+                  "description": "Editor-only path для діагностики/регенерації catalog."
+                },
+                "required": {
+                  "type": "boolean",
+                  "default": true
+                }
+              },
+              "required": [
+                "$asset"
+              ],
+              "title": "Curtain Prefab"
             },
             "uvTileSizeMeters": {
               "type": "number",
@@ -2105,7 +2130,7 @@
             "vfxScale": {
               "type": "number",
               "title": "Vfx Scale",
-              "description": "Uniform scale applied to VFX prefabs; widths additionally scale the edge-foam emitter.",
+              "description": "Particle size multiplier after fitting authored effects to cell size and drop; emitter width follows the front.",
               "minimum": 0.25,
               "maximum": 2.0,
               "x-moyva-editorMinimum": 0.25,

@@ -151,7 +151,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                     if (!waterTarget[lower.x, lower.y])
                         continue;
                     float bottomY = surfaces[lower.x, lower.y];
-                    if (!IsFinite(bottomY) || topY - bottomY < minDropMeters)
+                    if (!IsFinite(bottomY) || topY - bottomY + 0.000001f < minDropMeters)
                         continue;
 
                     var edge = new Edge
@@ -287,12 +287,10 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 {
                     int sa = a.Cell.x * tangent.x + a.Cell.y * tangent.y;
                     int sb = b.Cell.x * tangent.x + b.Cell.y * tangent.y;
-                    int cmp = sa.CompareTo(sb);
-                    if (cmp != 0)
-                        return cmp;
                     int pa = a.Cell.x * d.x + a.Cell.y * d.y;
                     int pb = b.Cell.x * d.x + b.Cell.y * d.y;
-                    return pa.CompareTo(pb);
+                    int cmp = pa.CompareTo(pb);
+                    return cmp != 0 ? cmp : sa.CompareTo(sb);
                 });
 
                 Front run = null;

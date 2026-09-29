@@ -49,7 +49,7 @@ namespace Kruty1918.SpriteGrounding
         /// </summary>
         public static int ExtractQuads(Mesh mesh, List<CardQuad> results)
         {
-            if (mesh == null || results == null)
+            if (mesh == null || !mesh.isReadable || results == null)
                 return 0;
 
             Vector3[] vertices = mesh.vertices;

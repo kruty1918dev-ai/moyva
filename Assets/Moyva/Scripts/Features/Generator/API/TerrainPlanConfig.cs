@@ -332,8 +332,11 @@ namespace Kruty1918.Moyva.Generator.API
         [Tooltip("Minimum rendered drop in meters. A positive value overrides MinDropLevels, including small visual elevation steps.")]
         [Min(0f)] public float MinDropMeters;
 
-        [Tooltip("Front curtain material. The SW3 river-mode material scrolls foam down the curtain via its animation direction vector; falls back to no curtain when unset.")]
+        [Tooltip("Front curtain material with downstream flow UVs; no curtain when unset.")]
         public Material CurtainMaterial;
+
+        [Tooltip("Readable SW3 waterfall mesh prefab used as the source for generated curtains. Particle children are spawned separately through the VFX budget.")]
+        public GameObject CurtainPrefab;
 
         [Tooltip("Curtain UV density: meters of ribbon arc length covered by one UV tile. Keeps foam scale constant across different drops and widths.")]
         [Min(0.05f)] public float UvTileSizeMeters = 1f;
@@ -359,7 +362,7 @@ namespace Kruty1918.Moyva.Generator.API
         [Tooltip("Hard cap on spawned waterfall VFX objects per map (mobile particle budget). The largest fronts win.")]
         [Min(0)] public int MaxVfxPerMap = 18;
 
-        [Tooltip("Uniform scale applied to VFX prefabs; widths additionally scale the edge-foam emitter.")]
+        [Tooltip("Particle size multiplier after fitting authored effects to cell size and drop; emitter width follows the front.")]
         [Range(0.25f, 2f)] public float VfxScale = 0.7f;
 
         [Tooltip("Cap on per-instance particle counts so SW3 prefabs stay inside the mobile budget.")]

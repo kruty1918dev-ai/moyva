@@ -6,14 +6,10 @@ using Zenject;
 namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
 {
     /// <summary>
-    /// Owns the shared waterfall front field for the active world and emits
-    /// one ribbon mesh per front: a profiled curtain that tucks under the
-    /// upper water sheet, noses over the lip, falls with a slight bow and
-    /// curls under the lower sheet. The Stylized Water 3 river material
-    /// scrolls along mesh UV, so UV is laid out in meters (constant foam
-    /// density at any drop or width) and each drop bucket gets a material
-    /// clone whose animation-direction magnitude scales with sqrt(drop) —
-    /// free-fall speed for the pour.
+    /// Owns rendered water drop fronts and generates curtains from the SW3
+    /// source profile, with common height rows at corners. Materials use
+    /// metre-scaled flow UVs and normalized lip/impact coordinates in UV2.
+    /// One material per drop bucket controls downstream animation speed.
     /// </summary>
     internal sealed class WaterfallChunkMeshService
     {
@@ -205,13 +201,205 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 var front = _field.Fronts[f];
                 if (!coreRect.Contains(front.Anchor))
                     continue;
-                Mesh mesh = BuildFrontMesh(front, cs);
+                Mesh mesh = BuildPrefabFrontMesh(front, cs) ?? BuildFrontMesh(front, cs);
                 if (mesh == null)
                     continue;
                 results.Add(new Curtain(mesh, MaterialForDrop(front.Drop)));
                 added++;
             }
             return added;
+        }
+
+        // Resample the SW3 model onto a regular grid. Keeping the source's
+        // irregular triangles while fitting unequal pools creates long fans
+        // at corners; common world-height rows keep those seams vertical.
+        private Mesh BuildPrefabFrontMesh(WaterfallFieldPlanner.Front front, float cs)
+        {
+            var filter = _config.CurtainPrefab != null
+                ? _config.CurtainPrefab.GetComponent<MeshFilter>() : null;
+            var source = filter != null ? filter.sharedMesh : null;
+            if (source == null || !source.isReadable || source.bounds.size.z < 0.001f)
+                return null;
+            var sourceVertices = source.vertices;
+            var sourceUv = source.uv;
+            if (sourceUv.Length != sourceVertices.Length) return null;
+            float minV = float.MaxValue, maxV = float.MinValue;
+            foreach (var coordinate in sourceUv)
+            {
+                minV = Mathf.Min(minV, coordinate.y);
+                maxV = Mathf.Max(maxV, coordinate.y);
+            }
+            if (maxV - minV < 0.001f) return null;
+
+            var n = new Vector3(front.Dir.x, 0f, front.Dir.y).normalized;
+            var tangent = new Vector3(-n.z, 0f, n.x);
+            var center = front.Center * cs;
+            float width = front.WidthCells * cs;
+            var start = FindJoin(front, center - tangent * width * 0.5f, cs);
+            var end = FindJoin(front, center + tangent * width * 0.5f, cs);
+            float tuck = Mathf.Min(cs * 0.002f, front.Drop * 0.02f);
+            float depth = Mathf.Min(cs * 0.12f, front.Drop * 0.3f);
+            float approach = cs * 0.18f;
+            float runout = cs * 0.32f;
+            float uvTile = Mathf.Max(0.05f, _config.UvTileSizeMeters);
+            int columns = Mathf.Max(8, front.WidthCells * 8) + 1;
+            var distances = new List<float> { -approach, -approach * 0.6f, -approach * 0.25f,
+                0f, front.Drop, front.Drop + runout * 0.25f,
+                front.Drop + runout * 0.6f, front.Drop + runout };
+            // This spacing is independent of either pool's bottom level.
+            for (float d = cs / 12f; d < front.Drop; d += cs / 12f)
+                distances.Add(d);
+            // Add a small lip bend even for sub-cell drops.
+            distances.Add(Mathf.Min(cs * 0.04f, front.Drop * 0.1f));
+            AddJoinRows(start);
+            AddJoinRows(end);
+            distances.Sort();
+            for (int i = distances.Count - 1; i > 0; i--)
+                if (Mathf.Abs(distances[i] - distances[i - 1]) < 0.00001f)
+                    distances.RemoveAt(i);
+
+            int rows = distances.Count;
+            var vertices = new Vector3[columns * rows];
+            var uv = new Vector2[vertices.Length];
+            var flow = new Vector2[vertices.Length];
+            var triangles = new int[(columns - 1) * (rows - 1) * 6];
+            for (int row = 0; row < rows; row++)
+            for (int column = 0; column < columns; column++)
+            {
+                float across = column / (float)(columns - 1);
+                float distance = distances[row];
+                float down = Mathf.Clamp01(distance / front.Drop);
+                float sourceDepth = SampleSourceDepth(sourceVertices, sourceUv, source.bounds,
+                    across, down, minV, maxV);
+                // A thin sheet with the authored cross-section and folds,
+                // tucked under the upper surface instead of a swollen tube.
+                float offset = (sourceDepth - 0.15f) * depth;
+                if (distance < 0f) offset = distance - depth * 0.15f;
+                if (distance > front.Drop) offset += distance - front.Drop;
+                var displacement = n * offset;
+                float y = front.TopY - Mathf.Clamp(distance, 0f, front.Drop) - tuck;
+                // Surface foam wings sit just above the water, then blend
+                // into the curved curtain and spread out at the impact.
+                if (distance < 0f || distance > front.Drop) y += tuck + cs * 0.004f;
+                float flowY = distance < 0f ? distance / approach * 0.3f
+                    : distance > front.Drop ? 1f + (distance - front.Drop) / runout * 0.3f : down;
+                FitCorner(start, Mathf.Clamp01(1f - across * width / (cs * 0.2f)));
+                FitCorner(end, Mathf.Clamp01(1f - (1f - across) * width / (cs * 0.2f)));
+                int index = row * columns + column;
+                vertices[index] = center + tangent * ((across - 0.5f) * width)
+                    + displacement + Vector3.up * y;
+                uv[index] = new Vector2(across * width / uvTile, -distance / uvTile);
+                flow[index] = new Vector2(across, flowY);
+
+                void FitCorner(WaterfallFieldPlanner.Front other, float weight)
+                {
+                    if (other == null || weight <= 0f) return;
+                    float commonDrop = Mathf.Min(front.Drop, other.Drop);
+                    float commonTuck = Mathf.Min(cs * 0.002f, commonDrop * 0.02f);
+                    float lipDepth = Mathf.Min(cs * 0.04f, commonDrop * 0.1f);
+                    float cornerOffset = Mathf.Lerp(-commonTuck,
+                        Mathf.Min(cs * 0.08f, commonDrop * 0.22f),
+                        Mathf.Clamp01(distance / lipDepth));
+                    if (distance < 0f) cornerOffset = distance - commonTuck;
+                    if (distance > front.Drop)
+                    {
+                        // Different lower pools cannot share a horizontal
+                        // impact skirt; each spreads over its own surface.
+                        if (Mathf.Abs(other.BottomY - front.BottomY) > 0.001f) return;
+                        cornerOffset += distance - front.Drop;
+                    }
+                    var otherNormal = new Vector3(other.Dir.x, 0f, other.Dir.y).normalized;
+                    displacement = Vector3.Lerp(displacement, (n + otherNormal) * cornerOffset, weight);
+                    float cornerY = front.TopY - Mathf.Clamp(distance, 0f, front.Drop) - commonTuck;
+                    if (distance < 0f || distance > front.Drop) cornerY += commonTuck + cs * 0.004f;
+                    y = Mathf.Lerp(y, cornerY, weight);
+                }
+            }
+            int triangle = 0;
+            for (int row = 0; row < rows - 1; row++)
+            for (int column = 0; column < columns - 1; column++)
+            {
+                int a = row * columns + column;
+                triangles[triangle++] = a;
+                triangles[triangle++] = a + 1;
+                triangles[triangle++] = a + columns + 1;
+                triangles[triangle++] = a;
+                triangles[triangle++] = a + columns + 1;
+                triangles[triangle++] = a + columns;
+            }
+            var mesh = new Mesh { name = $"waterfall_prefab_{front.Anchor.x}_{front.Anchor.y}_{front.Dir.x}_{front.Dir.y}",
+                indexFormat = vertices.Length > 65535 ? UnityEngine.Rendering.IndexFormat.UInt32 : UnityEngine.Rendering.IndexFormat.UInt16,
+                vertices = vertices, uv = uv, uv2 = flow, triangles = triangles };
+            mesh.RecalculateNormals();
+            mesh.RecalculateTangents();
+            mesh.RecalculateBounds();
+            return mesh;
+
+            void AddJoinRows(WaterfallFieldPlanner.Front other)
+            {
+                if (other == null) return;
+                float common = Mathf.Min(front.Drop, other.Drop);
+                distances.Add(common);
+                distances.Add(Mathf.Min(cs * 0.04f, common * 0.1f));
+            }
+        }
+
+        private static float SampleSourceDepth(Vector3[] vertices, Vector2[] uv,
+            Bounds bounds, float across, float down, float minV, float maxV)
+        {
+            float v = Mathf.Lerp(maxV, minV, down);
+            float lower = minV, upper = maxV;
+            for (int i = 0; i < uv.Length; i++)
+            {
+                if (uv[i].y <= v) lower = Mathf.Max(lower, uv[i].y);
+                if (uv[i].y >= v) upper = Mathf.Min(upper, uv[i].y);
+            }
+            float z = Mathf.Lerp(SampleRow(lower), SampleRow(upper), Mathf.InverseLerp(lower, upper, v));
+            return (z - bounds.min.z) / bounds.size.z;
+
+            float SampleRow(float row)
+            {
+                float x = Mathf.Lerp(bounds.min.x, bounds.max.x, across);
+                float left = float.MinValue, right = float.MaxValue;
+                float leftZ = 0f, rightZ = 0f;
+                for (int i = 0; i < vertices.Length; i++)
+                {
+                    if (Mathf.Abs(uv[i].y - row) > 0.0001f) continue;
+                    var vertex = vertices[i];
+                    if (vertex.x <= x && vertex.x > left) { left = vertex.x; leftZ = vertex.z; }
+                    if (vertex.x >= x && vertex.x < right) { right = vertex.x; rightZ = vertex.z; }
+                }
+                if (left == float.MinValue) return rightZ;
+                if (right == float.MaxValue) return leftZ;
+                return Mathf.Lerp(leftZ, rightZ, Mathf.InverseLerp(left, right, x));
+            }
+        }
+
+        // Miter both curtains to the same displaced corner. The endpoint
+        // search also handles concave joins between different upper cells.
+        private WaterfallFieldPlanner.Front FindJoin(WaterfallFieldPlanner.Front front, Vector3 endpoint, float cs)
+        {
+            foreach (var other in _field.Fronts)
+            {
+                if (other == front || other.Dir.x * front.Dir.x + other.Dir.y * front.Dir.y != 0
+                    || Mathf.Abs(other.TopY - front.TopY) > WaterfallFieldPlanner.FrontHeightTolerance)
+                    continue;
+                var n = new Vector3(other.Dir.x, 0f, other.Dir.y).normalized;
+                var t = new Vector3(-n.z, 0f, n.x);
+                var c = other.Center * cs;
+                float halfWidth = other.WidthCells * cs * 0.5f;
+                if ((endpoint - (c - t * halfWidth)).sqrMagnitude < cs * cs * 0.000001f
+                    || (endpoint - (c + t * halfWidth)).sqrMagnitude < cs * cs * 0.000001f)
+                    return other;
+            }
+            return null;
+        }
+
+        private Vector3 JoinDirection(WaterfallFieldPlanner.Front front, Vector3 endpoint, float cs)
+        {
+            var other = FindJoin(front, endpoint, cs);
+            return other != null && Mathf.Abs(other.BottomY - front.BottomY) <= WaterfallFieldPlanner.FrontHeightTolerance
+                ? new Vector3(other.Dir.x, 0f, other.Dir.y).normalized : Vector3.zero;
         }
 
         /*
@@ -243,6 +431,9 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             float bottomY = front.BottomY;
             float drop = Mathf.Max(0.001f, front.Drop);
             float bow = BowFactor(drop);
+            float verticalScale = Mathf.Min(1f, drop / FullProfileDropMeters);
+            var startJoin = JoinDirection(front, spanA, cs);
+            var endJoin = JoinDirection(front, spanB, cs);
 
             // Profile points in ribbon space: u = along fall dir, y = world.
             var offsets = new float[rows];
@@ -251,8 +442,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             for (int j = 0; j < rows; j++)
             {
                 var p = Profile[j];
-                float y = !float.IsNaN(p.Top) ? topY + p.Top
-                    : !float.IsNaN(p.Bottom) ? bottomY + p.Bottom
+                float y = !float.IsNaN(p.Top) ? topY + p.Top * verticalScale
+                    : !float.IsNaN(p.Bottom) ? bottomY + p.Bottom * verticalScale
                     : Mathf.Lerp(topY, bottomY, p.Blend);
                 y = Mathf.Min(y, prevY);
                 prevY = y;
@@ -272,6 +463,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             var verts = new List<Vector3>(cols * rows * 2);
             var normals = new List<Vector3>(cols * rows * 2);
             var uvs = new List<Vector2>(cols * rows * 2);
+            var flowUvs = new List<Vector2>(cols * rows * 2);
             var tris = new List<int>((cols - 1) * (rows - 1) * 12);
 
             float uvTile = Mathf.Max(0.05f, _config.UvTileSizeMeters);
@@ -293,16 +485,17 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                     if (face == 1)
                         nrm = -nrm;
 
-                    float v = arc[j] / uvTile;
+                    float v = -arc[j] / uvTile;
                     for (int c = 0; c < cols; c++)
                     {
                         float s = (float)c / (cols - 1);
                         var p = Vector3.LerpUnclamped(spanA, spanB, s);
-                        p += n * offsets[j];
+                        p += (n + Vector3.Lerp(startJoin, endJoin, s)) * offsets[j];
                         p.y = heights[j];
                         verts.Add(p);
                         normals.Add(nrm);
                         uvs.Add(new Vector2(Vector3.Dot(p, t) / uvTile, v));
+                        flowUvs.Add(new Vector2(s, Mathf.InverseLerp(topY, bottomY, p.y)));
                     }
                 }
 
@@ -337,6 +530,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 vertices = verts.ToArray(),
                 normals = normals.ToArray(),
                 uv = uvs.ToArray(),
+                uv2 = flowUvs.ToArray(),
                 triangles = tris.ToArray(),
             };
             mesh.RecalculateBounds();

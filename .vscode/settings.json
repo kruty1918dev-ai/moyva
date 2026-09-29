@@ -1,6 +1,6 @@
 {
   "json.schemas": [],
-  "devin.defaultModel": "swe-2-max",
+  "devin.defaultModel": "claude-sonnet-5-5-low",
   "devin.implicitContext.enabled": false,
   "devin.defaultMode": "bypass"
 }

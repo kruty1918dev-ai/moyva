@@ -94,6 +94,12 @@
       "source": "embedded",
       "dependencies": {}
     },
+    "com.kruty1918.sprite-grounding": {
+      "version": "file:com.kruty1918.sprite-grounding",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {}
+    },
     "com.kruty1918.telemetry": {
       "version": "file:com.kruty1918.telemetry",
       "depth": 0,
