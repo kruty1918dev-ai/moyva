@@ -185,6 +185,9 @@ namespace Kruty1918.Moyva.Generator
                 container.BindInterfacesAndSelfTo<EnvironmentDecorationSpawner>().AsSingle();
             }
 
+            // Card grounding is unconditional: the object spawner uses it
+            // even when decorative spawning is disabled.
+            container.Bind<SpriteCardGroundingService>().AsSingle();
             container.Bind<EnvironmentObjectPlacementResolver>().AsSingle();
             // Runs without the decoration spawner as well: committed building
             // footprints still clear stack-spawned props (trees/rocks).

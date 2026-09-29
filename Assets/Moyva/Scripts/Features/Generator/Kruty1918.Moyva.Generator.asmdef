@@ -14,7 +14,8 @@
     "GUID:068667acb9b6c81c7b34e9ede8e6b521",
     "GiantGrey.TileWorldCreator",
     "Unity.Mathematics",
-    "Kruty1918.JsonConfig"
+    "Kruty1918.JsonConfig",
+    "Kruty1918.SpriteGrounding"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],

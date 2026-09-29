@@ -13,6 +13,7 @@
     "com.kruty1918.notifications": "file:com.kruty1918.notifications",
     "com.kruty1918.runtime-diagnostics": "file:com.kruty1918.runtime-diagnostics",
     "com.kruty1918.save-system": "file:com.kruty1918.save-system",
+    "com.kruty1918.sprite-grounding": "file:com.kruty1918.sprite-grounding",
     "com.kruty1918.ui-actions": "file:com.kruty1918.ui-actions",
     "com.kruty1918.ui-foundation": "file:com.kruty1918.ui-foundation",
     "com.kruty1918.vfx": "file:com.kruty1918.vfx",
