@@ -206,13 +206,77 @@ namespace Kruty1918.Moyva.Units.Runtime
             targetHealth.TakeDamage(Mathf.Max(0, breakdown.TotalDamage));
             int hpAfter = targetHealth.CurrentHp;
 
+            int counterDamage = 0;
+            int attackerHpBefore = 0;
+            int attackerHpAfter = 0;
+            bool attackerDied = false;
+            if (hpAfter > 0)
+            {
+                counterDamage = ApplyCounterAttack(
+                    attackerUnitId, targetUnitId,
+                    out attackerHpBefore, out attackerHpAfter, out attackerDied);
+            }
+
             result = new UnitAttackResult(
                 true, UnitAttackRejectReason.None,
                 attackerUnitId, targetUnitId,
                 Mathf.Max(0, hpBefore - hpAfter),
-                hpBefore, hpAfter, hpAfter <= 0);
+                hpBefore, hpAfter, hpAfter <= 0,
+                counterDamage, attackerHpBefore, attackerHpAfter, attackerDied);
             AttackResolved?.Invoke(result);
             return true;
+        }
+
+        /// <summary>
+        /// Живий захисник відповідає зниженою шкодою, якщо атакувальник у межах його дальності
+        /// і захисник здатен завдавати шкоди. Дальній бій (дистанція більша за дальність
+        /// захисника) контратаки не отримує.
+        /// </summary>
+        private int ApplyCounterAttack(
+            string attackerUnitId,
+            string targetUnitId,
+            out int attackerHpBefore,
+            out int attackerHpAfter,
+            out bool attackerDied)
+        {
+            attackerHpBefore = attackerHpAfter = 0;
+            attackerDied = false;
+
+            UnitClassConfig attackerConfig, defenderConfig;
+            if (!TryGetConfig(attackerUnitId, out attackerConfig)
+                || !TryGetConfig(targetUnitId, out defenderConfig)
+                || defenderConfig.CanTransportCargo)
+            {
+                return 0;
+            }
+
+            Vector2Int attackerPosition, targetPosition;
+            if (!_unitService.TryGetUnitPosition(attackerUnitId, out attackerPosition)
+                || !_unitService.TryGetUnitPosition(targetUnitId, out targetPosition)
+                || GridDistance(attackerPosition, targetPosition)
+                    > Mathf.Max(1, defenderConfig.AttackRange))
+            {
+                return 0;
+            }
+
+            IHealth attackerHealth;
+            if (!_healthRegistry.TryGet(attackerUnitId, out attackerHealth)
+                || attackerHealth == null || attackerHealth.IsDestroyed)
+            {
+                return 0;
+            }
+
+            UnitCombatBreakdown counter = UnitCombatCalculator.CalculateAttack(
+                defenderConfig, attackerConfig,
+                UnitCombatCalculator.CounterAttackDamageMultiplier);
+            if (counter.TotalDamage <= 0)
+                return 0;
+
+            attackerHpBefore = attackerHealth.CurrentHp;
+            attackerHealth.TakeDamage(counter.TotalDamage);
+            attackerHpAfter = attackerHealth.CurrentHp;
+            attackerDied = attackerHpAfter <= 0;
+            return Mathf.Max(0, attackerHpBefore - attackerHpAfter);
         }
 
         internal static int GridDistance(Vector2Int a, Vector2Int b)

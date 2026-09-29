@@ -121,10 +121,14 @@
     "cost": [
       {
         "resourceId": "walnut-wood-materials-resources",
-        "amount": 15
+        "amount": 30
+      },
+      {
+        "resourceId": "stone-materials-resources",
+        "amount": 10
       }
     ],
-    "buildTurns": 4,
+    "buildTurns": 3,
     "requiresBuilder": true,
     "workRequired": 0
   },
@@ -160,7 +164,7 @@
           "outputs": [
             {
               "resourceId": "hardwood-materials-resources",
-              "amount": 3
+              "amount": 2
             }
           ],
           "turnsPerCycle": 1,
@@ -170,6 +174,18 @@
       ],
       "isEnabled": true,
       "singletonScope": "PerBuilding"
+    },
+    {
+      "$type": "building-prerequisite-module",
+      "matchMode": "All",
+      "buildingIds": [
+        "wood-camp"
+      ],
+      "buildingTags": [],
+      "minimumCount": 1,
+      "mergeMode": "Override",
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
     }
   ],
   "migration": {
@@ -177,4 +193,4 @@
     "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Construction/Buildings/sawmill.asset",
     "sourceHash": "31e0c342b14358c4b9f693ff5b550471dd0a4c9cdecda868af8e9e8bd30bf0f1"
   }
-}
+}

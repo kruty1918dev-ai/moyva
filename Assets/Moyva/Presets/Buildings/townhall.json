@@ -141,7 +141,7 @@
         "amount": 30
       }
     ],
-    "buildTurns": 5,
+    "buildTurns": 6,
     "requiresBuilder": true,
     "workRequired": 0
   },
@@ -197,4 +197,4 @@
     "sourceAssetPath": "",
     "sourceHash": "runtime-json-added-townhall-2026-09-06"
   }
-}
+}

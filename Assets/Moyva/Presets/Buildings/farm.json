@@ -102,7 +102,7 @@
     "cost": [
       {
         "resourceId": "walnut-wood-materials-resources",
-        "amount": 20
+        "amount": 25
       }
     ],
     "buildTurns": 2,
@@ -136,7 +136,7 @@
           "outputs": [
             {
               "resourceId": "wheat-bundle-food-resources",
-              "amount": 8
+              "amount": 6
             }
           ],
           "turnsPerCycle": 1,
@@ -162,4 +162,4 @@
     "sourceAssetPath": "",
     "sourceHash": "runtime-json-added-farm-2026-09-06"
   }
-}
+}

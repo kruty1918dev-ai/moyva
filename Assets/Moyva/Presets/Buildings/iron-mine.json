@@ -121,7 +121,11 @@
     "cost": [
       {
         "resourceId": "walnut-wood-materials-resources",
-        "amount": 20
+        "amount": 35
+      },
+      {
+        "resourceId": "hardwood-materials-resources",
+        "amount": 10
       }
     ],
     "buildTurns": 4,
@@ -155,7 +159,7 @@
           "outputs": [
             {
               "resourceId": "iron-ore-materials-resources",
-              "amount": 3
+              "amount": 2
             }
           ],
           "turnsPerCycle": 1,
@@ -165,6 +169,18 @@
       ],
       "isEnabled": true,
       "singletonScope": "PerBuilding"
+    },
+    {
+      "$type": "building-prerequisite-module",
+      "matchMode": "All",
+      "buildingIds": [
+        "stone-quarry"
+      ],
+      "buildingTags": [],
+      "minimumCount": 1,
+      "mergeMode": "Override",
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
     }
   ],
   "migration": {
@@ -172,4 +188,4 @@
     "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Construction/Buildings/iron-mine.asset",
     "sourceHash": "969c647b8a861d8cc7eaff212fec5ddd14d84f66ae112b794248872a914c6cf1"
   }
-}
+}

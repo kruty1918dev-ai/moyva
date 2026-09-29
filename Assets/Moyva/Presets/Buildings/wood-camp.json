@@ -121,7 +121,7 @@
     "cost": [
       {
         "resourceId": "walnut-wood-materials-resources",
-        "amount": 5
+        "amount": 20
       }
     ],
     "buildTurns": 2,
@@ -155,7 +155,7 @@
           "outputs": [
             {
               "resourceId": "walnut-wood-materials-resources",
-              "amount": 6
+              "amount": 5
             }
           ],
           "turnsPerCycle": 1,
@@ -172,4 +172,4 @@
     "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Construction/Buildings/wood-camp.asset",
     "sourceHash": "6c520740354786befb5458b4901daf0641d7fd8a022f662c9395374d0d2b15ed"
   }
-}
+}

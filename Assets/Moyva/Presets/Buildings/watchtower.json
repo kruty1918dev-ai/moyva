@@ -137,7 +137,7 @@
         "amount": 20
       }
     ],
-    "buildTurns": 2,
+    "buildTurns": 3,
     "requiresBuilder": true,
     "workRequired": 0
   },
@@ -176,6 +176,18 @@
       "maximumDistanceToCenter": 0,
       "isEnabled": true,
       "singletonScope": "PerBuilding"
+    },
+    {
+      "$type": "building-prerequisite-module",
+      "matchMode": "All",
+      "buildingIds": [
+        "stone-quarry"
+      ],
+      "buildingTags": [],
+      "minimumCount": 1,
+      "mergeMode": "Override",
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
     }
   ],
   "migration": {
@@ -183,4 +195,4 @@
     "sourceAssetPath": "",
     "sourceHash": "agent-added-watchtower-2026-02"
   }
-}
+}

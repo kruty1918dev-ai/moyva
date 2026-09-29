@@ -172,7 +172,7 @@
           "outputs": [
             {
               "resourceId": "coin-gold-materials-resources",
-              "amount": 2
+              "amount": 1
             }
           ],
           "turnsPerCycle": 1,
@@ -191,6 +191,18 @@
       "maximumDistanceToCenter": 0,
       "isEnabled": true,
       "singletonScope": "PerBuilding"
+    },
+    {
+      "$type": "building-prerequisite-module",
+      "matchMode": "All",
+      "buildingIds": [
+        "house-01"
+      ],
+      "buildingTags": [],
+      "minimumCount": 2,
+      "mergeMode": "Override",
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
     }
   ],
   "migration": {
@@ -198,4 +210,4 @@
     "sourceAssetPath": "",
     "sourceHash": "agent-added-tavern-2026-02"
   }
-}
+}

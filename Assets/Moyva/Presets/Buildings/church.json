@@ -173,6 +173,18 @@
       "maximumDistanceToCenter": 0,
       "isEnabled": true,
       "singletonScope": "PerBuilding"
+    },
+    {
+      "$type": "building-prerequisite-module",
+      "matchMode": "All",
+      "buildingIds": [
+        "stone-quarry"
+      ],
+      "buildingTags": [],
+      "minimumCount": 1,
+      "mergeMode": "Override",
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
     }
   ],
   "migration": {
@@ -180,4 +192,4 @@
     "sourceAssetPath": "",
     "sourceHash": "agent-added-church-2026-02"
   }
-}
+}

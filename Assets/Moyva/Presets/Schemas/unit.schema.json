@@ -67,11 +67,12 @@
     },
     "combatType": {
       "type": "string",
-      "pattern": "^(?:-?\\d+|(?:Infantry|Cavalry|SiegeMachine))$",
+      "pattern": "^(?:-?\\d+|(?:Infantry|Cavalry|SiegeMachine|Naval))$",
       "x-enumNames": [
         "Infantry",
         "Cavalry",
-        "SiegeMachine"
+        "SiegeMachine",
+        "Naval"
       ],
       "x-flags": false,
       "title": "Combat Type",
@@ -330,6 +331,43 @@
       "description": "Захист від дроблячої шкоди.",
       "minimum": 0.0,
       "x-moyva-editorMinimum": 0.0
+    },
+    "combatBonuses": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "targetCombatType": {
+            "type": "string",
+            "pattern": "^(?:-?\\d+|(?:Infantry|Cavalry|SiegeMachine|Naval))$",
+            "x-enumNames": [
+              "Infantry",
+              "Cavalry",
+              "SiegeMachine",
+              "Naval"
+            ],
+            "x-flags": false,
+            "title": "Target Combat Type",
+            "description": "Бойовий клас цілі, проти якого діє бонус."
+          },
+          "damageMultiplier": {
+            "type": "number",
+            "title": "Damage Multiplier",
+            "description": "Множник підсумкової шкоди проти цього класу. 1.5 = +50% шкоди.",
+            "minimum": 0.0,
+            "x-moyva-editorMinimum": 0.0
+          }
+        },
+        "additionalProperties": false
+      },
+      "title": "Combat Bonuses",
+      "description": "Контр-бонуси: додатковий множник шкоди проти певних бойових класів."
     },
     "prefab": {
       "type": [

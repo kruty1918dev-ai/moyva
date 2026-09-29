@@ -182,6 +182,18 @@
       ],
       "isEnabled": true,
       "singletonScope": "PerBuilding"
+    },
+    {
+      "$type": "building-prerequisite-module",
+      "matchMode": "All",
+      "buildingIds": [
+        "smelter"
+      ],
+      "buildingTags": [],
+      "minimumCount": 1,
+      "mergeMode": "Override",
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
     }
   ],
   "migration": {
@@ -189,4 +201,4 @@
     "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Construction/Buildings/weapon-workshop.asset",
     "sourceHash": "427814c852c7329db319443bf9dbc3d7a881ba11343a864cca938b80c72ac988"
   }
-}
+}

@@ -182,7 +182,7 @@
           "outputs": [
             {
               "resourceId": "wheat-bundle-food-resources",
-              "amount": 6
+              "amount": 5
             }
           ],
           "turnsPerCycle": 1,
@@ -192,6 +192,18 @@
       ],
       "isEnabled": true,
       "singletonScope": "PerBuilding"
+    },
+    {
+      "$type": "building-prerequisite-module",
+      "matchMode": "All",
+      "buildingIds": [
+        "farm"
+      ],
+      "buildingTags": [],
+      "minimumCount": 1,
+      "mergeMode": "Override",
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
     }
   ],
   "migration": {
@@ -199,4 +211,4 @@
     "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Construction/Buildings/windmill-01.asset",
     "sourceHash": "4c32003e0e38e18273f40e76d8db97b8a04ad7fe97e36e052dfa7710114d8298"
   }
-}
+}

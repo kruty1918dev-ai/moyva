@@ -169,7 +169,7 @@
           "outputs": [
             {
               "resourceId": "wheat-bundle-food-resources",
-              "amount": 10
+              "amount": 8
             }
           ],
           "turnsPerCycle": 1,
@@ -188,6 +188,18 @@
       "maximumDistanceToCenter": 0,
       "isEnabled": true,
       "singletonScope": "PerBuilding"
+    },
+    {
+      "$type": "building-prerequisite-module",
+      "matchMode": "All",
+      "buildingIds": [
+        "stone-quarry"
+      ],
+      "buildingTags": [],
+      "minimumCount": 1,
+      "mergeMode": "Override",
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
     }
   ],
   "migration": {
@@ -195,4 +207,4 @@
     "sourceAssetPath": "",
     "sourceHash": "agent-added-watermill-2026-02"
   }
-}
+}

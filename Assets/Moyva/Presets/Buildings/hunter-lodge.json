@@ -161,10 +161,10 @@
           "outputs": [
             {
               "resourceId": "steak-food-resources",
-              "amount": 3
+              "amount": 2
             }
           ],
-          "turnsPerCycle": 3,
+          "turnsPerCycle": 2,
           "requiresWorkers": false,
           "requiresStorageSpace": false,
           "successChance": 0.6
@@ -179,6 +179,18 @@
       "requiresInfluence": true,
       "blockOverlappingCenters": false,
       "maximumDistanceToCenter": 0,
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    },
+    {
+      "$type": "building-prerequisite-module",
+      "matchMode": "All",
+      "buildingIds": [
+        "farm"
+      ],
+      "buildingTags": [],
+      "minimumCount": 1,
+      "mergeMode": "Override",
       "isEnabled": true,
       "singletonScope": "PerBuilding"
     }

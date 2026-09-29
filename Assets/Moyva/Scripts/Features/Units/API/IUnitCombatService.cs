@@ -44,7 +44,11 @@ namespace Kruty1918.Moyva.Units.API
             int damageApplied,
             int targetHpBefore,
             int targetHpAfter,
-            bool targetDied)
+            bool targetDied,
+            int counterDamageApplied = 0,
+            int attackerHpBefore = 0,
+            int attackerHpAfter = 0,
+            bool attackerDied = false)
         {
             Succeeded = succeeded;
             RejectReason = rejectReason;
@@ -54,6 +58,10 @@ namespace Kruty1918.Moyva.Units.API
             TargetHpBefore = Mathf.Max(0, targetHpBefore);
             TargetHpAfter = Mathf.Max(0, targetHpAfter);
             TargetDied = targetDied;
+            CounterDamageApplied = Mathf.Max(0, counterDamageApplied);
+            AttackerHpBefore = Mathf.Max(0, attackerHpBefore);
+            AttackerHpAfter = Mathf.Max(0, attackerHpAfter);
+            AttackerDied = attackerDied;
         }
 
         public bool Succeeded { get; }
@@ -64,6 +72,10 @@ namespace Kruty1918.Moyva.Units.API
         public int TargetHpBefore { get; }
         public int TargetHpAfter { get; }
         public bool TargetDied { get; }
+        public int CounterDamageApplied { get; }
+        public int AttackerHpBefore { get; }
+        public int AttackerHpAfter { get; }
+        public bool AttackerDied { get; }
 
         public static UnitAttackResult Rejected(
             string attackerUnitId,

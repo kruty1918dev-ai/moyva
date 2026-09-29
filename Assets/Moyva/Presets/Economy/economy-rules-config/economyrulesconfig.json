@@ -6,7 +6,7 @@
   "model": "economy-rules-config",
   "settlement": {
     "maxSettlements": 3,
-    "minTownHallDistance": 25,
+    "minTownHallDistance": 20,
     "allowSettlementWithoutPopulation": false,
     "deactivateSettlementWhenPopulationIsZero": true
   },
@@ -14,7 +14,7 @@
     "initialResidents": 15,
     "constructionWorkersForFullSpeed": 10,
     "minimumConstructionSpeed": 0.25,
-    "newResidentsArrivalIntervalTurns": 10,
+    "newResidentsArrivalIntervalTurns": 8,
     "requireHousingForFamilyCreation": true,
     "enableWarMortality": true,
     "enableDiseaseMortality": true
@@ -54,44 +54,48 @@
     "referenceTradeVolume": 50.0,
     "resourceBasePrices": [
       {
-        "resourceId": "Wood",
+        "resourceId": "walnut-wood-materials-resources",
         "basePrice": 5
       },
       {
-        "resourceId": "Stone",
+        "resourceId": "stone-materials-resources",
         "basePrice": 6
       },
       {
-        "resourceId": "Grain",
+        "resourceId": "wheat-bundle-food-resources",
         "basePrice": 5
       },
       {
-        "resourceId": "Meat",
+        "resourceId": "steak-food-resources",
         "basePrice": 8
       },
       {
-        "resourceId": "Berries",
-        "basePrice": 6
+        "resourceId": "raspberries-food-resources",
+        "basePrice": 4
       },
       {
-        "resourceId": "Water",
-        "basePrice": 3
+        "resourceId": "hardwood-materials-resources",
+        "basePrice": 8
       },
       {
-        "resourceId": "Coal",
+        "resourceId": "iron-ore-materials-resources",
         "basePrice": 9
       },
       {
-        "resourceId": "Clothing",
-        "basePrice": 12
-      },
-      {
-        "resourceId": "Planks",
-        "basePrice": 8
-      },
-      {
-        "resourceId": "Tools",
+        "resourceId": "iron-ingot-materials-resources",
         "basePrice": 14
+      },
+      {
+        "resourceId": "axe-white-materials-resources",
+        "basePrice": 20
+      },
+      {
+        "resourceId": "dark-armor-materials-resources",
+        "basePrice": 20
+      },
+      {
+        "resourceId": "coin-gold-materials-resources",
+        "basePrice": 10
       }
     ]
   },
@@ -226,19 +230,13 @@
       },
       {
         "resourceId": "stone-materials-resources",
-        "intervalTurns": 10,
+        "intervalTurns": 12,
         "baseAmount": 1.0,
         "perResidentAmount": 0.02
       },
       {
         "resourceId": "hardwood-materials-resources",
         "intervalTurns": 15,
-        "baseAmount": 1.0,
-        "perResidentAmount": 0.0
-      },
-      {
-        "resourceId": "iron-ore-materials-resources",
-        "intervalTurns": 20,
         "baseAmount": 1.0,
         "perResidentAmount": 0.0
       }

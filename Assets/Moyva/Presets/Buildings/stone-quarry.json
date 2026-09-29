@@ -99,7 +99,7 @@
     "cost": [
       {
         "resourceId": "walnut-wood-materials-resources",
-        "amount": 20
+        "amount": 30
       }
     ],
     "buildTurns": 3,
@@ -133,7 +133,7 @@
           "outputs": [
             {
               "resourceId": "stone-materials-resources",
-              "amount": 5
+              "amount": 4
             }
           ],
           "turnsPerCycle": 1,
@@ -143,6 +143,18 @@
       ],
       "isEnabled": true,
       "singletonScope": "PerBuilding"
+    },
+    {
+      "$type": "building-prerequisite-module",
+      "matchMode": "All",
+      "buildingIds": [
+        "wood-camp"
+      ],
+      "buildingTags": [],
+      "minimumCount": 1,
+      "mergeMode": "Override",
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
     }
   ],
   "migration": {
@@ -150,4 +162,4 @@
     "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Construction/Buildings/stone-quarry.asset",
     "sourceHash": "f4532d671a490befda9eec8fc2e9764108358df987aef40f4119d97ce4f2cb89"
   }
-}
+}

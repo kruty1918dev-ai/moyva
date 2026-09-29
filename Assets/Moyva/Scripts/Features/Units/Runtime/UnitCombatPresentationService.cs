@@ -119,6 +119,11 @@ namespace Kruty1918.Moyva.Units.Runtime
                 PlayConfiguredAnimation(result.TargetUnitId, AnimationType.TakeDamage);
                 PlayHitRecoil(result.AttackerUnitId, result.TargetUnitId);
             }
+            if (result.Succeeded && result.CounterDamageApplied > 0 && !result.AttackerDied)
+            {
+                PlayConfiguredAnimation(result.AttackerUnitId, AnimationType.TakeDamage);
+                PlayHitRecoil(result.TargetUnitId, result.AttackerUnitId);
+            }
             if (_selectedUnitId != null) Refresh();
         }
 

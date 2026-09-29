@@ -15,14 +15,14 @@
   "crestVisibilityFactor": 1.0,
   "downSlopeVisionBonus": 0.0,
   "silhouettePenalty": 0.0,
-  "hitPoints": 100,
+  "hitPoints": 90,
   "baseLevel": 1,
-  "cuttingDamage": 15,
+  "cuttingDamage": 18,
   "penetratingDamage": 0,
   "crushingDamage": 0,
-  "cuttingDefense": 0,
+  "cuttingDefense": 1,
   "penetratingDefense": 0,
-  "crushingDefense": 0,
+  "crushingDefense": 1,
   "prefab": {
     "$asset": "asset.game-object.light-cavalry.32716c4f",
     "editorPath": "Assets/Moyva/Prefabs/Units/KayKit/light-cavalry.prefab",
@@ -50,7 +50,7 @@
     "sourceHash": "cfa0cbf56301b0668d749c38162bd998e648877dc3540aa6edcad6ad1e3c3a37"
   },
   "attackRange": 1,
-  "movementPointsPerTurn": 7.0,
+  "movementPointsPerTurn": 8.0,
   "movementProfile": {
     "$config": {
       "model": "movement-profile",

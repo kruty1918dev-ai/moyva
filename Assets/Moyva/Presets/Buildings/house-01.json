@@ -121,18 +121,14 @@
     "cost": [
       {
         "resourceId": "walnut-wood-materials-resources",
-        "amount": 1
+        "amount": 15
       },
       {
         "resourceId": "stone-materials-resources",
-        "amount": 1
-      },
-      {
-        "resourceId": "hardwood-materials-resources",
-        "amount": 1
+        "amount": 5
       }
     ],
-    "buildTurns": 1,
+    "buildTurns": 2,
     "requiresBuilder": true,
     "workRequired": 0
   },
@@ -175,4 +171,4 @@
     "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Construction/Buildings/house-01.asset",
     "sourceHash": "50576e489cdc8d6b025fb4dd5c41ca3f1a3a864771f856fcb7ce696302d27922"
   }
-}
+}

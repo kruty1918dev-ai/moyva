@@ -8,29 +8,29 @@
   "displayName": "Воїн",
   "role": "Military",
   "combatType": "Infantry",
-  "baseStamina": 15.0,
+  "baseStamina": 100.0,
   "visionRange": 2,
   "visionHeightBoostPerLevel": 0.0,
   "canSeeCrest": true,
   "crestVisibilityFactor": 1.0,
   "downSlopeVisionBonus": 0.0,
   "silhouettePenalty": 0.0,
-  "hitPoints": 100,
+  "hitPoints": 110,
   "baseLevel": 1,
-  "cuttingDamage": 15,
+  "cuttingDamage": 20,
   "penetratingDamage": 0,
   "crushingDamage": 0,
-  "cuttingDefense": 0,
-  "penetratingDefense": 0,
-  "crushingDefense": 0,
+  "cuttingDefense": 3,
+  "penetratingDefense": 1,
+  "crushingDefense": 2,
   "prefab": {
     "$asset": "asset.game-object.warrior.ad2b8f50",
     "editorPath": "Assets/Moyva/Prefabs/Units/KayKit/warrior.prefab",
     "required": true
   },
   "staminaRandomRange": {
-    "x": -1.0,
-    "y": 1.0
+    "x": -5.0,
+    "y": 5.0
   },
   "animationSettings": {
     "moveDurationPerTile": 0.3,

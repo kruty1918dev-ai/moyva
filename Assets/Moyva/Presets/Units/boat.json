@@ -7,8 +7,8 @@
   "typeId": "boat",
   "displayName": "Човен",
   "role": "Worker",
-  "combatType": "SiegeMachine",
-  "baseStamina": 18.0,
+  "combatType": "Naval",
+  "baseStamina": 80.0,
   "canTransportCargo": true,
   "cargoCapacity": 80.0,
   "visionRange": 3,
@@ -31,8 +31,8 @@
     "required": false
   },
   "staminaRandomRange": {
-    "x": -1.0,
-    "y": 1.0
+    "x": -5.0,
+    "y": 5.0
   },
   "animationSettings": {
     "moveDurationPerTile": 0.22,

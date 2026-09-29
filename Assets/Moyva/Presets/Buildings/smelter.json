@@ -186,6 +186,18 @@
       "maximumDistanceToCenter": 0,
       "isEnabled": true,
       "singletonScope": "PerBuilding"
+    },
+    {
+      "$type": "building-prerequisite-module",
+      "matchMode": "All",
+      "buildingIds": [
+        "iron-mine"
+      ],
+      "buildingTags": [],
+      "minimumCount": 1,
+      "mergeMode": "Override",
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
     }
   ],
   "migration": {
@@ -193,4 +205,4 @@
     "sourceAssetPath": "",
     "sourceHash": "runtime-json-added-smelter-2026-09-06"
   }
-}
+}

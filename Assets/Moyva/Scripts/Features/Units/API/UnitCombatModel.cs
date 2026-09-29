@@ -34,7 +34,8 @@ namespace Kruty1918.Moyva.Units.API
             int crushingEffective,
             float levelMultiplier,
             int totalDamage,
-            int defenderHitPoints)
+            int defenderHitPoints,
+            float counterBonusMultiplier = 1f)
         {
             CuttingRawDamage = cuttingRaw;
             PenetratingRawDamage = penetratingRaw;
@@ -46,6 +47,7 @@ namespace Kruty1918.Moyva.Units.API
             PenetratingEffectiveDamage = penetratingEffective;
             CrushingEffectiveDamage = crushingEffective;
             LevelMultiplier = levelMultiplier;
+            CounterBonusMultiplier = counterBonusMultiplier;
             TotalDamage = totalDamage;
             DefenderHitPoints = Mathf.Max(1, defenderHitPoints);
             HitsToDefeat = totalDamage > 0 ? Mathf.CeilToInt(DefenderHitPoints / (float)totalDamage) : int.MaxValue;
@@ -62,6 +64,7 @@ namespace Kruty1918.Moyva.Units.API
         public int PenetratingEffectiveDamage { get; }
         public int CrushingEffectiveDamage { get; }
         public float LevelMultiplier { get; }
+        public float CounterBonusMultiplier { get; }
         public int TotalDamage { get; }
         public int DefenderHitPoints { get; }
         public int HitsToDefeat { get; }
@@ -125,7 +128,13 @@ namespace Kruty1918.Moyva.Units.API
         public const float MinLevelMultiplier = 0.5f;
         public const float MaxLevelMultiplier = 1.5f;
 
-        public static UnitCombatBreakdown CalculateAttack(UnitClassConfig attacker, UnitClassConfig defender)
+        /// <summary>Частка шкоди, яку живий захисник наносить у відповідь, якщо атакувальник у межах його дальності.</summary>
+        public const float CounterAttackDamageMultiplier = 0.75f;
+
+        public static UnitCombatBreakdown CalculateAttack(
+            UnitClassConfig attacker,
+            UnitClassConfig defender,
+            float damageMultiplier = 1f)
         {
             if (attacker == null)
                 throw new ArgumentNullException(nameof(attacker));
@@ -144,7 +153,9 @@ namespace Kruty1918.Moyva.Units.API
             int crushingEffective = Mathf.Max(0, crushingRaw - crushingDefense);
             int effectiveBeforeLevel = cuttingEffective + penetratingEffective + crushingEffective;
             float levelMultiplier = CalculateLevelMultiplier(attacker.BaseLevel, defender.BaseLevel);
-            int totalDamage = Mathf.RoundToInt(effectiveBeforeLevel * levelMultiplier);
+            float counterBonus = ResolveCounterBonusMultiplier(attacker, defender.CombatType);
+            int totalDamage = Mathf.RoundToInt(
+                effectiveBeforeLevel * levelMultiplier * counterBonus * Mathf.Max(0f, damageMultiplier));
 
             if (totalDamage <= 0 && cuttingRaw + penetratingRaw + crushingRaw > 0)
                 totalDamage = 1;
@@ -161,14 +172,31 @@ namespace Kruty1918.Moyva.Units.API
                 crushingEffective,
                 levelMultiplier,
                 totalDamage,
-                defender.HitPoints);
+                defender.HitPoints,
+                counterBonus);
         }
 
         public static UnitCombatDuel CalculateDuel(UnitClassConfig attacker, UnitClassConfig defender)
         {
             return new UnitCombatDuel(
                 CalculateAttack(attacker, defender),
-                CalculateAttack(defender, attacker));
+                CalculateAttack(defender, attacker, CounterAttackDamageMultiplier));
+        }
+
+        public static float ResolveCounterBonusMultiplier(UnitClassConfig attacker, UnitCombatType targetCombatType)
+        {
+            var bonuses = attacker?.CombatBonuses;
+            if (bonuses == null || bonuses.Count == 0)
+                return 1f;
+
+            float multiplier = 1f;
+            for (int i = 0; i < bonuses.Count; i++)
+            {
+                UnitCombatBonus bonus = bonuses[i];
+                if (bonus != null && bonus.TargetCombatType == targetCombatType)
+                    multiplier = Mathf.Max(multiplier, bonus.DamageMultiplier);
+            }
+            return multiplier;
         }
 
         public static float CalculateLevelMultiplier(int attackerLevel, int defenderLevel)

@@ -99,11 +99,11 @@
     "cost": [
       {
         "resourceId": "stone-materials-resources",
-        "amount": 1
+        "amount": 8
       },
       {
         "resourceId": "hardwood-materials-resources",
-        "amount": 1
+        "amount": 2
       }
     ],
     "buildTurns": 1,
@@ -140,6 +140,18 @@
       "requiresInfluence": true,
       "blockOverlappingCenters": false,
       "maximumDistanceToCenter": 0,
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    },
+    {
+      "$type": "building-prerequisite-module",
+      "matchMode": "All",
+      "buildingIds": [
+        "engineers-guild"
+      ],
+      "buildingTags": [],
+      "minimumCount": 1,
+      "mergeMode": "Override",
       "isEnabled": true,
       "singletonScope": "PerBuilding"
     }

@@ -327,6 +327,29 @@ namespace Kruty1918.Moyva.Vfx.Runtime
                 if (targetObject != null)
                     _flash.Flash(targetObject);
             }
+
+            if (result.CounterDamageApplied > 0
+                && (_unitSnapshots.TryGet(
+                        result.AttackerUnitId, out Vector2Int attackerPos, out string attackerType, out _)
+                    || (_units != null
+                        && _units.TryGetUnitPosition(result.AttackerUnitId, out attackerPos)
+                        && (attackerType = _units.GetUnitTypeId(result.AttackerUnitId)) != null)))
+            {
+                float counterSeverity = result.AttackerHpBefore > 0
+                    ? Mathf.Clamp01(result.CounterDamageApplied / (float)result.AttackerHpBefore)
+                    : 0.5f;
+
+                Emit(VfxEventIds.CombatImpact, attackerPos, null,
+                    UnitContext(attackerType), Quaternion.identity,
+                    severityScale: Mathf.Lerp(0.85f, 1.3f, counterSeverity));
+
+                if (IsVisible(attackerPos))
+                {
+                    GameObject attackerObject = _units?.GetUnitObject(result.AttackerUnitId);
+                    if (attackerObject != null)
+                        _flash.Flash(attackerObject);
+                }
+            }
         }
 
         // ---- Emission pipeline ----

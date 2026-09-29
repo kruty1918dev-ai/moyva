@@ -19,6 +19,7 @@ namespace Kruty1918.Moyva.Units.API
         Infantry = 0,
         Cavalry = 1,
         SiegeMachine = 2,
+        Naval = 3,
     }
 
     public enum AnimationType
@@ -63,6 +64,19 @@ namespace Kruty1918.Moyva.Units.API
         [Min(0.01f)] public float Duration = 1f;
 
         public bool HasClip => AnimationClip != null || (SpriteFrames != null && SpriteFrames.Count > 0);
+    }
+
+    /// <summary>
+    /// Множник шкоди юніта проти певного бойового класу цілі (контр-юніти, Civ-стиль).
+    /// </summary>
+    [Serializable]
+    public class UnitCombatBonus
+    {
+        [Tooltip("Бойовий клас цілі, проти якого діє бонус.")]
+        public UnitCombatType TargetCombatType = UnitCombatType.Infantry;
+
+        [Tooltip("Множник підсумкової шкоди проти цього класу. 1.5 = +50% шкоди.")]
+        [Min(0f)] public float DamageMultiplier = 1f;
     }
 
     [Serializable]
@@ -120,6 +134,9 @@ namespace Kruty1918.Moyva.Units.API
         [Min(0)] public int PenetratingDefense;
         [Tooltip("Захист від дроблячої шкоди.")]
         [Min(0)] public int CrushingDefense;
+
+        [Tooltip("Контр-бонуси: додатковий множник шкоди проти певних бойових класів.")]
+        public List<UnitCombatBonus> CombatBonuses = new List<UnitCombatBonus>();
 
         public GameObject Prefab;
         public UnitPresentationConfig Presentation = new UnitPresentationConfig();
