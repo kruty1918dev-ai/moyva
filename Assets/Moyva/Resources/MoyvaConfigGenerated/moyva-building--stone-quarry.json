@@ -99,7 +99,7 @@
     "cost": [
       {
         "resourceId": "walnut-wood-materials-resources",
-        "amount": 20
+        "amount": 30
       }
     ],
     "buildTurns": 3,
@@ -133,7 +133,7 @@
           "outputs": [
             {
               "resourceId": "stone-materials-resources",
-              "amount": 5
+              "amount": 4
             }
           ],
           "turnsPerCycle": 1,
@@ -141,6 +141,18 @@
           "requiresStorageSpace": false
         }
       ],
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    },
+    {
+      "$type": "building-prerequisite-module",
+      "matchMode": "All",
+      "buildingIds": [
+        "wood-camp"
+      ],
+      "buildingTags": [],
+      "minimumCount": 1,
+      "mergeMode": "Override",
       "isEnabled": true,
       "singletonScope": "PerBuilding"
     }

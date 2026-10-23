@@ -23,7 +23,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 _turns?.ActiveOwnerId,
                 _turns?.LocalOwnerId,
                 _turns?.Phase ?? TurnPhase.Initializing,
-                _progressClock?.IsRealtime ?? false);
+                _progressClock?.IsRealtime ?? false,
+                (_turns as ITurnRoundState)?.FlowMode ?? TurnFlowMode.Sequential);
 
             if (!ConstructionTurnAuthorityPolicy.TryAuthorize(
                     ownerId,

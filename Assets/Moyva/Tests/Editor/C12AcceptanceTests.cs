@@ -218,7 +218,7 @@ namespace Kruty1918.Moyva.Tests
 
     internal static class C12Fakes
     {
-        internal sealed class Calendar : ICalendarService
+        internal sealed class Calendar : ICalendarService, ICalendarStateRestorer
         {
             public int AdvanceCount;
             public long TotalHours;
@@ -238,6 +238,8 @@ namespace Kruty1918.Moyva.Tests
                 TotalHours += Config.HoursPerTurn;
             }
             public void SetByTotalHours(long totalHours)
+                => TotalHours = totalHours;
+            public void RestoreByTotalHours(long totalHours)
                 => TotalHours = totalHours;
         }
 

@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using Kruty1918.Moyva.Multiplayer.Core;
+using Kruty1918.Moyva.Turns.API;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Multiplayer.Runtime
@@ -93,12 +94,18 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 ReportStateError("Host and client participant order differs. Turn commands are blocked.");
                 return;
             }
-            // Apply a public projection, never replay end/start-turn gameplay callbacks on clients.
+            // The authoritative apply restores the public projection and replays
+            // the deterministic per-owner lifecycle for the covered delta — the
+            // first apply is a silent baseline, so a fresh join does not double
+            // progress already included in the world snapshot.
             _historyRestorer.RestoreHistory(state.History);
             if (state.IsGameOver != _result.IsGameOver || state.WinnerId != _result.WinnerId)
                 _result.RestoreResult(state.IsGameOver, state.WinnerId);
-            _calendarRestorer.RestoreByTotalHours(state.CalendarHours);
-            _turnRestorer.Restore(state.Round, state.GlobalTurn, state.OwnerId, state.Actions);
+            _turnRestorer.RestoreAuthoritative(
+                state.Round, state.GlobalTurn, state.OwnerId, state.Actions,
+                (TurnFlowMode)state.FlowMode, state.RoundTimerSeconds,
+                state.EndedOwners, state.RoundSecondsRemaining,
+                state.CalendarHours);
             _lastAppliedRevision = state.Revision;
             _pendingState = null;
             _stateError = string.Empty;

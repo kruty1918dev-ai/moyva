@@ -31,6 +31,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         ITickable,
         IDisposable,
         ITurnBlocker,
+        ITurnOwnerBlocker,
         IUiActionHandler
     {
         private const string LogTag = "[UnitDeployment]";
@@ -195,6 +196,24 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             reason = TurnBlockReason;
             return true;
+        }
+
+        /// <summary>
+        /// The deployment session is local UI state — it only blocks the local
+        /// owner's end turn, never a remote owner's round on the host.
+        /// </summary>
+        public bool IsTurnBlocked(string ownerId, out string reason)
+        {
+            string localOwner = _turns?.LocalOwnerId?.Trim();
+            if (!string.IsNullOrWhiteSpace(ownerId)
+                && !string.IsNullOrWhiteSpace(localOwner)
+                && !string.Equals(ownerId.Trim(), localOwner, StringComparison.Ordinal))
+            {
+                reason = null;
+                return false;
+            }
+
+            return IsTurnBlocked(out reason);
         }
 
     }

@@ -35,7 +35,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _placementRulesProvider = placementRulesProvider;
         }
 
-        public bool IsBlockedByFog(Vector2Int position)
+        public bool IsBlockedByFog(string ownerId, Vector2Int position)
         {
             try
             {
@@ -44,12 +44,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
                         || !_placementRulesProvider.RequireVisibleFogTile))
                     return false;
 
-                if (_fogOfWarService == null)
-                    return false;
-
-                FogStateType fogState =
-                    _fogOfWarService.GetFogState(position);
-                return fogState != FogStateType.Visible;
+                FogStateType? fogState = GetFogState(ownerId, position);
+                return fogState.HasValue
+                    && fogState.Value != FogStateType.Visible;
             }
             catch (Exception ex)
             {
@@ -58,6 +55,26 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     $"{ex.GetType().Name} - {ex.Message}");
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Owner-aware fog query: the requesting owner's per-owner grid is the
+        /// authority; the local-perspective grid is used only when the owner is
+        /// the local perspective owner (or owner-scoped state is unavailable).
+        /// </summary>
+        public FogStateType? GetFogState(string ownerId, Vector2Int position)
+        {
+            if (_fogOfWarService == null)
+                return null;
+
+            if (!string.IsNullOrWhiteSpace(ownerId)
+                && !_fogOfWarService.IsLocalPerspectiveOwner(ownerId)
+                && _fogOfWarService is IFogOwnerStateReader ownerStateReader)
+            {
+                return ownerStateReader.GetFogState(ownerId, position);
+            }
+
+            return _fogOfWarService.GetFogState(position);
         }
 
         public bool IsBlockedByTerrain(

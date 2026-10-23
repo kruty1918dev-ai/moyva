@@ -438,6 +438,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         public void SetConstructionCategory(object value)
             => _state.SetConstructionCategory(value?.ToString());
+        public void SetConstructionAvailability(object value)
+            => _state.SetConstructionAvailability(
+                (GameplayConstructionAvailability)Math.Clamp(ToInt(value), 0, 2));
         public void SetConstructionSearch(string value)
             => _state.SetConstructionSearch(value);
         public void PreviousConstructionPage() => _state.MoveConstructionPage(-1);

@@ -32,6 +32,11 @@ public static class WorldVisualSmoke
 
     static WorldVisualSmoke()
     {
+        // Log writers below append into Library/ai and Temp/ai, which do not
+        // exist on a fresh clone — create them up front (esp. important on
+        // Linux where a fresh checkout lacks these folders entirely).
+        Directory.CreateDirectory("Library/ai");
+        Directory.CreateDirectory("Temp/ai");
         EditorApplication.update += Update;
         EditorApplication.playModeStateChanged += state =>
         {

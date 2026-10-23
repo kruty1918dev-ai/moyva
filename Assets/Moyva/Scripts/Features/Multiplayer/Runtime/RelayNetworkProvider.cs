@@ -148,6 +148,11 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
         private volatile string _transportError;
         private volatile bool _transportActive;
         private volatile int _relayStatus;
+        // Serializes every NetworkDriver access. Pump ticks run on the main
+        // thread while teardown can run on a continuation thread — without the
+        // gate a queued UpdateJob overlaps a Disconnect/flush and trips Unity
+        // Transport's job-safety checks.
+        private readonly object _driverGate = new object();
 
         // Outbound user messages are enqueued by any thread and drained on the
         // transport pump thread, which exclusively owns the driver.
@@ -544,20 +549,47 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                 // The connect token owns setup only. The established transport
                 // belongs to the session and stops explicitly on leave/dispose.
                 CancellationToken.None,
-                () => _driver.IsCreated,
+                IsTransportAlive,
                 PumpTransportOnce);
+        }
+
+        private bool IsTransportAlive()
+        {
+            if (!_transportActive)
+                return false;
+            lock (_driverGate)
+                return _driver.IsCreated;
         }
 
         private void PumpTransportOnce()
         {
-            _driver.ScheduleUpdate().Complete();
-            _relayStatus = (int)_driver.GetRelayConnectionStatus();
-            DrainOutbound();
-            if (_isHost)
-                PumpHost();
-            else
-                PumpClient();
-            _reliableChannel?.Flush(_driver, FailTransportPeer);
+            if (!_transportActive)
+                return;
+
+            lock (_driverGate)
+            {
+                try
+                {
+                    _driver.ScheduleUpdate().Complete();
+                }
+                catch (Exception exception) when (IsExpectedShutdownFault(exception))
+                {
+                    // A queued tick can race with transport teardown: the driver is
+                    // being disposed between the predicate check and ScheduleUpdate.
+                    // Shutdown noise, not a failure — stop the pump quietly.
+                    _transportActive = false;
+                    Debug.LogWarning($"[Relay Transport] Pump stopped during shutdown: {exception.Message}");
+                    return;
+                }
+
+                _relayStatus = (int)_driver.GetRelayConnectionStatus();
+                DrainOutbound();
+                if (_isHost)
+                    PumpHost();
+                else
+                    PumpClient();
+                _reliableChannel?.Flush(_driver, FailTransportPeer);
+            }
         }
 
         private void PumpHost()
@@ -906,6 +938,23 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             }
         }
 
+        private static bool IsExpectedShutdownFault(Exception exception)
+        {
+            if (exception is ObjectDisposedException or InvalidOperationException)
+            {
+                string message = exception.Message ?? string.Empty;
+                return message.Contains("deallocated")
+                    || message.Contains("disposed")
+                    || message.Contains("IsCreated")
+                    || message.Contains("UpdateJob")
+                    || message.Contains("DequeuePacketsJob")
+                    || message.Contains("not been created")
+                    || message.Contains("wrapped");
+            }
+
+            return false;
+        }
+
         private async Task ShutdownTransportAsync()
         {
             _transportActive = false;
@@ -913,28 +962,31 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             while (_outbound.TryDequeue(out _)) { }
             _sendRetry.Clear();
 
-            if (_driver.IsCreated)
+            lock (_driverGate)
             {
-                if (_isHost && _serverConnections.IsCreated)
+                if (_driver.IsCreated)
                 {
-                    for (int i = 0; i < _serverConnections.Length; i++)
-                        if (_serverConnections[i].IsCreated)
-                            _driver.Disconnect(_serverConnections[i]);
-                }
-                else if (_serverConnection.IsCreated)
-                {
-                    _driver.Disconnect(_serverConnection);
-                }
+                    if (_isHost && _serverConnections.IsCreated)
+                    {
+                        for (int i = 0; i < _serverConnections.Length; i++)
+                            if (_serverConnections[i].IsCreated)
+                                _driver.Disconnect(_serverConnections[i]);
+                    }
+                    else if (_serverConnection.IsCreated)
+                    {
+                        _driver.Disconnect(_serverConnection);
+                    }
 
-                try
-                {
-                    _driver.ScheduleUpdate().Complete();
-                }
-                catch (Exception)
-                {
-                }
+                    try
+                    {
+                        _driver.ScheduleUpdate().Complete();
+                    }
+                    catch (Exception)
+                    {
+                    }
 
-                _driver.Dispose();
+                    _driver.Dispose();
+                }
             }
 
             if (_serverConnections.IsCreated)
@@ -959,12 +1011,34 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             while (_outbound.TryDequeue(out _)) { }
             _sendRetry.Clear();
 
-            try
+            lock (_driverGate)
             {
-                if (_driver.IsCreated)
-                    _driver.Dispose();
+                try
+                {
+                    if (_driver.IsCreated)
+                    {
+                        // Best-effort goodbye so peers see a disconnect instead of
+                        // a timeout; one update flushes the disconnect packets
+                        // before the driver is released.
+                        if (_isHost && _serverConnections.IsCreated)
+                        {
+                            for (int i = 0; i < _serverConnections.Length; i++)
+                                if (_serverConnections[i].IsCreated)
+                                    _driver.Disconnect(_serverConnections[i]);
+                        }
+                        else if (_serverConnection.IsCreated)
+                        {
+                            _driver.Disconnect(_serverConnection);
+                        }
+
+                        try { _driver.ScheduleUpdate().Complete(); }
+                        catch (Exception) { }
+
+                        _driver.Dispose();
+                    }
+                }
+                catch { }
             }
-            catch { }
 
             try
             {

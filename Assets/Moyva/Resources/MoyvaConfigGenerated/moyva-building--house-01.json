@@ -121,18 +121,14 @@
     "cost": [
       {
         "resourceId": "walnut-wood-materials-resources",
-        "amount": 1
+        "amount": 15
       },
       {
         "resourceId": "stone-materials-resources",
-        "amount": 1
-      },
-      {
-        "resourceId": "hardwood-materials-resources",
-        "amount": 1
+        "amount": 5
       }
     ],
-    "buildTurns": 1,
+    "buildTurns": 2,
     "requiresBuilder": true,
     "workRequired": 0
   },

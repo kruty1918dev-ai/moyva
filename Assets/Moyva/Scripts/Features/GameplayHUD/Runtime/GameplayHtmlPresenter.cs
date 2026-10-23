@@ -97,6 +97,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private string _css;
         private long _lastSandboxSecond = -1;
         private int _lastSandboxCountdown = -1;
+        private int _lastRoundTimerSecond = -1;
+        private bool _lastRoundTimerHeld;
 
         public GameplayHtmlPresenter(
             SignalBus signals,
@@ -237,6 +239,21 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 {
                     _lastSandboxSecond = second;
                     _lastSandboxCountdown = countdown;
+                    _state.MarkDirty();
+                }
+            }
+            // Simultaneous round countdown: only a changed whole second (or a
+            // timer-hold flip) re-renders — the timer itself is the authority.
+            var roundState = _turns as ITurnRoundState;
+            if (roundState?.FlowMode == TurnFlowMode.Simultaneous
+                && roundState.RoundTimerSeconds > 0)
+            {
+                int remaining = Mathf.CeilToInt(roundState.RoundSecondsRemaining);
+                bool held = roundState.RoundTimerHeld;
+                if (remaining != _lastRoundTimerSecond || held != _lastRoundTimerHeld)
+                {
+                    _lastRoundTimerSecond = remaining;
+                    _lastRoundTimerHeld = held;
                     _state.MarkDirty();
                 }
             }
@@ -467,11 +484,19 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (_turns == null
                 || _turns.Phase != TurnPhase.AwaitingInput
                 || string.IsNullOrWhiteSpace(_turns.LocalOwnerId)
-                || !string.Equals(_turns.ActiveOwnerId, _turns.LocalOwnerId, StringComparison.Ordinal)
                 || _bootstrap == null)
             {
                 return;
             }
+
+            // Sequential mode gates on the active cursor; in simultaneous
+            // rounds every owner may place their castle until they end turn.
+            var roundState = _turns as ITurnRoundState;
+            bool localMayAct = roundState?.FlowMode == TurnFlowMode.Simultaneous
+                ? !roundState.HasOwnerEndedTurn(_turns.LocalOwnerId)
+                : string.Equals(_turns.ActiveOwnerId, _turns.LocalOwnerId, StringComparison.Ordinal);
+            if (!localMayAct)
+                return;
 
             bool required = _bootstrap.RequiresInitialCastle(
                 _turns.LocalOwnerId,

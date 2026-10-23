@@ -19,7 +19,7 @@ using Zenject;
 namespace Kruty1918.Moyva.Units.Runtime
 {
 	/// <summary>Сервіс руху юнітів: прокачує шляхи через PathTraversalMotion, блокує хід під час переміщень.</summary>
-	internal sealed class UnitMovementService : IUnitMovementService, ITurnBlocker, IInitializable, IDisposable
+	internal sealed class UnitMovementService : IUnitMovementService, ITurnBlocker, ITurnOwnerBlocker, IInitializable, IDisposable
 	{
 		private readonly IUnitService _unitService;
 		private readonly IPathfinder _pathfinder;
@@ -370,6 +370,25 @@ namespace Kruty1918.Moyva.Units.Runtime
 
 			reason = null;
 			return false;
+		}
+
+		/// <summary>
+		/// Active movements are local-process animation state — they only block
+		/// the local owner's end turn. A remote player's round must not stall on
+		/// the host's own unit animations in simultaneous mode.
+		/// </summary>
+		public bool IsTurnBlocked(string ownerId, out string reason)
+		{
+			string localOwner = _turns?.LocalOwnerId?.Trim();
+			if (!string.IsNullOrWhiteSpace(ownerId)
+			    && !string.IsNullOrWhiteSpace(localOwner)
+			    && !string.Equals(ownerId.Trim(), localOwner, StringComparison.Ordinal))
+			{
+				reason = null;
+				return false;
+			}
+
+			return IsTurnBlocked(out reason);
 		}
 
 		private bool CanMakeStep(string unitId, Vector2Int stepPos)

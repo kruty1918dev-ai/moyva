@@ -12,8 +12,8 @@ Base: `.`
 | Gameplay composition | `Bootstrap/Runtime/BootstrapInstaller.cs` → feature bindings; startup below |
 | Input routing | `Packages/com.kruty1918.input-context/Runtime/`; game bindings `Infrastructure/InputRouting/Runtime/InputRoutingBindings.cs` |
 | Camera shortcuts | `Shared/PlayerControlBinding.cs`; `Shared/PlayerControlSettingsService.cs` |
-| Audio / graphics / performance / UI | `Shared/SharedInstaller.cs`; audio `Packages/com.kruty1918.audio/` + `Shared/Audio/MoyvaAudioInstaller.cs`; perf `Packages/com.kruty1918.adaptive-performance/` + `Shared/Performance/`; UI `Packages/com.kruty1918.ui-foundation/` + `Shared/UI/` |
-| Diagnostic logging | `Packages/com.kruty1918.runtime-diagnostics/` (composed in SharedInstaller); game capture `Shared/Diagnostics/` |
+| Audio / graphics / performance / UI | `Shared/SharedInstaller.cs`; `Shared/Audio/MoyvaAudioInstaller.cs`; Packages com.kruty1918.audio / adaptive-performance / ui-foundation |
+| Diagnostic logging | `Packages/com.kruty1918.runtime-diagnostics/`; game capture `Shared/Diagnostics/` |
 | Localization | `Packages/com.kruty1918.localization/`; `Features/HomeMenu/Runtime/Services/LanguageSwitchCoordinator.cs` |
 | JSON / asset catalog | `Packages/com.kruty1918.json-config/`; game adapter `Jsonization/Runtime/` |
 
@@ -23,7 +23,8 @@ Base: `Features/`
 
 | Task | Entry points |
 |---|---|
-| Turns / rounds | `Turns/API/TurnContracts.cs`; `Turns/Runtime/TurnBindings.cs`; `Turns/Runtime/TurnService.cs`; `Turns/Runtime/RoundResolutionService.cs` |
+| Turns / rounds | `Turns/API/TurnContracts.cs`; `Turns/Runtime/TurnBindings.cs`; `Turns/Runtime/TurnService.cs`; `Turns/Runtime/TurnService.Simultaneous.cs`; `Turns/Runtime/RoundResolutionService.cs` |
+| Turn rules config | `Turns/API/TurnRulesConfig.cs`; `Turns/Runtime/TurnRulesResolver.cs`; `Turns/Runtime/TurnRoundTimerService.cs`; preset Presets/Systems/turn-rules; DTO `WorldCreation/API/WorldSettingsDto.cs` |
 | Combat / health | `Combat/API/ICombatCommandService.cs`; `Combat/Runtime/CombatInstaller.cs`; health mechanics `Packages/com.kruty1918.entity-health/` |
 | Economy state | `Economy/Runtime/EconomyInstaller.cs`; `Economy/Runtime/EconomyManager.cs`; `Economy/Runtime/EconomySettlementRegistryService.cs`; `Economy/Runtime/EconomyOwnerResourcePoolService.cs` |
 | Economy queries | `Economy/Runtime/IEconomyRuntimeApi.cs`; `Economy/Runtime/EconomyRuntimeApi.cs`; `Economy/API/IMapObjectEconomyService.cs` |
@@ -41,7 +42,7 @@ Base: `Features/`
 | Tile selection | `Interactions/API/ITileInteractionService.cs`; `Interactions/Runtime/InteractionsInstaller.cs`; `Interactions/Runtime/WorldInfoSelectionCoordinator.cs` |
 | Info panel | `InfoPanel/UI/WorldInfoPanelInstaller.cs` |
 | Notifications | `Packages/com.kruty1918.notifications/`; game composition `Notifications/Runtime/NotificationsInstaller.cs` |
-| Game audio layer | `GameAudio/API/AudioAmbienceConfig.cs`; `GameAudio/API/AudioFeedbackConfig.cs`; `GameAudio/Runtime/GameAudioInstaller.cs` (shared→ProjectServices, gameplay→Bootstrap installers); presets: Presets/Systems/audio-* |
+| Game audio layer | `GameAudio/API/AudioAmbienceConfig.cs`; `GameAudio/API/AudioFeedbackConfig.cs`; `GameAudio/Runtime/GameAudioInstaller.cs` |
 | Camera | `Camera/API/`; `Camera/Runtime/CameraInstaller.cs`; `Camera/Runtime/CameraMovement.cs`; `Camera/Runtime/CameraZoom.cs` |
 | Camera zoom state | `Camera/API/ICameraZoomState.cs`; `Camera/Runtime/CameraZoomStateService.cs` |
 | Far-view atmosphere | `Visuals/Runtime/FarView/FarViewAtmosphereRendererFeature.cs`; `Visuals/Runtime/FarView/FarViewAtmosphereDriver.cs` |
@@ -70,7 +71,7 @@ Base: `Bootstrap/Runtime/`
 | Boot (scene 0) | `Boot/` |
 | Scene composition | `BootstrapInstaller.cs` |
 | Direct Gameplay / participants | `DirectGameplayLaunchModeInitializer.cs`; `GameplayLaunchTopology.cs` |
-| Spawn / reveal / camera | `StartingPositionInitializer.cs`; `StartingPositionWorkflowService.cs`; `StartingPositionWorkflowService.Client.cs` |
+| Spawn / reveal / camera | `StartingPositionInitializer.cs`; `StartingPositionWorkflowService.cs`; `StartingPositionWorkflowService.Client.cs`; per-owner fog reveal `StartingPositionOwnerRevealService.cs` |
 | Initial save | `InitialWorldSaveService.cs` |
 
 Menu: GameplaySession → GameplayStartupPipeline → GameLaunchContext → scene; world/spawn signals → starting-position workflow → Turns ready.
@@ -122,7 +123,7 @@ EvaluatePlacement = decisions; SessionStore = state.
 | Footprints | `ConstructionFootprintStore.cs` |
 | Replacement / gate-wall / influence | `ConstructionReplacementPolicy.cs`; `ConstructionInfluencePolicy.cs` |
 | Costs / prerequisites / limits | `ConstructionService.Economy.cs`; `ConstructionService.Prerequisites.cs`; `ConstructionService.BuildingLimits.cs` |
-| Turn / owner authority | `ConstructionTurnAuthority.cs`; `ConstructionService.Authority.cs` |
+| Turn / owner authority | `ConstructionTurnAuthority.cs`; `ConstructionService.Authority.cs`; `ConstructionTurnParticipant.cs`; round-1 gate `InitialCastleTurnBlocker.cs` |
 | Confirm / demolition / undo-redo | `ConstructionService.CommitUndo.cs`; `ConstructionService.DemolitionSession.cs`; `ConstructionService.UndoSession.cs` |
 | Restore / authoritative placement | `ConstructionService.Persistence.cs`; `ConstructionService.AuthoritativePlacement.cs` |
 | Replica / relocation / destruction | `ConstructionService.ReplicaPlacement.cs`; `ConstructionService.UniqueRelocation.cs`; `ConstructionService.Destruction.cs` |
@@ -168,10 +169,9 @@ GameplayHudBindings → presenter/state.
 | Task | Files |
 |---|---|
 | Bindings / presenter / state | `GameplayHudBindings.cs`; `GameplayHtmlPresenter.cs`; `GameplayHudReadModel.cs`; `GameplayHtmlBridge.cs`; `GameplayHtmlState.cs` |
-| HTML markup | `GameplayHtmlMarkup.Core.cs`; `GameplayHtmlMarkup.Regions.cs`; `GameplayHtmlMarkup.Cargo.cs` |
+| HTML markup | `GameplayHtmlMarkup.Core.cs` + Regions/Cargo partials |
 | Cargo presentation | `GameplayCargoPanel.cs` |
-| Deployment session | `UnitRecruitmentDeploymentController.cs`; `UnitRecruitmentDeploymentController.Session.cs` |
-| Preview / controls / UI actions | `UnitRecruitmentDeploymentController.Preview.cs`; `UnitRecruitmentDeploymentController.Controls.cs`; `UnitRecruitmentDeploymentController.UiActions.cs` |
+| Deployment session | `UnitRecruitmentDeploymentController.cs` + Session/Preview/Controls/UiActions partials |
 | Recruitment indicators / canvas | `UnitRecruitmentReadyIndicatorPresenter.cs`; `UnitRecruitmentProgressIndicatorPresenter.cs`; `RecruitmentIndicatorCanvasContainer.cs` |
 
 ## Multiplayer session / commands / transport
@@ -188,11 +188,12 @@ JoinRoomTransportAdapter → ISessionManager → LAN/Relay provider; host author
 | Participants / reconnect / migration | `Runtime/SessionManager.Participants.cs`; `Runtime/SessionManager.Reconnect.cs`; `Runtime/HostMigrationService.cs` |
 | Offline / normalization | `Runtime/SessionManager.Fallback.cs` |
 | Lobby implementations | `Runtime/Lobby/LanLobbyService.cs`; `Runtime/Lobby/UgsLobbyService.cs`; `Runtime/Lobby/OfflineLobbyService.cs` |
-| LAN discovery / connect / sockets | `Runtime/Lobby/LanLobbyService.Discovery.cs`; `Runtime/Lobby/LanLobbyService.Connection.cs`; `Runtime/Lobby/LanLobbyService.Networking.cs` |
-| Sync / authorization | `Runtime/GameCommandSyncService.cs`; `Runtime/MultiplayerAuthorityService.cs`; `Runtime/MultiplayerAuthorityService.Authorization.cs` |
-| Construction / Units commands | `Runtime/MultiplayerAuthorityService.ConstructionCommands.cs`; `Runtime/MultiplayerAuthorityService.UnitCommands.cs` |
+| LAN discovery / connect / sockets | `Runtime/Lobby/LanLobbyService.cs` + Discovery/Connection/Networking partials |
+| Sync / authorization | `Runtime/GameCommandSyncService.cs`; `Runtime/MultiplayerAuthorityService.cs` + Authorization partial |
+| Construction / Units commands | `Runtime/MultiplayerAuthorityService.ConstructionCommands.cs` + UnitCommands partial |
 | Frame / pump lifecycle | `Runtime/MultiplayerFrameCodec.cs`; `Runtime/MultiplayerTransportPump.cs` |
 | Host readiness / loading barrier | `API/IMultiplayerStartupBarrier.cs`; `Runtime/MultiplayerStartupBarrier.cs`; `Runtime/StartingPositionSyncService.cs` |
+| Turn sync (host↔client) | `Runtime/MultiplayerTurnSyncService.cs` + Messages partial; wire `Runtime/TurnSyncPayload.cs` |
 
 ## FogOfWar state / composition
 
@@ -211,8 +212,8 @@ Skip for fog-state tasks.
 
 | Task | Files |
 |---|---|
-| Screen-space lifecycle / texture / shader / transform | `ScreenSpace/FogScreenSpaceTextureUpdater.cs` + Lifecycle/StateBuffer/ShaderPublisher/Transform partials |
-| Curtain geometry / material / top cap | `ScreenSpace/` FogBoundaryCurtainRenderer partials |
+| Screen-space texture / transform | `ScreenSpace/FogScreenSpaceTextureUpdater.cs` + partials |
+| Curtain geometry / material / top cap | `ScreenSpace/FogBoundaryCurtainRenderer.cs` + partials |
 | Renderer culling | `Culling/FogRendererCullingEngine.cs` |
 | Shared visual context / height | `FogWorldVisualContextFactory.cs`; `FogVolumeHeightSampler.cs` |
 

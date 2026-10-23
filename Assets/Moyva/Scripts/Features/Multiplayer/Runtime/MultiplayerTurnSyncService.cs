@@ -27,7 +27,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
         private readonly ITurnHistoryRestorer _historyRestorer;
         private readonly ITurnStateRestorer _turnRestorer;
         private readonly ICalendarService _calendar;
-        private readonly ICalendarStateRestorer _calendarRestorer;
         private readonly IGameResultStateStore _result;
         private readonly string _hostEpoch = Guid.NewGuid().ToString("N");
         private readonly string _syncRequestId = Guid.NewGuid().ToString("N");
@@ -48,11 +47,11 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
         public MultiplayerTurnSyncService(IGameCommandSyncService sync, ISessionManager session,
             ILocalGameplayRoleResolver roles, ITurnService turns, ITurnHistoryQuery history,
             ITurnHistoryRestorer historyRestorer, ITurnStateRestorer turnRestorer,
-            ICalendarService calendar, ICalendarStateRestorer calendarRestorer, IGameResultStateStore result)
+            ICalendarService calendar, IGameResultStateStore result)
         {
             _sync = sync; _session = session; _roles = roles; _turns = turns;
             _history = history; _historyRestorer = historyRestorer; _turnRestorer = turnRestorer;
-            _calendar = calendar; _calendarRestorer = calendarRestorer; _result = result;
+            _calendar = calendar; _result = result;
         }
 
         public event Action<bool, string> EndTurnResolved;
@@ -157,12 +156,19 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
         private void SendState(string peerId, string requestId)
         {
             if (!HasStableState) return;
+            var round = _turns as ITurnRoundState;
             var message = new TurnSyncPayload { Kind = TurnSyncMessageKind.State,
                 Epoch = _hostEpoch, Revision = _revision, RequestId = requestId,
                 OwnerId = _turns.ActiveOwnerId, GlobalTurn = _turns.GlobalTurn,
                 Round = _turns.Round, Actions = _turns.ActionsThisTurn,
                 CalendarHours = _calendar.TotalHoursSinceEpoch, IsGameOver = _result.IsGameOver,
-                WinnerId = _result.WinnerId, History = _history.GetParticipantHistory() };
+                WinnerId = _result.WinnerId, History = _history.GetParticipantHistory(),
+                FlowMode = (byte)(round?.FlowMode ?? TurnFlowMode.Sequential),
+                RoundTimerSeconds = round?.RoundTimerSeconds ?? 0,
+                RoundSecondsRemaining = round?.RoundSecondsRemaining ?? 0f,
+                EndedOwners = round?.EndedTurnOwnerIds != null
+                    ? new List<string>(round.EndedTurnOwnerIds)
+                    : (IReadOnlyList<string>)Array.Empty<string>() };
             byte[] bytes = message.ToBytes();
             if (peerId == null)
             {

@@ -150,7 +150,7 @@
       "recipes": [
         {
           "unitTypeId": "warrior",
-          "trainingTurns": 1,
+          "trainingTurns": 2,
           "trainingSeconds": 10,
           "populationCost": 1,
           "costs": [
@@ -160,7 +160,7 @@
             },
             {
               "resourceId": "hardwood-materials-resources",
-              "amount": 5
+              "amount": 8
             }
           ]
         },
@@ -176,13 +176,13 @@
             },
             {
               "resourceId": "hardwood-materials-resources",
-              "amount": 8
+              "amount": 10
             }
           ]
         },
         {
           "unitTypeId": "archer",
-          "trainingTurns": 2,
+          "trainingTurns": 3,
           "trainingSeconds": 20,
           "populationCost": 1,
           "costs": [
@@ -192,11 +192,23 @@
             },
             {
               "resourceId": "hardwood-materials-resources",
-              "amount": 10
+              "amount": 12
             }
           ]
         }
       ],
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    },
+    {
+      "$type": "building-prerequisite-module",
+      "matchMode": "All",
+      "buildingIds": [
+        "house-01"
+      ],
+      "buildingTags": [],
+      "minimumCount": 2,
+      "mergeMode": "Override",
       "isEnabled": true,
       "singletonScope": "PerBuilding"
     }

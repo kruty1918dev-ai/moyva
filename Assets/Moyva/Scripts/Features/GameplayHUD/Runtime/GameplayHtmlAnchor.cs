@@ -225,13 +225,23 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             Rect safe = Screen.safeArea;
             float width = Mathf.Max(1f, Screen.width);
             float height = Mathf.Max(1f, Screen.height);
+            // Android reports an empty safe area during early frames/orientation
+            // settle on some devices — collapse would zero the mount root.
+            if (safe.width <= 0f || safe.height <= 0f)
+                safe = new Rect(0f, 0f, width, height);
+            else
+                safe = Rect.MinMaxRect(
+                    Mathf.Clamp(safe.xMin, 0f, width), Mathf.Clamp(safe.yMin, 0f, height),
+                    Mathf.Clamp(safe.xMax, 0f, width), Mathf.Clamp(safe.yMax, 0f, height));
             root.anchorMin = new Vector2(safe.xMin / width, safe.yMin / height);
             root.anchorMax = new Vector2(safe.xMax / width, safe.yMax / height);
             root.anchoredPosition = Vector2.zero;
             root.sizeDelta = Vector2.zero;
             _lastWidth = Screen.width;
             _lastHeight = Screen.height;
-            _lastSafeArea = safe;
+            // Record the raw value: LayoutChanged() compares against
+            // Screen.safeArea, so a normalized fallback must not be stored.
+            _lastSafeArea = Screen.safeArea;
         }
 
         private void RefreshPreview(bool force)
@@ -475,6 +485,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             public void ClosePanel() { }
             public void Construction() { }
             public void SetConstructionCategory(object value) { }
+            public void SetConstructionAvailability(object value) { }
             public void SetConstructionSearch(string value) { }
             public void PreviousConstructionPage() { }
             public void NextConstructionPage() { }

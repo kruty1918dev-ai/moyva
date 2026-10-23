@@ -130,7 +130,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                     dto.Width,
                     dto.Height,
                     isLocalPlayerHost: false,
-                    localPlayerId: localId);
+                    localPlayerId: localId,
+                    turnMode: dto.TurnMode,
+                    turnTimerSeconds: dto.TurnTimerSeconds);
 
                 var ct = _lifecycleCts.Token;
                 MainThreadDispatcher.Enqueue(() =>

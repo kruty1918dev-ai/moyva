@@ -14,23 +14,289 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
 {
     public sealed partial class LanLobbyService
     {
-        private bool MergeCurrentRoom(LobbyRoom incomingRoom)
+        // Roster authority model: the host's snapshot is authoritative for
+        // clients (replace, not union-merge — unions can never remove members).
+        // Client packets are presence heartbeats; the host consumes only the
+        // sender's own player record from them so stale client views cannot
+        // resurrect departed players.
+        private bool MergeCurrentRoom(LobbyRoom incomingRoom, string senderId)
         {
             if (incomingRoom == null)
                 return false;
 
+            var localId = BuildLocalHostId();
+            var now = DateTime.UtcNow;
             lock (_stateLock)
             {
-                if (_current == null || !string.Equals(_current.LobbyId, incomingRoom.LobbyId, StringComparison.Ordinal))
+                bool weAreHost = IsCurrentLocalHost();
+                bool senderIsAuthoritativeHost = !string.IsNullOrWhiteSpace(senderId)
+                    && string.Equals(senderId, incomingRoom.HostPlayerId, StringComparison.Ordinal);
+
+                if (senderIsAuthoritativeHost)
+                {
+                    _lastHostSnapshotUtc = now;
+                    if (weAreHost)
+                        return false;
+
+                    bool sameRoom = _current != null &&
+                        string.Equals(_current.LobbyId, incomingRoom.LobbyId, StringComparison.Ordinal);
+                    bool adoptStub = !sameRoom && _isDirectJoinStub && _current != null &&
+                        !string.IsNullOrWhiteSpace(_current.RelayJoinCode) &&
+                        string.Equals(_current.RelayJoinCode.Trim(), incomingRoom.RelayJoinCode,
+                            StringComparison.OrdinalIgnoreCase);
+                    if (!sameRoom && !adoptStub)
+                        return false;
+
+                    var adopted = AdoptHostSnapshot(incomingRoom, localId);
+                    adopted = StripBannedPlayers(adopted);
+                    if (HaveSameRoomState(_current, adopted))
+                        return false;
+
+                    _current = adopted;
+                    _isDirectJoinStub = false;
+                    return true;
+                }
+
+                // Client-authored presence: only the host consumes it, and only
+                // the sender's own player record (heartbeats announce self).
+                if (!weAreHost || _current == null || string.IsNullOrWhiteSpace(senderId))
                     return false;
 
-                var merged = MergeRooms(_current, incomingRoom, preferSecondState: !IsCurrentLocalHost());
-                merged = StripBannedPlayers(merged);
-                if (HaveSameRoomState(_current, merged))
+                bool sameLobby = string.Equals(_current.LobbyId, incomingRoom.LobbyId, StringComparison.Ordinal);
+                bool stubSender = string.Equals(incomingRoom.LobbyId, incomingRoom.RelayJoinCode,
+                    StringComparison.OrdinalIgnoreCase);
+                bool stubTargetsUs = stubSender &&
+                    string.Equals(_current.RelayJoinCode, incomingRoom.RelayJoinCode,
+                        StringComparison.OrdinalIgnoreCase);
+                if (!sameLobby && !stubTargetsUs)
                     return false;
 
-                _current = merged;
-                return true;
+                if (IsBanned(_current, senderId))
+                    return false;
+
+                _presenceLastSeenUtc[senderId] = now;
+                return UpsertPresencePlayer(senderId, incomingRoom);
+            }
+        }
+
+        private LobbyRoom AdoptHostSnapshot(LobbyRoom incomingRoom, string localId)
+        {
+            var players = new List<LobbyPlayer>(incomingRoom.Players ?? Array.Empty<LobbyPlayer>());
+            var selfKnown = false;
+            foreach (var player in players)
+            {
+                if (player != null && string.Equals(player.PlayerId, localId, StringComparison.Ordinal))
+                {
+                    selfKnown = true;
+                    break;
+                }
+            }
+
+            if (!selfKnown)
+            {
+                var displayName = _localDisplayName;
+                var localTicks = 0L;
+                foreach (var player in _current?.Players ?? Array.Empty<LobbyPlayer>())
+                {
+                    if (player != null && string.Equals(player.PlayerId, localId, StringComparison.Ordinal))
+                    {
+                        if (!string.IsNullOrWhiteSpace(player.DisplayName))
+                            displayName = player.DisplayName;
+                        localTicks = player.LocalTimeTicks;
+                        break;
+                    }
+                }
+
+                players.Add(new LobbyPlayer(localId, displayName, isHost: false, localTicks));
+            }
+
+            return new LobbyRoom(incomingRoom.LobbyId, incomingRoom.LobbyCode, incomingRoom.Name,
+                incomingRoom.MaxPlayers, incomingRoom.IsPrivate, incomingRoom.HostPlayerId,
+                incomingRoom.RelayJoinCode, players, incomingRoom.PasswordHash, incomingRoom.State,
+                incomingRoom.ReconnectRecords, incomingRoom.StartedWorldSettingsBytes,
+                incomingRoom.BannedPlayerIds, incomingRoom.CapabilityFlags, incomingRoom.ConfigFingerprint);
+        }
+
+        private bool UpsertPresencePlayer(string senderId, LobbyRoom incomingRoom)
+        {
+            LobbyPlayer senderRecord = null;
+            foreach (var player in incomingRoom.Players ?? Array.Empty<LobbyPlayer>())
+            {
+                if (player != null && string.Equals(player.PlayerId, senderId, StringComparison.Ordinal))
+                {
+                    senderRecord = player;
+                    break;
+                }
+            }
+
+            var players = new List<LobbyPlayer>(_current.Players ?? Array.Empty<LobbyPlayer>());
+            var index = players.FindIndex(p =>
+                p != null && string.Equals(p.PlayerId, senderId, StringComparison.Ordinal));
+            if (index < 0)
+            {
+                players.Add(new LobbyPlayer(senderId,
+                    string.IsNullOrWhiteSpace(senderRecord?.DisplayName) ? "Player" : senderRecord.DisplayName,
+                    isHost: false, senderRecord?.LocalTimeTicks ?? 0));
+            }
+            else
+            {
+                var existing = players[index];
+                var name = string.IsNullOrWhiteSpace(senderRecord?.DisplayName)
+                    ? existing.DisplayName
+                    : senderRecord.DisplayName;
+                var ticks = senderRecord?.LocalTimeTicks ?? existing.LocalTimeTicks;
+                if (!existing.IsHost
+                    && string.Equals(existing.DisplayName, name, StringComparison.Ordinal)
+                    && existing.LocalTimeTicks == ticks)
+                {
+                    return false;
+                }
+
+                players[index] = new LobbyPlayer(senderId, name, existing.IsHost, ticks);
+            }
+
+            _current = new LobbyRoom(_current.LobbyId, _current.LobbyCode, _current.Name, _current.MaxPlayers,
+                _current.IsPrivate, _current.HostPlayerId, _current.RelayJoinCode, players,
+                _current.PasswordHash, _current.State, _current.ReconnectRecords,
+                _current.StartedWorldSettingsBytes, _current.BannedPlayerIds,
+                _current.CapabilityFlags, _current.ConfigFingerprint);
+            return true;
+        }
+
+        private static bool IsBanned(LobbyRoom room, string playerId)
+        {
+            var banned = room?.BannedPlayerIds;
+            if (banned == null || banned.Count == 0 || string.IsNullOrWhiteSpace(playerId))
+                return false;
+
+            foreach (var id in banned)
+            {
+                if (string.Equals(id, playerId, StringComparison.Ordinal))
+                    return true;
+            }
+            return false;
+        }
+
+        private void HandleLeavePayload(string roomId, string playerId)
+        {
+            byte[] advertiseBytes = null;
+            lock (_stateLock)
+            {
+                if (_current == null || !IsCurrentLocalHost())
+                    return;
+                if (!string.Equals(_current.LobbyId, roomId, StringComparison.Ordinal))
+                    return;
+
+                var players = new List<LobbyPlayer>();
+                var removed = false;
+                foreach (var player in _current.Players ?? Array.Empty<LobbyPlayer>())
+                {
+                    if (player != null && string.Equals(player.PlayerId, playerId, StringComparison.Ordinal))
+                    {
+                        removed = true;
+                        continue;
+                    }
+                    if (player != null)
+                        players.Add(player);
+                }
+
+                if (!removed)
+                    return;
+
+                _presenceLastSeenUtc.Remove(playerId);
+                _current = new LobbyRoom(_current.LobbyId, _current.LobbyCode, _current.Name, _current.MaxPlayers,
+                    _current.IsPrivate, _current.HostPlayerId, _current.RelayJoinCode, players,
+                    _current.PasswordHash, _current.State, _current.ReconnectRecords,
+                    _current.StartedWorldSettingsBytes, _current.BannedPlayerIds,
+                    _current.CapabilityFlags, _current.ConfigFingerprint);
+                RememberDiscoveredRoom(_current);
+                advertiseBytes = Encoding.UTF8.GetBytes(BuildPayload());
+            }
+
+            RaiseLobbyUpdated(_current);
+            if (advertiseBytes != null)
+                _ = SendHostDiscoveryPayloadAsync(advertiseBytes);
+        }
+
+        // Players that stop announcing themselves (crash, network loss) must
+        // not linger forever: presence heartbeats run every BroadcastIntervalMs.
+        private void ReapExpiredPresence()
+        {
+            bool changed = false;
+            lock (_stateLock)
+            {
+                if (_current == null || !IsCurrentLocalHost())
+                    return;
+
+                var now = DateTime.UtcNow;
+                var localId = BuildLocalHostId();
+                var players = new List<LobbyPlayer>();
+                foreach (var player in _current.Players ?? Array.Empty<LobbyPlayer>())
+                {
+                    if (player == null)
+                        continue;
+
+                    if (string.Equals(player.PlayerId, localId, StringComparison.Ordinal))
+                    {
+                        players.Add(player);
+                        continue;
+                    }
+
+                    if (!_presenceLastSeenUtc.TryGetValue(player.PlayerId, out var lastSeen))
+                    {
+                        _presenceLastSeenUtc[player.PlayerId] = now;
+                        players.Add(player);
+                        continue;
+                    }
+
+                    if ((now - lastSeen).TotalMilliseconds > PresenceTimeoutMs)
+                    {
+                        _presenceLastSeenUtc.Remove(player.PlayerId);
+                        changed = true;
+                        continue;
+                    }
+
+                    players.Add(player);
+                }
+
+                if (!changed)
+                    return;
+
+                _current = new LobbyRoom(_current.LobbyId, _current.LobbyCode, _current.Name, _current.MaxPlayers,
+                    _current.IsPrivate, _current.HostPlayerId, _current.RelayJoinCode, players,
+                    _current.PasswordHash, _current.State, _current.ReconnectRecords,
+                    _current.StartedWorldSettingsBytes, _current.BannedPlayerIds,
+                    _current.CapabilityFlags, _current.ConfigFingerprint);
+                RememberDiscoveredRoom(_current);
+            }
+
+            RaiseLobbyUpdated(_current);
+        }
+
+        // When the host disappears without a final advertise (crash/kill), the
+        // last remaining signal is silence: close the lobby after the timeout.
+        private void DetectHostSnapshotTimeout()
+        {
+            bool timedOut = false;
+            lock (_stateLock)
+            {
+                if (_current == null || IsCurrentLocalHost())
+                    return;
+                if (_lastHostSnapshotUtc == DateTime.MinValue)
+                    return;
+                if ((DateTime.UtcNow - _lastHostSnapshotUtc).TotalMilliseconds <= HostSnapshotTimeoutMs)
+                    return;
+
+                _current = null;
+                _isDirectJoinStub = false;
+                _presenceLastSeenUtc.Clear();
+                timedOut = true;
+            }
+
+            if (timedOut)
+            {
+                RaiseKickedFromLobby("lobby_closed");
+                PublishState(LobbyState.Closed);
             }
         }
 
@@ -391,6 +657,9 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             if (first.State != second.State)
                 return false;
 
+            if (!string.Equals(first.HostPlayerId, second.HostPlayerId, StringComparison.Ordinal))
+                return false;
+
             if (!string.Equals(first.RelayJoinCode, second.RelayJoinCode, StringComparison.Ordinal))
                 return false;
 
@@ -403,14 +672,23 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             if (!HaveSameStrings(first.BannedPlayerIds, second.BannedPlayerIds))
                 return false;
 
-            var firstPlayers = new HashSet<string>(StringComparer.Ordinal);
+            var firstPlayers = new Dictionary<string, LobbyPlayer>(StringComparer.Ordinal);
             foreach (var player in first.Players)
-                firstPlayers.Add(player.PlayerId);
+            {
+                if (player != null && !string.IsNullOrWhiteSpace(player.PlayerId))
+                    firstPlayers[player.PlayerId] = player;
+            }
 
             foreach (var player in second.Players)
             {
-                if (!firstPlayers.Contains(player.PlayerId))
+                if (player == null || string.IsNullOrWhiteSpace(player.PlayerId))
+                    continue;
+                if (!firstPlayers.TryGetValue(player.PlayerId, out var existing)
+                    || existing.IsHost != player.IsHost
+                    || !string.Equals(existing.DisplayName, player.DisplayName, StringComparison.Ordinal))
+                {
                     return false;
+                }
             }
 
             return true;

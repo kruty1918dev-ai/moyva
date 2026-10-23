@@ -117,6 +117,8 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                     payload.ToBytes());
                 _placementRequestsInFlight.Add(kv.Key);
                 sentCount++;
+                LogConstructionAuthorityInfo(
+                    $"Sent construction placement request for '{kv.Value}' at {kv.Key}, owner='{ownerId}'.");
             }
 
             if (sentCount == 0 && _placementRequestsInFlight.Count == 0)
@@ -211,13 +213,23 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                     return;
                 }
 
+                string normalizedReason = string.IsNullOrWhiteSpace(data.RejectionReason)
+                    ? "The placement was rejected by host."
+                    : data.RejectionReason;
+                LogConstructionAuthorityWarning(
+                    $"Host rejected construction placement for '{data.BuildingId}' at {data.Position}: {normalizedReason}");
                 _signalBus?.Fire(new ConstructionPlacementRejectedSignal
                 {
                     BuildingId = data.BuildingId,
                     Position = data.Position,
-                    Reason = string.IsNullOrWhiteSpace(data.RejectionReason)
-                        ? "The placement was rejected by host."
-                        : data.RejectionReason,
+                    Reason = normalizedReason,
+                });
+                _signalBus?.Fire(new BuildingPreviewChangedSignal
+                {
+                    Position = data.Position,
+                    BuildingId = data.BuildingId,
+                    PreviewState = BuildingPreviewState.Blocked,
+                    RotationQuarterTurns = (int)data.Rotation,
                 });
                 return;
             }
@@ -582,6 +594,14 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 return;
 
             Debug.LogWarning($"[MultiplayerAuthority] {message}");
+        }
+
+        private static void LogConstructionAuthorityInfo(string message)
+        {
+            if (!Application.isEditor && !Debug.isDebugBuild)
+                return;
+
+            Debug.Log($"[MultiplayerAuthority] {message}");
         }
 
     }

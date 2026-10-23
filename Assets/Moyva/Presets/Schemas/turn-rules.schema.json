@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moyva.local/schemas/turn-rules.schema.json",
+  "title": "Moyva — Turn Rules",
+  "description": "JSON source of truth для Kruty1918.Moyva.Turns.API.TurnRulesConfig. Режим ходів і таймер раунду для solo/multiplayer сесій; лобі хоста може перевизначити ці значення на матч.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "id",
+    "model"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "title": "JSON Schema"
+    },
+    "schema": {
+      "const": "moyva.turn-rules"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "title": "Стабільний ID"
+    },
+    "model": {
+      "const": "turn-rules"
+    },
+    "migration": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "multiplayerMode": {
+      "type": "string",
+      "enum": ["sequential", "simultaneous"],
+      "default": "simultaneous",
+      "title": "Multiplayer Turn Mode",
+      "description": "Дефолтний режим ходів для мережевих матчів: sequential — черга по одній фракції; simultaneous — усі грають раунд одночасно (Civilization-style)."
+    },
+    "soloMode": {
+      "type": "string",
+      "enum": ["sequential", "simultaneous"],
+      "default": "sequential",
+      "title": "Solo Turn Mode",
+      "description": "Дефолтний режим ходів для локальних/бот/тестових сесій."
+    },
+    "roundTimerEnabled": {
+      "type": "boolean",
+      "default": true,
+      "title": "Round Timer Enabled",
+      "description": "Чи увімкнено таймер раунду для simultaneous режиму за замовчуванням."
+    },
+    "roundTimerSeconds": {
+      "type": "integer",
+      "minimum": 5,
+      "maximum": 3600,
+      "default": 90,
+      "title": "Round Timer Seconds",
+      "description": "Тривалість одного раунду в simultaneous режимі. Хост примусово завершує раунд після тайм-ауту."
+    },
+    "holdTimerUntilInitialCastlesPlaced": {
+      "type": "boolean",
+      "default": true,
+      "title": "Hold Timer Until Initial Castles Placed",
+      "description": "Пауза таймера раунду, доки будь-яка жива фракція ще не розмістила стартовий замок — раунд 1 не може завершитися по таймеру до цього."
+    }
+  }
+}

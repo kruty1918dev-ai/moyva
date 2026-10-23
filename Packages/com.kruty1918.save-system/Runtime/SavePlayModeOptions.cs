@@ -98,6 +98,18 @@ namespace Kruty1918.SaveSystem
         public static string BotPlayerId { get; private set; } = string.Empty;
         /// <summary>Ідентифікатор складності бота.</summary>
         public static string BotDifficultyId { get; private set; } = string.Empty;
+        /// <summary>
+        /// Explicit per-match turn flow override chosen in the host lobby and
+        /// propagated to clients through the session settings. -1 means
+        /// "not set — resolve from the JSON turn-rules preset".
+        /// Values map to Kruty1918.Moyva.Turns.API.TurnFlowMode ordinals.
+        /// </summary>
+        public static int TurnMode { get; private set; } = -1;
+        /// <summary>
+        /// Explicit per-match round timer override in seconds; -1 resolves
+        /// from the JSON turn-rules preset, 0 disables the timer.
+        /// </summary>
+        public static int TurnTimerSeconds { get; private set; } = -1;
         /// <summary>Чи має матч бот-опонента.</summary>
         public static bool HasBotOpponent
             => (Mode == GameLaunchMode.MenuBotGame || Mode == GameLaunchMode.MenuLoadGame)
@@ -196,12 +208,15 @@ namespace Kruty1918.SaveSystem
             int width = 0,
             int height = 0,
             bool? isLocalPlayerHost = null,
-            string localPlayerId = null)
+            string localPlayerId = null,
+            int turnMode = -1,
+            int turnTimerSeconds = -1)
         {
             Mode = GameLaunchMode.MenuNewGame;
             Source = GameLaunchSource.HomeMenu;
             SaveSlot = ClampSlot(saveSlot);
-            SetWorldSettings(worldName, seed, size, mapType, difficulty, maxPlayers, isPrivate, width, height);
+            SetWorldSettings(worldName, seed, size, mapType, difficulty, maxPlayers, isPrivate, width, height,
+                turnMode, turnTimerSeconds);
             SetLocalPlayerRole(isLocalPlayerHost, localPlayerId);
             _autoLoadOverride = false;
             _autoSaveOverride = true;
@@ -264,12 +279,15 @@ namespace Kruty1918.SaveSystem
             int width = 0,
             int height = 0,
             bool? isLocalPlayerHost = null,
-            string localPlayerId = null)
+            string localPlayerId = null,
+            int turnMode = -1,
+            int turnTimerSeconds = -1)
         {
             Mode = GameLaunchMode.MenuMultiplayerGame;
             Source = GameLaunchSource.HomeMenu;
             SaveSlot = 0;
-            SetWorldSettings(worldName, seed, size, mapType, difficulty, maxPlayers, isPrivate, width, height);
+            SetWorldSettings(worldName, seed, size, mapType, difficulty, maxPlayers, isPrivate, width, height,
+                turnMode, turnTimerSeconds);
             SetLocalPlayerRole(isLocalPlayerHost, localPlayerId);
             _autoLoadOverride = false;
             _autoSaveOverride = false;
@@ -385,6 +403,19 @@ namespace Kruty1918.SaveSystem
             _expiresAtUtc = _configuredAtUtc.Add(ttl);
         }
 
+        /// <summary>
+        /// Applies synchronized turn rules on clients after session settings
+        /// arrive from the host. Safe no-op for contexts without world settings.
+        /// </summary>
+        public static void ApplySyncedTurnRules(int turnMode, int turnTimerSeconds)
+        {
+            if (!HasActiveContext)
+                return;
+
+            TurnMode = turnMode;
+            TurnTimerSeconds = turnTimerSeconds;
+        }
+
         private static void SetWorldSettings(
             string worldName,
             int seed,
@@ -394,7 +425,9 @@ namespace Kruty1918.SaveSystem
             int maxPlayers,
             bool isPrivate,
             int width,
-            int height)
+            int height,
+            int turnMode = -1,
+            int turnTimerSeconds = -1)
         {
             HasWorldSettings = true;
             WorldName = string.IsNullOrWhiteSpace(worldName)
@@ -408,6 +441,8 @@ namespace Kruty1918.SaveSystem
             Difficulty = difficulty;
             MaxPlayers = maxPlayers < 1 ? 1 : maxPlayers;
             IsPrivate = isPrivate;
+            TurnMode = turnMode;
+            TurnTimerSeconds = turnTimerSeconds;
         }
 
         private static void ClearWorldSettings()
@@ -424,6 +459,8 @@ namespace Kruty1918.SaveSystem
             Difficulty = 0;
             MaxPlayers = 0;
             IsPrivate = false;
+            TurnMode = -1;
+            TurnTimerSeconds = -1;
         }
 
         private static void SetLocalPlayerRole(bool? isLocalPlayerHost, string localPlayerId)

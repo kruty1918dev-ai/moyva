@@ -15,6 +15,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         private const string MapTypeOptions = "Continents|Pangaea|Islands|Highlands|Desert|Random";
         private const string DifficultyOptions = "Easy|Normal|Hard|Insane";
         private const string NetworkOptions = "Online (Relay)|Local network (LAN)";
+        private const string TurnModeOptions = "Sequential|Simultaneous";
+        private const string TurnTimerOptions = "Off|30s|60s|90s|120s|180s";
         private const string GraphicsProfileOptions = "Automatic|Performance|Balanced|Quality|Custom";
         private const string FrameRateOptions = "30 FPS|45 FPS|60 FPS|90 FPS|120 FPS|144 FPS|240 FPS";
         private const string TextureQualityOptions = "High|Medium|Low|Very low";
@@ -182,7 +184,11 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                     if (state.PlayFlow == HomeMenuPlayFlow.HumanVsBot)
                         Select(sb, view.T("Bot difficulty"), view.TOptions(view.BotDifficultyOptions), view.SelectedBotDifficultyIndex, "Globals.moyvaMenu.SetBotDifficultyValue(event)");
                     else if (state.PlayFlow == HomeMenuPlayFlow.Multiplayer)
+                    {
                         Select(sb, view.T("Difficulty"), view.TOptions(DifficultyOptions), (int)view.Difficulty, "Globals.moyvaMenu.SetDifficultyValue(event)");
+                        Select(sb, view.T("Turn mode"), view.TOptions(TurnModeOptions), view.TurnMode, "Globals.moyvaMenu.SetTurnModeValue(event)");
+                        Select(sb, view.T("Turn timer"), view.TOptions(TurnTimerOptions), view.TurnTimerIndex, "Globals.moyvaMenu.SetTurnTimerValue(event)");
+                    }
                     sb.Append("</view>");
                     ActionButton(
                         sb,

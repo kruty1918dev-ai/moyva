@@ -154,7 +154,7 @@
       "recipes": [
         {
           "unitTypeId": "light-cavalry",
-          "trainingTurns": 3,
+          "trainingTurns": 4,
           "trainingSeconds": 30,
           "populationCost": 1,
           "costs": [
@@ -173,6 +173,18 @@
           ]
         }
       ],
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    },
+    {
+      "$type": "building-prerequisite-module",
+      "matchMode": "All",
+      "buildingIds": [
+        "barrack"
+      ],
+      "buildingTags": [],
+      "minimumCount": 1,
+      "mergeMode": "Override",
       "isEnabled": true,
       "singletonScope": "PerBuilding"
     }

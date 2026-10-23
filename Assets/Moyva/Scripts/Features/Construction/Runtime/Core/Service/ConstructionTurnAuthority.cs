@@ -14,13 +14,15 @@ namespace Kruty1918.Moyva.Construction.Runtime
             string activeOwnerId,
             string localOwnerId,
             TurnPhase phase,
-            bool isRealtimeSandbox = false)
+            bool isRealtimeSandbox = false,
+            TurnFlowMode flowMode = TurnFlowMode.Sequential)
         {
             HasTurnAuthority = hasTurnAuthority;
             ActiveOwnerId = activeOwnerId ?? string.Empty;
             LocalOwnerId = localOwnerId ?? string.Empty;
             Phase = phase;
             IsRealtimeSandbox = isRealtimeSandbox;
+            FlowMode = flowMode;
         }
 
         public bool HasTurnAuthority { get; }
@@ -28,6 +30,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         public string LocalOwnerId { get; }
         public TurnPhase Phase { get; }
         public bool IsRealtimeSandbox { get; }
+        public TurnFlowMode FlowMode { get; }
     }
 
     internal static class ConstructionTurnAuthorityPolicy
@@ -86,21 +89,28 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return false;
             }
 
-            string activeOwnerId = snapshot.ActiveOwnerId?.Trim();
-            if (string.IsNullOrWhiteSpace(activeOwnerId))
+            // Sequential mode requires the requester to hold the active turn.
+            // In simultaneous mode every living faction may act during the
+            // shared AwaitingInput window; CanOwnerAct performs the real
+            // configured/alive/pending validation for the requesting owner.
+            if (snapshot.FlowMode == TurnFlowMode.Sequential)
             {
-                reason = "Active turn owner is empty.";
-                return false;
-            }
+                string activeOwnerId = snapshot.ActiveOwnerId?.Trim();
+                if (string.IsNullOrWhiteSpace(activeOwnerId))
+                {
+                    reason = "Active turn owner is empty.";
+                    return false;
+                }
 
-            if (!string.Equals(
-                    activeOwnerId,
-                    normalizedOwnerId,
-                    StringComparison.Ordinal))
-            {
-                reason =
-                    $"Owner '{normalizedOwnerId}' is not the active turn owner '{activeOwnerId}'.";
-                return false;
+                if (!string.Equals(
+                        activeOwnerId,
+                        normalizedOwnerId,
+                        StringComparison.Ordinal))
+                {
+                    reason =
+                        $"Owner '{normalizedOwnerId}' is not the active turn owner '{activeOwnerId}'.";
+                    return false;
+                }
             }
 
             if (requireLocalOwner)

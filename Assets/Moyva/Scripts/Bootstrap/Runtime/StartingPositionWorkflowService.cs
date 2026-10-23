@@ -18,6 +18,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private readonly IStartingPositionPolicy _policy;
         private readonly IStartingPositionSpawnSetupService _spawnSetupService;
         private readonly IStartingPositionRevealPresentationService _revealPresentationService;
+        private readonly IStartingPositionOwnerRevealService _ownerRevealService;
         private readonly IStartingPositionAutoloadRecoveryService _autoloadRecoveryService;
         private readonly IStartingPositionWorkflowState _workflowState;
         public StartingPositionWorkflowService(
@@ -26,6 +27,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             IStartingPositionPolicy policy,
             IStartingPositionSpawnSetupService spawnSetupService,
             IStartingPositionRevealPresentationService revealPresentationService,
+            IStartingPositionOwnerRevealService ownerRevealService,
             IStartingPositionAutoloadRecoveryService autoloadRecoveryService,
             IStartingPositionWorkflowState workflowState)
         {
@@ -34,6 +36,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _policy = policy;
             _spawnSetupService = spawnSetupService;
             _revealPresentationService = revealPresentationService;
+            _ownerRevealService = ownerRevealService;
             _autoloadRecoveryService = autoloadRecoveryService;
             _workflowState = workflowState;
         }

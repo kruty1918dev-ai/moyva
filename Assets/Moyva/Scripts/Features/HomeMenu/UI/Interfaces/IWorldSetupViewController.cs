@@ -29,6 +29,15 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         /// <summary>Ідентифікатор JSON-профілю бота для Human vs Bot матчу.</summary>
         string SelectedBotDifficultyId { get; }
 
+        /// <summary>Режим ходів матчу (TurnFlowMode ordinal): 0 = sequential, 1 = simultaneous.</summary>
+        int TurnMode { get; }
+
+        /// <summary>Індекс вибраної опції таймера раунду.</summary>
+        int TurnTimerIndex { get; }
+
+        /// <summary>Таймер раунду в секундах; 0 = вимкнено.</summary>
+        int TurnTimerSeconds { get; }
+
         /// <summary>Подія натискання кнопки створення світу.</summary>
         event Action OnButtonNextClicked;
 

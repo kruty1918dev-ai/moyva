@@ -37,6 +37,15 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         Route,
     }
 
+    /// <summary>Construction list availability filter — a dropdown switch
+    /// between every option, only buildable ones and only locked ones.</summary>
+    internal enum GameplayConstructionAvailability
+    {
+        All,
+        Buildable,
+        Unavailable,
+    }
+
     internal sealed class GameplayHtmlState
     {
         private readonly ILocalizationService _localization;
@@ -76,6 +85,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         public string ConstructionCategory { get; private set; } = string.Empty;
         public string ConstructionSearch { get; private set; } = string.Empty;
         public string ConstructionProducerResource { get; private set; } = string.Empty;
+        public GameplayConstructionAvailability ConstructionAvailability { get; private set; }
         public int ConstructionPageIndex { get; private set; }
         /// <summary>Building card the construction list should jump to and
         /// highlight once (consumed by markup on render).</summary>
@@ -235,6 +245,16 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             MarkDirty();
         }
 
+        public void SetConstructionAvailability(GameplayConstructionAvailability availability)
+        {
+            if (ConstructionAvailability == availability)
+                return;
+            ConstructionAvailability = availability;
+            ConstructionPageIndex = 0;
+            ClearConstructionFocus();
+            MarkDirty();
+        }
+
         /// <summary>Points the construction list at a specific building card:
         /// clears search/category/producer filters so the card is visible,
         /// arms a one-shot page jump and a ~6 s card highlight.</summary>
@@ -243,6 +263,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             ConstructionSearch = string.Empty;
             ConstructionCategory = string.Empty;
             ConstructionProducerResource = string.Empty;
+            ConstructionAvailability = GameplayConstructionAvailability.All;
             ConstructionPageIndex = 0;
             _constructionFocusId = buildingId?.Trim() ?? string.Empty;
             _constructionFocusPending = !string.IsNullOrEmpty(_constructionFocusId);
@@ -920,6 +941,20 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         public float SandboxRoundSeconds = 10f;
         public bool CanIssueLocalCommands => !TurnUiEnabled || IsLocalTurn;
         public bool EndTurnPending;
+        /// <summary>True when the match runs Civilization-style simultaneous rounds.</summary>
+        public bool TurnSimultaneous;
+        /// <summary>Local owner already finished the current simultaneous round.</summary>
+        public bool LocalTurnEnded;
+        /// <summary>Owners that finished the current round (simultaneous).</summary>
+        public int TurnReadyCount;
+        /// <summary>Living owners expected to finish the current round.</summary>
+        public int TurnReadyTotal;
+        /// <summary>Round timer configured and counting (simultaneous).</summary>
+        public bool TurnTimerActive;
+        /// <summary>Seconds left in the current round; 0 when no timer runs.</summary>
+        public float TurnSecondsRemaining;
+        /// <summary>Round timer paused by a hold (e.g. initial castles pending).</summary>
+        public bool TurnTimerHeld;
         public int SettlementCount;
         public int Population;
         public int BuildingCount;

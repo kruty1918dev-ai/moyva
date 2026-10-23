@@ -169,6 +169,11 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 ? Difficulty.Normal
                 : _viewController.Difficulty;
 
+            // Turn rules are a host choice for multiplayer lobbies; solo/bot
+            // flows leave -1 so the JSON turn-rules preset resolves the default.
+            int turnMode = soloFlow ? -1 : _viewController.TurnMode;
+            int turnTimerSeconds = soloFlow ? -1 : _viewController.TurnTimerSeconds;
+
             var worldSettings = new WorldSettingsDto(
                 _viewController.WorldName,
                 _viewController.Seed,
@@ -178,7 +183,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 _viewController.MapType,
                 difficulty,
                 maxPlayers,
-                soloFlow || (currentLobby?.IsPrivate ?? true));
+                soloFlow || (currentLobby?.IsPrivate ?? true),
+                turnMode,
+                turnTimerSeconds);
 
             var players = new List<GameplayPlayer>
             {
@@ -203,7 +210,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                     worldSettings.Width,
                     worldSettings.Height,
                     isLocalPlayerHost: true,
-                    localPlayerId: localId);
+                    localPlayerId: localId,
+                    turnMode: worldSettings.TurnMode,
+                    turnTimerSeconds: worldSettings.TurnTimerSeconds);
                 if (botMatch)
                     GameLaunchContext.ConfigureBotOpponent(players[1].PlayerId, _viewController.SelectedBotDifficultyId);
             }
@@ -220,7 +229,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                     worldSettings.Width,
                     worldSettings.Height,
                     isLocalPlayerHost: true,
-                    localPlayerId: localId);
+                    localPlayerId: localId,
+                    turnMode: worldSettings.TurnMode,
+                    turnTimerSeconds: worldSettings.TurnTimerSeconds);
             }
         }
 

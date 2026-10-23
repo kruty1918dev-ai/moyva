@@ -1,0 +1,19 @@
+# Cross-platform line-ending policy.
+# Blobs stay LF; scripts get pinned EOLs so Windows commits cannot poison
+# Linux checkouts (autocrlf settings differ per machine without this file).
+
+* text=auto
+
+# Shell entry points must stay LF or Linux fails with "bad interpreter".
+*.sh            text eol=lf
+*.bash          text eol=lf
+moyva           text eol=lf
+moyva-train     text eol=lf
+compile-all     text eol=lf
+compile-errors  text eol=lf
+pack-model      text eol=lf
+
+# Windows-only scripts keep CRLF.
+*.cmd           text eol=crlf
+*.bat           text eol=crlf
+*.ps1           text eol=crlf

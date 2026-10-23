@@ -10,7 +10,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
 
     internal sealed class TurnSyncPayload
     {
-        private const byte Version = 1;
+        private const byte Version = 2;
         private const int MaxPayloadBytes = 32768;
         public TurnSyncMessageKind Kind;
         public string Epoch = string.Empty;
@@ -25,6 +25,11 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
         public bool IsGameOver;
         public string WinnerId = string.Empty;
         public IReadOnlyList<TurnParticipantHistorySnapshot> History = Array.Empty<TurnParticipantHistorySnapshot>();
+        // v2: simultaneous-round projection (State messages only).
+        public byte FlowMode;
+        public int RoundTimerSeconds;
+        public float RoundSecondsRemaining;
+        public IReadOnlyList<string> EndedOwners = Array.Empty<string>();
 
         public byte[] ToBytes()
         {
@@ -53,6 +58,12 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                     writer.Write(item.CompletedTurns);
                     writer.Write(item.IsEliminated);
                 }
+                writer.Write(FlowMode);
+                writer.Write(RoundTimerSeconds);
+                writer.Write(RoundSecondsRemaining);
+                writer.Write(EndedOwners.Count);
+                foreach (string endedOwner in EndedOwners)
+                    writer.Write(endedOwner);
             }
             writer.Flush();
             if (stream.Length > MaxPayloadBytes)
@@ -90,6 +101,16 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                     history[i] = new TurnParticipantHistorySnapshot(reader.ReadString(),
                         reader.ReadInt64(), false, false, reader.ReadBoolean());
                 message.History = history;
+                message.FlowMode = reader.ReadByte();
+                message.RoundTimerSeconds = reader.ReadInt32();
+                message.RoundSecondsRemaining = reader.ReadSingle();
+                int endedCount = reader.ReadInt32();
+                if (endedCount < 0 || endedCount > count)
+                    throw new InvalidDataException("Invalid ended-owner roster size.");
+                var ended = new string[endedCount];
+                for (int i = 0; i < endedCount; i++)
+                    ended[i] = reader.ReadString();
+                message.EndedOwners = ended;
             }
             if (stream.Position != stream.Length)
                 throw new InvalidDataException("Unexpected trailing turn message data.");
@@ -116,6 +137,12 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 || WinnerId == null || WinnerId.Length > 256 || WinnerId != WinnerId.Trim()
                 || (!IsGameOver && WinnerId.Length != 0) || History.Count < 1 || History.Count > 16)
                 throw new InvalidDataException("Invalid public turn state.");
+            if (FlowMode > (byte)TurnFlowMode.Simultaneous
+                || RoundTimerSeconds < 0 || RoundTimerSeconds > 3600
+                || float.IsNaN(RoundSecondsRemaining) || RoundSecondsRemaining < 0f
+                || RoundSecondsRemaining > 3600f
+                || EndedOwners == null || EndedOwners.Count > History.Count)
+                throw new InvalidDataException("Invalid simultaneous round state.");
 
             var owners = new HashSet<string>(StringComparer.Ordinal);
             bool activeFound = false;
@@ -133,6 +160,13 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             }
             if (!activeFound || !winnerFound || total != GlobalTurn - 1)
                 throw new InvalidDataException("Turn state does not match its participant history.");
+
+            foreach (string endedOwner in EndedOwners)
+            {
+                if (string.IsNullOrWhiteSpace(endedOwner) || endedOwner.Length > 256
+                    || endedOwner != endedOwner.Trim() || !owners.Contains(endedOwner))
+                    throw new InvalidDataException("Invalid ended-owner entry.");
+            }
         }
     }
 }

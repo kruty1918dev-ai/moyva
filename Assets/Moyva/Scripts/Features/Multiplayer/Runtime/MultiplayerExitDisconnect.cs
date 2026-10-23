@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Kruty1918.Moyva.Multiplayer.Core;
 using Kruty1918.Moyva.Multiplayer.Lobbies;
+using Kruty1918.Moyva.Multiplayer.Networking;
 using UnityEngine;
 using Zenject;
 
@@ -20,6 +21,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
 
         [Inject(Optional = true)] private ISessionManager _sessionManager = null;
         [Inject(Optional = true)] private ILobbyService _lobbyService = null;
+        [Inject(Optional = true)] private INetworkProvider _networkProvider = null;
 
         private bool _quitting;
 
@@ -80,15 +82,42 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 else if (_lobbyService != null)
                     task = _lobbyService.LeaveAsync(cts.Token);
 
-                if (task == null)
+                if (MultiplayerThreadContext.IsMainThread)
+                {
+                    // The async leave's continuations resume on the main-thread
+                    // context — blocking on the task here would deadlock until
+                    // timeout while a queued transport tick cannot run. Fire it
+                    // best-effort, then tear the transport down synchronously:
+                    // provider disposal stops the pump and releases the driver
+                    // without waiting for a tick that cannot arrive.
+                    ObserveFireAndForget(task);
+                    (_networkProvider as IDisposable)?.Dispose();
                     return;
+                }
 
                 // Чекаємо коротко; не блокуємо shutdown більше ніж на LeaveTimeoutMs.
-                task.Wait(LeaveTimeoutMs);
+                task?.Wait(LeaveTimeoutMs);
             }
             catch (AggregateException)
             {
             }
+            catch (Exception)
+            {
+            }
+        }
+
+        private static void ObserveFireAndForget(Task task)
+        {
+            if (task == null)
+                return;
+
+            // Swallow the fault so a racing graceful-leave never surfaces as an
+            // unobserved task exception after the transport was disposed.
+            task.ContinueWith(
+                completed => _ = completed.Exception,
+                CancellationToken.None,
+                TaskContinuationOptions.OnlyOnFaulted,
+                TaskScheduler.Default);
         }
     }
 }

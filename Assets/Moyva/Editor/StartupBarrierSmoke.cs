@@ -22,6 +22,9 @@ public static class StartupBarrierSmoke
     static Task transition;
     static StartupBarrierSmoke()
     {
+        // Smoke tooling writes into Temp/ai, which does not exist on a fresh
+        // clone — create it up front so writers never hit missing directories.
+        Directory.CreateDirectory("Temp/ai");
         EditorApplication.update += Update;
         EditorApplication.playModeStateChanged += state =>
         {

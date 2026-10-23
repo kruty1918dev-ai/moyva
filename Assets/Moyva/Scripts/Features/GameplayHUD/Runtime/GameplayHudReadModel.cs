@@ -386,6 +386,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         public GameplayHtmlSnapshot Capture(GameplayHtmlState state)
         {
             string ownerId = ResolveOwnerId();
+            var roundState = _turns as ITurnRoundState;
+            bool simultaneous = roundState?.FlowMode == TurnFlowMode.Simultaneous;
             var snapshot = new GameplayHtmlSnapshot
             {
                 OwnerId = ownerId,
@@ -395,7 +397,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 ActionsThisTurn = _turns?.ActionsThisTurn ?? 0,
                 ActiveOwnerId = _turns?.ActiveOwnerId ?? ownerId,
                 IsLocalTurn = _turns == null
-                    || string.Equals(_turns.ActiveOwnerId, ownerId, StringComparison.Ordinal),
+                    || (simultaneous
+                        ? !(roundState?.HasOwnerEndedTurn(ownerId) ?? false)
+                        : string.Equals(_turns.ActiveOwnerId, ownerId, StringComparison.Ordinal)),
+                TurnSimultaneous = simultaneous,
                 TurnUiEnabled = IsTurnUiEnabled(),
                 SandboxRealtime = _progressClock?.IsRealtime ?? false,
                 SandboxSpeed = _progressClock?.Speed ?? 1f,
@@ -409,6 +414,16 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 SelectionId = _selectionId,
                 SelectionPosition = _selectionPosition,
             };
+
+            if (snapshot.TurnSimultaneous)
+            {
+                snapshot.LocalTurnEnded = roundState?.HasOwnerEndedTurn(ownerId) ?? false;
+                snapshot.TurnReadyCount = roundState?.EndedTurnOwnerIds?.Count ?? 0;
+                snapshot.TurnReadyTotal = _turns?.Factions?.Count ?? 0;
+                snapshot.TurnTimerActive = (roundState?.RoundTimerSeconds ?? 0) > 0;
+                snapshot.TurnSecondsRemaining = roundState?.RoundSecondsRemaining ?? 0f;
+                snapshot.TurnTimerHeld = roundState?.RoundTimerHeld ?? false;
+            }
 
             IReadOnlyDictionary<Vector2Int, string> pending =
                 _construction?.GetPendingPlacements();

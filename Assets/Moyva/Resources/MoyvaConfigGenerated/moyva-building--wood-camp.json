@@ -121,7 +121,7 @@
     "cost": [
       {
         "resourceId": "walnut-wood-materials-resources",
-        "amount": 5
+        "amount": 20
       }
     ],
     "buildTurns": 2,
@@ -155,7 +155,7 @@
           "outputs": [
             {
               "resourceId": "walnut-wood-materials-resources",
-              "amount": 6
+              "amount": 5
             }
           ],
           "turnsPerCycle": 1,

@@ -56,7 +56,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 GetOccupantOrigin = GetOccupantOriginForPlacementQuery,
                 GetOccupantOwnerId =
                     GetOccupantOwnerForPlacementQuery,
-                IsFogBlocked = _placementEnvironmentRules.IsBlockedByFog,
+                IsFogBlocked = IsFogBlockedForPlacementQuery,
                 GetFogState = GetFogStateForPlacementQuery,
                 IsTerrainBlocked = IsTerrainBlockedForPlacementQuery,
                 GetTerrainLevel = GetTerrainLevelForPlacementQuery,
@@ -88,11 +88,16 @@ namespace Kruty1918.Moyva.Construction.Runtime
             => _gridService == null
                 || _gridService.TryGetTileData(position, out _);
 
+        private bool IsFogBlockedForPlacementQuery(Vector2Int position)
+            => _placementEnvironmentRules.IsBlockedByFog(
+                _placementQueryEvaluationRequest?.OwnerId,
+                position);
+
         private Kruty1918.Moyva.FogOfWar.API.FogStateType? GetFogStateForPlacementQuery(
             Vector2Int position)
-            => _fogOfWarService != null
-                ? _fogOfWarService.GetFogState(position)
-                : null;
+            => _placementEnvironmentRules.GetFogState(
+                _placementQueryEvaluationRequest?.OwnerId,
+                position);
 
         private bool HasTerrainTagForPlacementQuery(
             Vector2Int position,

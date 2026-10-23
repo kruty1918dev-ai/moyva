@@ -121,7 +121,11 @@
     "cost": [
       {
         "resourceId": "walnut-wood-materials-resources",
-        "amount": 20
+        "amount": 35
+      },
+      {
+        "resourceId": "hardwood-materials-resources",
+        "amount": 10
       }
     ],
     "buildTurns": 4,
@@ -155,7 +159,7 @@
           "outputs": [
             {
               "resourceId": "iron-ore-materials-resources",
-              "amount": 3
+              "amount": 2
             }
           ],
           "turnsPerCycle": 1,
@@ -163,6 +167,18 @@
           "requiresStorageSpace": false
         }
       ],
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    },
+    {
+      "$type": "building-prerequisite-module",
+      "matchMode": "All",
+      "buildingIds": [
+        "stone-quarry"
+      ],
+      "buildingTags": [],
+      "minimumCount": 1,
+      "mergeMode": "Override",
       "isEnabled": true,
       "singletonScope": "PerBuilding"
     }

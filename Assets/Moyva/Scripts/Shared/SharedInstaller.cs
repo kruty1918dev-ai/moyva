@@ -107,6 +107,9 @@ namespace Kruty1918.Moyva.Shared
                 .To<UiFoundationTickable>()
                 .AsSingle()
                 .NonLazy();
+            container.BindInterfacesAndSelfTo<UiEventSystemTuningService>()
+                .AsSingle()
+                .NonLazy();
             UiTooltipPresenter.CanvasScaleApplier = UiCanvasScalePolicy.Apply;
 
             // Localization: project-scope singletons so language state survives scene changes.

@@ -161,6 +161,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public void SetMapTypeValue(object value) => _view?.SetMapType((MapType)Mathf.Clamp(ToInt(value, 0), 0, 5));
         public void SetDifficultyValue(object value) => _view?.SetDifficulty((Difficulty)Mathf.Clamp(ToInt(value, 1), 0, 3));
         public void SetBotDifficultyValue(object value) => _view?.SetBotDifficultyIndex(ToInt(value, 0));
+        public void SetTurnModeValue(object value) => _view?.SetTurnModeIndex(ToInt(value, 1));
+        public void SetTurnTimerValue(object value) => _view?.SetTurnTimerIndex(ToInt(value, 3));
         public void SetLanguageValue(object value) => _view?.SetLanguageIndex(ToInt(value, 0));
 
         public void StartGame() => _view?.ClickLobbyStart();

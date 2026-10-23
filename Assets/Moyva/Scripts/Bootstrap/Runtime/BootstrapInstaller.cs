@@ -191,6 +191,9 @@ namespace Kruty1918.Moyva.Bootstrap
             Container.BindInterfacesAndSelfTo<StartingPositionRevealPresentationService>()
                 .AsSingle();
 
+            Container.BindInterfacesAndSelfTo<StartingPositionOwnerRevealService>()
+                .AsSingle();
+
             Container.BindInterfacesAndSelfTo<StartingPositionAutoloadRecoveryService>()
                 .AsSingle();
 

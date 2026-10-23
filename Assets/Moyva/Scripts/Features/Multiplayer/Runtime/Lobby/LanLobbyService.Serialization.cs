@@ -15,10 +15,14 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
     public sealed partial class LanLobbyService
     {
         internal static bool TryParsePayload(string payload, out LobbyRoom room, out string joinCode)
-            => TryParsePayload(payload, out room, out joinCode, null);
+            => TryParsePayload(payload, out room, out joinCode, out _, null);
 
         private static bool TryParsePayload(string payload, out LobbyRoom room, out string joinCode, IPEndPoint sourceEndPoint)
+            => TryParsePayload(payload, out room, out joinCode, out _, sourceEndPoint);
+
+        internal static bool TryParsePayload(string payload, out LobbyRoom room, out string joinCode, out string senderId, IPEndPoint sourceEndPoint)
         {
+            senderId = null;
             room = null;
             joinCode = string.Empty;
 
@@ -60,6 +64,9 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                 ? parts[14].Trim()
                 : (roomId.Length >= 8 ? roomId.Substring(0, 8) : roomId);
             var bannedPlayerIds = parts.Length >= 16 ? DeserializePlayerIds(parts[15]) : null;
+            senderId = parts.Length >= 17 ? DecodeToken(parts[16]) : null;
+            if (string.IsNullOrWhiteSpace(senderId))
+                senderId = null;
 
             var advertisedIp = ResolvePayloadEndpointIp(parsedIp, sourceEndPoint);
             joinCode = $"lan:{advertisedIp}:{port}";
@@ -107,6 +114,28 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             return parts != null && parts.Length >= 2 &&
                    string.Equals(parts[0], PayloadProtocol, StringComparison.Ordinal) &&
                    string.Equals(parts[1], DiscoveryQuery, StringComparison.Ordinal);
+        }
+
+        // Explicit leave notice: protocol|LEAVE|roomId|playerId. A roster union
+        // merge can never remove members, so departures must be announced.
+        private static string BuildLeavePayload(string roomId, string playerId)
+            => string.Join('|', PayloadProtocol, LeaveVerb, EncodeToken(roomId), EncodeToken(playerId));
+
+        private static bool TryParseLeavePayload(string payload, out string roomId, out string playerId)
+        {
+            roomId = null;
+            playerId = null;
+            var parts = payload?.Split('|');
+            if (parts == null || parts.Length < 4
+                || !string.Equals(parts[0], PayloadProtocol, StringComparison.Ordinal)
+                || !string.Equals(parts[1], LeaveVerb, StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            roomId = DecodeToken(parts[2]);
+            playerId = DecodeToken(parts[3]);
+            return !string.IsNullOrWhiteSpace(roomId) && !string.IsNullOrWhiteSpace(playerId);
         }
 
         private static string SerializePlayers(LobbyRoom room)

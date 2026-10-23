@@ -146,7 +146,20 @@
     "flags": "BlocksPath, Selectable, Damageable",
     "runtimeTags": []
   },
-  "modules": [],
+  "modules": [
+    {
+      "$type": "building-prerequisite-module",
+      "matchMode": "All",
+      "buildingIds": [
+        "smelter"
+      ],
+      "buildingTags": [],
+      "minimumCount": 1,
+      "mergeMode": "Override",
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    }
+  ],
   "migration": {
     "sourceAssetGuid": "61163c815ddb0909595e83b807ecc759",
     "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Construction/Buildings/engineers-guild.asset",

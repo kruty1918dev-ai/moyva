@@ -36,13 +36,31 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 if (botMatch)
                     TurnPill(html, state.T("VS BOT"), state.T("MODE"), "local-turn");
                 TurnPill(html, snapshot.Round.ToString(CultureInfo.InvariantCulture), state.T("ROUND"), string.Empty);
-                if (!botMatch)
-                    TurnPill(html, snapshot.GlobalTurn.ToString(CultureInfo.InvariantCulture), state.T("GLOBAL TURN"), string.Empty);
-                TurnPill(html, botMatch ? state.T("BOT") : Display(snapshot.ActiveOwnerId), botMatch ? state.T("OPPONENT") : state.T("ACTIVE PLAYER"), string.Empty);
-                TurnPill(html, botMatch ? (snapshot.IsLocalTurn ? state.T("YOUR TURN") : state.T("BOT TURN")) : snapshot.IsLocalTurn ? state.T("YOUR TURN") :
-                    Kruty1918.SaveSystem.GameLaunchContext.GetPlayerController(snapshot.ActiveOwnerId)
-                        == Kruty1918.SaveSystem.PlayerControllerType.Bot ? state.T("BOT TURN") : state.T("WAITING"),
-                    state.T("STATUS"), snapshot.IsLocalTurn ? "local-turn" : "waiting-turn");
+                if (snapshot.TurnSimultaneous)
+                {
+                    // Civilization-style round: everyone acts in the same window,
+                    // the timer caps it and READY x/y shows who already finished.
+                    if (snapshot.TurnTimerActive)
+                        TurnPill(html,
+                            snapshot.TurnTimerHeld ? state.T("SETUP") : RoundTimerText(snapshot.TurnSecondsRemaining),
+                            state.T("TIMER"), snapshot.TurnTimerHeld ? "local-turn" : string.Empty);
+                    TurnPill(html, snapshot.TurnReadyCount.ToString(CultureInfo.InvariantCulture)
+                        + "/" + snapshot.TurnReadyTotal.ToString(CultureInfo.InvariantCulture),
+                        state.T("READY"), string.Empty);
+                    TurnPill(html,
+                        snapshot.LocalTurnEnded ? state.T("WAITING FOR PLAYERS") : state.T("YOUR TURN"),
+                        state.T("STATUS"), snapshot.IsLocalTurn ? "local-turn" : "waiting-turn");
+                }
+                else
+                {
+                    if (!botMatch)
+                        TurnPill(html, snapshot.GlobalTurn.ToString(CultureInfo.InvariantCulture), state.T("GLOBAL TURN"), string.Empty);
+                    TurnPill(html, botMatch ? state.T("BOT") : Display(snapshot.ActiveOwnerId), botMatch ? state.T("OPPONENT") : state.T("ACTIVE PLAYER"), string.Empty);
+                    TurnPill(html, botMatch ? (snapshot.IsLocalTurn ? state.T("YOUR TURN") : state.T("BOT TURN")) : snapshot.IsLocalTurn ? state.T("YOUR TURN") :
+                        Kruty1918.SaveSystem.GameLaunchContext.GetPlayerController(snapshot.ActiveOwnerId)
+                            == Kruty1918.SaveSystem.PlayerControllerType.Bot ? state.T("BOT TURN") : state.T("WAITING"),
+                        state.T("STATUS"), snapshot.IsLocalTurn ? "local-turn" : "waiting-turn");
+                }
             }
             else
             {
@@ -107,6 +125,14 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                         html.Append(FilterButton(state.T(category.ToUpperInvariant()), category, state.ConstructionCategory));
                 }
                 html.Append("</view></scroll>");
+                html.Append("<view className=\"filter-row\"><text className=\"filter-label\">")
+                    .Append(E(state.T("SHOW"))).Append("</text><select className=\"construction-availability-select\" options=\"")
+                    .Append(E(string.Join("|",
+                        state.T("ALL"),
+                        state.T("Buildable"),
+                        state.T("Unavailable"))))
+                    .Append("\" value=\"").Append((int)state.ConstructionAvailability)
+                    .Append("\" onChange=\"Globals.gameplay.SetConstructionAvailability(event)\"></select></view>");
                 if (!string.IsNullOrWhiteSpace(state.ConstructionProducerResource))
                 {
                     html.Append("<view className=\"filter-row\"><button className=\"filter-button active\" onClick=\"Globals.gameplay.ClearProducerFilter()\"><text className=\"tab-label\">")
@@ -491,9 +517,12 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 if (snapshot.TurnUiEnabled)
                     html.Append(Button(Kruty1918.SaveSystem.GameLaunchContext.HasBotOpponent
                             ? (snapshot.IsLocalTurn ? state.T("END TURN") : state.T("BOT TURN"))
-                            : snapshot.EndTurnPending ? state.T("WAITING...") : state.T("END TURN"),
+                            : snapshot.TurnSimultaneous && snapshot.LocalTurnEnded
+                                ? state.T("WAITING FOR PLAYERS")
+                                : snapshot.EndTurnPending ? state.T("WAITING...") : state.T("END TURN"),
                         "Globals.gameplay.EndTurn()", "button positive",
-                        snapshot.EndTurnPending ? state.T("Waiting for host confirmation") : state.T("End current turn"),
+                        snapshot.LocalTurnEnded ? state.T("Waiting for other players to finish the round")
+                            : snapshot.EndTurnPending ? state.T("Waiting for host confirmation") : state.T("End current turn"),
                         snapshot.EndTurnPending || !snapshot.IsLocalTurn));
             }
         }
@@ -748,6 +777,11 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 return false;
             }
 
+            if (state.ConstructionAvailability == GameplayConstructionAvailability.Buildable && !option.CanSelect)
+                return false;
+            if (state.ConstructionAvailability == GameplayConstructionAvailability.Unavailable && option.CanSelect)
+                return false;
+
             if (!string.IsNullOrWhiteSpace(state.ConstructionProducerResource))
             {
                 bool produces = false;
@@ -866,6 +900,12 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             => snapshot != null && snapshot.HasPopulationIcon ? GameplayHtmlIconKeys.Population : null;
 
         private static string Amount(float value) => value.ToString("0.#", CultureInfo.InvariantCulture);
+
+        private static string RoundTimerText(float secondsRemaining)
+        {
+            int total = Mathf.CeilToInt(Mathf.Max(0f, secondsRemaining));
+            return $"{total / 60}:{total % 60:D2}";
+        }
 
         private static string ProducesLabel(GameplayBuildingOptionSnapshot option, GameplayHtmlState state)
         {

@@ -563,7 +563,11 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
         public static Rect CalculateSafeRect(Vector2 canvasSize, Rect safeArea, Vector2 screenSize)
         {
-            if (canvasSize.x <= 1f || canvasSize.y <= 1f || screenSize.x <= 1f || screenSize.y <= 1f)
+            // An empty safe area is reported transiently on some Android devices
+            // during launch/orientation settle — treat it as the full screen so
+            // the mount root never collapses to zero size.
+            if (canvasSize.x <= 1f || canvasSize.y <= 1f || screenSize.x <= 1f || screenSize.y <= 1f
+                || safeArea.width <= 0f || safeArea.height <= 0f)
                 return new Rect(0f, 0f, Mathf.Max(1f, canvasSize.x), Mathf.Max(1f, canvasSize.y));
 
             var xScale = canvasSize.x / screenSize.x;

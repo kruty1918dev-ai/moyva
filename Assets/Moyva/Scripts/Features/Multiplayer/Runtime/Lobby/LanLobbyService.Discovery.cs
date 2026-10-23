@@ -40,6 +40,8 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                 {
                     try
                     {
+                        ReapExpiredPresence();
+                        DetectHostSnapshotTimeout();
                         if (_current != null)
                         {
                             var payload = BuildPayload();
@@ -70,11 +72,17 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                             continue;
                         }
 
-                        if (!TryParsePayload(json, out var incomingRoom, out _, result.Value.RemoteEndPoint))
+                        if (TryParseLeavePayload(json, out var leaveRoomId, out var leavePlayerId))
+                        {
+                            HandleLeavePayload(leaveRoomId, leavePlayerId);
+                            continue;
+                        }
+
+                        if (!TryParsePayload(json, out var incomingRoom, out _, out var senderId, result.Value.RemoteEndPoint))
                             continue;
 
                         RememberDiscoveredRoom(incomingRoom);
-                        bool merged = MergeCurrentRoom(incomingRoom);
+                        bool merged = MergeCurrentRoom(incomingRoom, senderId);
                         if (DetectLocalKick(incomingRoom))
                         {
                             lock (_stateLock) { _current = null; }
@@ -83,7 +91,10 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                             continue;
                         }
                         if (merged)
+                        {
                             RaiseLobbyUpdated(_current);
+                            PublishState(_current.State);
+                        }
                     }
                     catch (OperationCanceledException) { break; }
                     catch (ObjectDisposedException) { break; }
@@ -128,7 +139,8 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             var configFingerprint = _current?.ConfigFingerprint ?? string.Empty;
             var lobbyCode = _current?.LobbyCode ?? BuildShortLanLobbyCode(roomId);
             var banned = SerializePlayerIds(_current?.BannedPlayerIds);
-            return string.Join('|', PayloadProtocol, roomId, name, max.ToString(), ip, port, hostId, hostName, players, isPrivate, passwordHash, state, worldSettings, configFingerprint, lobbyCode, banned);
+            var senderId = EncodeToken(BuildLocalHostId());
+            return string.Join('|', PayloadProtocol, roomId, name, max.ToString(), ip, port, hostId, hostName, players, isPrivate, passwordHash, state, worldSettings, configFingerprint, lobbyCode, banned, senderId);
         }
 
         private static string ResolveAdvertisedTransportIp(LobbyRoom room)

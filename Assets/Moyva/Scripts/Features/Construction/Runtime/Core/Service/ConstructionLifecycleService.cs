@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.SaveSystem;
 using Kruty1918.Moyva.Signals;
@@ -14,6 +15,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
         IConstructionLifecycle,
         IConstructionOperationalRestore,
         IConstructionRealtimeProgress,
+        IConstructionModuleStatePersistence,
+        IConstructionObserverStateSource,
         ITickable,
         ITurnParticipant,
         ISaveModule,
@@ -24,6 +27,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private const int SaveVersion = 3;
         private const int LegacySaveVersion = 1;
         private const int MaxSavedStates = 100000;
+        private const string LifecycleStateKey = "construction-lifecycle.v1";
 
         private readonly SignalBus _signals;
         private readonly IBuildingRegistry _registry;
@@ -267,6 +271,127 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     ResolvePlacedBuildingId);
             _lastGameplaySeconds = _progressClock?.ElapsedGameplaySeconds ?? 0d;
             PublishOperational(transitions);
+        }
+
+        // ── World-state replication module ───────────────────────────────────
+        // The save block above covers persistence; this keyed module payload
+        // carries the same per-building progress to observer peers through the
+        // world-state snapshot, so a client joining mid-build keeps the host's
+        // completed/partial work instead of restarting construction at zero.
+
+        public string StateKey => LifecycleStateKey;
+
+        public byte[] CaptureState()
+            => SerializeLifecycleStates(_state.CaptureSorted());
+
+        public byte[] CaptureObserverState(
+            string ownerId,
+            ISet<Vector2Int> visibleBuildings)
+        {
+            if (visibleBuildings == null)
+                throw new ArgumentNullException(nameof(visibleBuildings));
+
+            IReadOnlyList<ConstructionLifecycleStateMachine.SavedState> all =
+                _state.CaptureSorted();
+            var visible =
+                new List<ConstructionLifecycleStateMachine.SavedState>(all.Count);
+            for (int index = 0; index < all.Count; index++)
+            {
+                if (visibleBuildings.Contains(all[index].Position))
+                    visible.Add(all[index]);
+            }
+
+            return SerializeLifecycleStates(visible);
+        }
+
+        public void RestoreState(byte[] payload)
+        {
+            if (payload == null || payload.Length == 0)
+                return;
+
+            List<ConstructionLifecycleStateMachine.SavedState> restored =
+                DeserializeLifecycleStates(payload);
+            if (restored == null)
+                return;
+
+            IReadOnlyList<ConstructionLifecycleStateMachine.OperationalTransition>
+                transitions = _state.Restore(restored, ResolvePlacedBuildingId);
+            _lastGameplaySeconds = _progressClock?.ElapsedGameplaySeconds ?? 0d;
+            PublishOperational(transitions);
+        }
+
+        private static byte[] SerializeLifecycleStates(
+            IReadOnlyList<ConstructionLifecycleStateMachine.SavedState> states)
+        {
+            using var stream = new MemoryStream();
+            using var writer = new BinaryWriter(stream, Encoding.UTF8);
+
+            writer.Write(1);
+            writer.Write(states?.Count ?? 0);
+            if (states != null)
+            {
+                for (int index = 0; index < states.Count; index++)
+                {
+                    var item = states[index];
+                    writer.Write(item.Position.x);
+                    writer.Write(item.Position.y);
+                    writer.Write(item.BuildingId ?? string.Empty);
+                    writer.Write(item.OwnerId ?? string.Empty);
+                    writer.Write(item.Required);
+                    writer.Write(item.Completed);
+                    writer.Write(item.PlacedTurn);
+                    writer.Write(item.PartialWork);
+                }
+            }
+
+            return stream.ToArray();
+        }
+
+        private static List<ConstructionLifecycleStateMachine.SavedState>
+            DeserializeLifecycleStates(byte[] payload)
+        {
+            using var stream = new MemoryStream(payload);
+            using var reader = new BinaryReader(stream, Encoding.UTF8);
+
+            int version = reader.ReadInt32();
+            if (version != 1)
+                return null;
+
+            int count = reader.ReadInt32();
+            if (count < 0 || count > MaxSavedStates)
+                return null;
+
+            var restored =
+                new List<ConstructionLifecycleStateMachine.SavedState>(count);
+            for (int index = 0; index < count; index++)
+            {
+                var position = new Vector2Int(
+                    reader.ReadInt32(),
+                    reader.ReadInt32());
+                string buildingId = reader.ReadString();
+                string ownerId = reader.ReadString();
+                int required = reader.ReadInt32();
+                int completed = reader.ReadInt32();
+                long placedTurn = reader.ReadInt64();
+                float partialWork = reader.ReadSingle();
+                if (float.IsNaN(partialWork) || float.IsInfinity(partialWork)
+                    || partialWork < 0f || partialWork >= 1f)
+                {
+                    return null;
+                }
+
+                restored.Add(
+                    new ConstructionLifecycleStateMachine.SavedState(
+                        position,
+                        buildingId,
+                        ownerId,
+                        required,
+                        completed,
+                        placedTurn,
+                        partialWork));
+            }
+
+            return restored;
         }
 
         private string ResolvePlacedBuildingId(Vector2Int position)

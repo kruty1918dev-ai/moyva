@@ -37,6 +37,9 @@ namespace Kruty1918.Moyva.Tests.Multiplayer
             _container
                 .DeclareSignal<ConstructionPlacementRejectedSignal>()
                 .OptionalSubscriber();
+            _container
+                .DeclareSignal<BuildingPreviewChangedSignal>()
+                .OptionalSubscriber();
             _rejectedSignalCount = 0;
             _lastRejected = default;
             _signals = _container.Resolve<SignalBus>();

@@ -368,7 +368,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 worldSettings.Width,
                 worldSettings.Height,
                 isLocalPlayerHost: false,
-                localPlayerId: localId);
+                localPlayerId: localId,
+                turnMode: worldSettings.TurnMode,
+                turnTimerSeconds: worldSettings.TurnTimerSeconds);
 
             if (_gameStarter != null)
                 await _gameStarter.StartGameAsync(ct);

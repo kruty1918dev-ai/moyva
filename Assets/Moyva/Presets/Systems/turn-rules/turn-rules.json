@@ -1,0 +1,12 @@
+{
+  "$schema": "../../Schemas/turn-rules.schema.json",
+  "schema": "moyva.turn-rules",
+  "version": 1,
+  "id": "turn-rules",
+  "model": "turn-rules",
+  "multiplayerMode": "simultaneous",
+  "soloMode": "sequential",
+  "roundTimerEnabled": true,
+  "roundTimerSeconds": 90,
+  "holdTimerUntilInitialCastlesPlaced": true
+}

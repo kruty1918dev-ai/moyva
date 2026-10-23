@@ -448,7 +448,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime.Startup
                 settings.Width,
                 settings.Height,
                 isLocalPlayerHost: _session.IsHost,
-                localPlayerId: _session.LocalPlayer.PlayerId);
+                localPlayerId: _session.LocalPlayer.PlayerId,
+                turnMode: settings.TurnMode,
+                turnTimerSeconds: settings.TurnTimerSeconds);
             Debug.Log($"{Prefix} Configured offline fallback. {DescribeLaunchContext()}");
         }
 
@@ -470,7 +472,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime.Startup
                 settings.Width,
                 settings.Height,
                 isLocalPlayerHost: _session.IsHost,
-                localPlayerId: _session.LocalPlayer.PlayerId);
+                localPlayerId: _session.LocalPlayer.PlayerId,
+                turnMode: settings.TurnMode,
+                turnTimerSeconds: settings.TurnTimerSeconds);
             Debug.Log($"{Prefix} Configured multiplayer fallback. {DescribeLaunchContext()}");
         }
 

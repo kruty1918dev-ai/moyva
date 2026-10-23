@@ -22,7 +22,12 @@ namespace Kruty1918.Moyva.Telemetry
             => _sink.Track(new MoyvaTurnLifecycleEvent { Phase = "roundCompleted", Round = completedRound });
 
         private void Track(string phase, TurnContext c)
-            => _sink.Track(new MoyvaTurnLifecycleEvent
+        {
+            // Replicated contexts replay host-committed transitions on a client;
+            // recording them would double-count analytics across peers.
+            if (c.IsReplicated)
+                return;
+            _sink.Track(new MoyvaTurnLifecycleEvent
             {
                 Phase = phase,
                 Round = c.Round,
@@ -30,5 +35,6 @@ namespace Kruty1918.Moyva.Telemetry
                 FactionIndex = c.FactionIndex,
                 OwnerId = c.Faction.OwnerId,
             });
+        }
     }
 }

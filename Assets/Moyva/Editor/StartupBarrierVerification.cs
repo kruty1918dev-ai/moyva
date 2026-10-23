@@ -7,7 +7,11 @@ using UnityEngine;
 public static class StartupBarrierVerification
 {
     static TestRunnerApi api;
-    static StartupBarrierVerification() { EditorApplication.update += Update; }
+    static StartupBarrierVerification()
+    {
+        Directory.CreateDirectory("Temp/ai");
+        EditorApplication.update += Update;
+    }
     static void Update()
     {
         const string request = "Temp/ai/barrier-tests.request";

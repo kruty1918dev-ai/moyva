@@ -182,7 +182,7 @@
           "outputs": [
             {
               "resourceId": "wheat-bundle-food-resources",
-              "amount": 6
+              "amount": 5
             }
           ],
           "turnsPerCycle": 1,
@@ -190,6 +190,18 @@
           "requiresStorageSpace": false
         }
       ],
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    },
+    {
+      "$type": "building-prerequisite-module",
+      "matchMode": "All",
+      "buildingIds": [
+        "farm"
+      ],
+      "buildingTags": [],
+      "minimumCount": 1,
+      "mergeMode": "Override",
       "isEnabled": true,
       "singletonScope": "PerBuilding"
     }

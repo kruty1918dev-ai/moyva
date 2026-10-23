@@ -19,10 +19,12 @@ namespace Kruty1918.Moyva.Camera.Runtime
         private readonly MoyvaProjectSettingsSO _projectSettings;
         private readonly UnityEngine.Camera _camera;
         private readonly IWorldGenerationSignalState _worldGenerationSignalState;
+        private readonly ICameraStartupFocusResolver _startupFocusResolver;
 
         private WorldGeneratedDataSignal _lastWorld;
         private bool _hasWorld;
         private bool _hasAppliedStartupFrame;
+        private Vector2Int _lastAppliedFocusGrid;
         private SpawnPositionAssignment[] _lastSpawnAssignments;
         private long _currentStartupSequence;
         private long _currentSpawnSequence;
@@ -37,7 +39,8 @@ namespace Kruty1918.Moyva.Camera.Runtime
             [InjectOptional] MoyvaProjectSettingsSO projectSettings = null,
             [InjectOptional] IGridProjection gridProjection = null,
             [InjectOptional] UnityEngine.Camera camera = null,
-            [InjectOptional] IWorldGenerationSignalState worldGenerationSignalState = null)
+            [InjectOptional] IWorldGenerationSignalState worldGenerationSignalState = null,
+            [InjectOptional] ICameraStartupFocusResolver startupFocusResolver = null)
         {
             _signalBus = signalBus;
             _cameraMovement = cameraMovement;
@@ -47,6 +50,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
             _gridProjection = gridProjection;
             _camera = camera;
             _worldGenerationSignalState = worldGenerationSignalState;
+            _startupFocusResolver = startupFocusResolver;
         }
 
         public void Initialize()
@@ -89,10 +93,9 @@ namespace Kruty1918.Moyva.Camera.Runtime
                 if (_currentStartupSequence != signal.StartupSequence)
                     _hasAppliedStartupFrame = false;
             }
-            else
-            {
-                _hasAppliedStartupFrame = false;
-            }
+            // Same-sequence re-publish (replication resend, cached replay): the
+            // focus comparison in ApplyAutoFrame decides whether the camera
+            // actually needs to move instead of unconditionally re-framing.
             _lastSpawnAssignments = signal.Assignments;
             ApplyAutoFrame();
         }
@@ -104,9 +107,13 @@ namespace Kruty1918.Moyva.Camera.Runtime
             {
                 return;
             }
-            ConfigureStartupCameraPose();
 
             Vector2Int focusGrid = ResolveFocusGridPosition(_lastWorld.Width, _lastWorld.Height);
+            if (_hasAppliedStartupFrame && focusGrid == _lastAppliedFocusGrid)
+                return;
+
+            ConfigureStartupCameraPose();
+
             float elevation = ResolveHeight(focusGrid, _lastWorld.HeightMap);
             Vector3 focusPoint = _gridProjection != null
                 ? _gridProjection.GridToWorld(focusGrid, elevation)
@@ -115,6 +122,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
             float distance = ResolveStartupCameraDistance();
             _cameraMovement.TeleportCameraToFocusPoint(focusPoint, distance);
             _hasAppliedStartupFrame = true;
+            _lastAppliedFocusGrid = focusGrid;
 
             if (_cameraZoom == null)
             {
@@ -126,8 +134,6 @@ namespace Kruty1918.Moyva.Camera.Runtime
 
         private string ResolveAutoFrameSkipReason()
         {
-            if (_hasAppliedStartupFrame)
-                return "already-applied";
             if (!_hasWorld)
                 return "world-not-ready";
             if (_lastSpawnAssignments == null)
@@ -256,16 +262,24 @@ namespace Kruty1918.Moyva.Camera.Runtime
 
         private Vector2Int ResolveFocusGridPosition(int width, int height)
         {
-            if (_lastSpawnAssignments != null && _lastSpawnAssignments.Length > 0)
+            // Prefer the local player's spawn — on a multiplayer client the
+            // first assignment is the host's slot, not this peer's.
+            if (_startupFocusResolver != null
+                && _startupFocusResolver.TryResolveStartupFocusGridPosition(out Vector2Int localSpawn))
             {
-                Vector2Int spawn = _lastSpawnAssignments[0].Position;
-                return new Vector2Int(
-                    Mathf.Clamp(spawn.x, 0, Mathf.Max(0, width - 1)),
-                    Mathf.Clamp(spawn.y, 0, Mathf.Max(0, height - 1)));
+                return ClampToGrid(localSpawn, width, height);
             }
+
+            if (_lastSpawnAssignments != null && _lastSpawnAssignments.Length > 0)
+                return ClampToGrid(_lastSpawnAssignments[0].Position, width, height);
 
             return new Vector2Int(Mathf.Max(0, width / 2), Mathf.Max(0, height / 2));
         }
+
+        private static Vector2Int ClampToGrid(Vector2Int position, int width, int height)
+            => new(
+                Mathf.Clamp(position.x, 0, Mathf.Max(0, width - 1)),
+                Mathf.Clamp(position.y, 0, Mathf.Max(0, height - 1)));
 
         private float ResolveHeight(Vector2Int position, float[,] heightMap)
         {

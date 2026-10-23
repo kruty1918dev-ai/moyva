@@ -1,7 +1,24 @@
 # com.kruty1918.telemetry
 
+![UPM package](https://img.shields.io/badge/UPM-package-blue)
+![version](https://img.shields.io/github/v/tag/kruty1918dev-ai/com.kruty1918.telemetry?label=version&sort=semver)
+
 High-integrity telemetry and data-acquisition layer for Unity — built for
 ML/AI dataset pipelines, not just analytics.
+
+## Install (Unity Package Manager)
+
+Package Manager → **+** → **Add package from git URL**:
+
+```
+https://github.com/kruty1918dev-ai/com.kruty1918.telemetry.git
+```
+
+or in `Packages/manifest.json`:
+
+```json
+"com.kruty1918.telemetry": "https://github.com/kruty1918dev-ai/com.kruty1918.telemetry.git#v0.1.0"
+```
 
 ## Pipeline
 
@@ -94,3 +111,11 @@ installation id for consent withdrawal.
 - `BackendReference/tests/backend.test.js` — 6 tests over real HTTP.
 - `tools/telemetry/unitycheck` — compile-check of Unity+adapter layers against
   the project's ScriptAssemblies (no editor needed).
+
+## Releasing / updating
+
+`main` is wired to CI that auto-tags releases: bump `"version"` in
+`package.json`, push to `main`, and the `UPM release` workflow tags
+`v<version>` automatically. Consumers pinned to a tag
+(`...git#v0.1.0`) upgrade by changing the tag in `manifest.json`;
+consumers on `...git` (HEAD) get the latest `main` on next resolve.

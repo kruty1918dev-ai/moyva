@@ -21,10 +21,13 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
         private const int DiscoveryPort = 54544;
         private const string PayloadProtocol = "MOYVA_LAN_LOBBY_V1";
         private const string DiscoveryQuery = "QUERY";
+        private const string LeaveVerb = "LEAVE";
         private const int BroadcastIntervalMs = 1000;
         private const int QueryTimeoutMs = 2500;
         private const int QueryRetryIntervalMs = 500;
         private const int DiscoveredRoomTtlMs = 8000;
+        private const int PresenceTimeoutMs = 5000;
+        private const int HostSnapshotTimeoutMs = 8000;
         private const int ShortLobbyCodeLength = 6;
 
         private readonly UdpClient _udp;
@@ -33,6 +36,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
         private readonly object _stateLock = new object();
         private readonly object _discoveryLock = new object();
         private readonly Dictionary<string, DiscoveredRoomEntry> _discoveredRooms = new Dictionary<string, DiscoveredRoomEntry>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, DateTime> _presenceLastSeenUtc = new Dictionary<string, DateTime>(StringComparer.Ordinal);
 
         private CancellationTokenSource _cts;
         private UdpClient _listenUdp;
@@ -40,6 +44,9 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
         private string _currentPasswordHash = string.Empty;
         private LobbyState _state = LobbyState.Closed;
         private string _lastDiscoveryError;
+        private string _localDisplayName = "Player";
+        private bool _isDirectJoinStub;
+        private DateTime _lastHostSnapshotUtc = DateTime.MinValue;
         private volatile bool _disposed;
 
         public event Action<LobbyRoom> LobbyUpdated;

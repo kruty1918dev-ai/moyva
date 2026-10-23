@@ -6,10 +6,12 @@ namespace Kruty1918.Moyva.WorldCreation.API
     /// DTO налаштувань світу, що передається від хоста клієнтам разом з командою StartGame.
     /// Бінарно серіалізується для мережі: сумісний формат із <see cref="ToBytes"/>/<see cref="TryFromBytes"/>.
     /// Поле Size зберігається як int, щоб не утворювати циклічну залежність із HomeMenu.API.
+    /// v4 додає TurnMode/TurnTimerSeconds (Kruty1918.Moyva.Turns.API.TurnFlowMode ordinals);
+    /// старіші версії читаються з -1 ("resolve from JSON turn-rules preset").
     /// </summary>
     public readonly struct WorldSettingsDto
     {
-        public const int CurrentVersion = 3;
+        public const int CurrentVersion = 4;
 
         public string WorldName { get; }
         public int Seed { get; }
@@ -20,6 +22,10 @@ namespace Kruty1918.Moyva.WorldCreation.API
         public Difficulty Difficulty { get; }
         public int MaxPlayers { get; }
         public bool IsPrivate { get; }
+        /// <summary>TurnFlowMode ordinal chosen by the host; -1 = JSON preset default.</summary>
+        public int TurnMode { get; }
+        /// <summary>Round timer override in seconds; -1 = JSON preset default, 0 = off.</summary>
+        public int TurnTimerSeconds { get; }
 
         public WorldSettingsDto(int seed, int size, MapType mapType, Difficulty difficulty, int maxPlayers, bool isPrivate)
             : this("Новий світ", seed, size, mapType, difficulty, maxPlayers, isPrivate)
@@ -32,6 +38,11 @@ namespace Kruty1918.Moyva.WorldCreation.API
         }
 
         public WorldSettingsDto(string worldName, int seed, int size, int width, int height, MapType mapType, Difficulty difficulty, int maxPlayers, bool isPrivate)
+            : this(worldName, seed, size, width, height, mapType, difficulty, maxPlayers, isPrivate, -1, -1)
+        {
+        }
+
+        public WorldSettingsDto(string worldName, int seed, int size, int width, int height, MapType mapType, Difficulty difficulty, int maxPlayers, bool isPrivate, int turnMode, int turnTimerSeconds)
         {
             WorldName = string.IsNullOrWhiteSpace(worldName) ? "Новий світ" : worldName.Trim();
             Seed = seed;
@@ -42,6 +53,8 @@ namespace Kruty1918.Moyva.WorldCreation.API
             Difficulty = difficulty;
             MaxPlayers = maxPlayers < 1 ? 1 : maxPlayers;
             IsPrivate = isPrivate;
+            TurnMode = turnMode;
+            TurnTimerSeconds = turnTimerSeconds;
         }
 
         public byte[] ToBytes()
@@ -58,6 +71,8 @@ namespace Kruty1918.Moyva.WorldCreation.API
             w.Write(WorldName ?? string.Empty);
             w.Write(Width);
             w.Write(Height);
+            w.Write(TurnMode);
+            w.Write(TurnTimerSeconds);
             return ms.ToArray();
         }
 
@@ -70,7 +85,7 @@ namespace Kruty1918.Moyva.WorldCreation.API
                 using var ms = new MemoryStream(bytes);
                 using var r = new BinaryReader(ms);
                 var version = r.ReadInt32();
-                if (version != 1 && version != 2 && version != CurrentVersion) return false;
+                if (version < 1 || version > CurrentVersion) return false;
                 var seed = r.ReadInt32();
                 var size = r.ReadInt32();
                 var mapType = (MapType)r.ReadInt32();
@@ -88,7 +103,16 @@ namespace Kruty1918.Moyva.WorldCreation.API
                     height = r.ReadInt32();
                 }
 
-                dto = new WorldSettingsDto(worldName, seed, size, width, height, mapType, diff, max, priv);
+                int turnMode = -1;
+                int turnTimerSeconds = -1;
+                if (version >= 4 && ms.Position < ms.Length)
+                {
+                    turnMode = r.ReadInt32();
+                    turnTimerSeconds = r.ReadInt32();
+                }
+
+                dto = new WorldSettingsDto(worldName, seed, size, width, height, mapType, diff, max, priv,
+                    turnMode, turnTimerSeconds);
                 return true;
             }
             catch

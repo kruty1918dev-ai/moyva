@@ -386,7 +386,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                     worldSettings.Width,
                     worldSettings.Height,
                     isLocalPlayerHost: _gameplaySession?.IsHost ?? IsHost(_currentLobby),
-                    localPlayerId: localPlayerId);
+                    localPlayerId: localPlayerId,
+                    turnMode: worldSettings.TurnMode,
+                    turnTimerSeconds: worldSettings.TurnTimerSeconds);
                 _gameStateService?.StartGame();
                 if (_gameStarter != null)
                     await _gameStarter.StartGameAsync(ct);
@@ -425,7 +427,10 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             int height = _worldCreationDefaults != null
                 ? _worldCreationDefaults.ResolveHeight((WorldSizePreset)size)
                 : 0;
-            return new WorldSettingsDto(worldName, seed, size, width, height, mapType, difficulty, maxPlayers, isPrivate);
+            int turnMode = _worldSetupViewController?.TurnMode ?? -1;
+            int turnTimerSeconds = _worldSetupViewController?.TurnTimerSeconds ?? -1;
+            return new WorldSettingsDto(worldName, seed, size, width, height, mapType, difficulty, maxPlayers, isPrivate,
+                turnMode, turnTimerSeconds);
         }
 
         private bool TryGetDraftWorldSettings(out WorldSettingsDto worldSettings)
@@ -446,7 +451,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 draft.MapType,
                 draft.Difficulty,
                 maxPlayers,
-                isPrivate);
+                isPrivate,
+                draft.TurnMode,
+                draft.TurnTimerSeconds);
             return true;
         }
 
@@ -490,11 +497,56 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
         #region Обробники подій
         /// <summary>
-        /// Викликається при оновленні лобі — просто оновлює вид.
+        /// Викликається при оновленні лобі — оновлює вид і логує зміни ростера
+        /// (join/leave видно в списку гравців; лог лишається для діагностики).
         /// </summary>
         private void OnLobbyUpdated(LobbyRoom room)
         {
-            MainThreadDispatcher.Enqueue(() => UpdateViewFromLobby(room));
+            var previous = _currentLobby;
+            MainThreadDispatcher.Enqueue(() =>
+            {
+                LogRosterChanges(previous, room);
+                UpdateViewFromLobby(room);
+            });
+        }
+
+        private void LogRosterChanges(LobbyRoom previous, LobbyRoom next)
+        {
+            if (previous == null || next == null)
+                return;
+            if (!string.Equals(previous.LobbyId, next.LobbyId, StringComparison.Ordinal))
+                return;
+
+            var localId = ResolveLocalPlayerId(next);
+            var previousIds = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var player in previous.Players ?? Array.Empty<LobbyPlayer>())
+            {
+                if (player != null && !string.IsNullOrWhiteSpace(player.PlayerId))
+                    previousIds.Add(player.PlayerId);
+            }
+
+            var nextIds = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var player in next.Players ?? Array.Empty<LobbyPlayer>())
+            {
+                if (player == null || string.IsNullOrWhiteSpace(player.PlayerId))
+                    continue;
+                nextIds.Add(player.PlayerId);
+                if (!previousIds.Contains(player.PlayerId)
+                    && !string.Equals(player.PlayerId, localId, StringComparison.Ordinal))
+                {
+                    UnityEngine.Debug.Log($"[Lobby] Player joined: {player.DisplayName} ({player.PlayerId})");
+                }
+            }
+
+            foreach (var player in previous.Players ?? Array.Empty<LobbyPlayer>())
+            {
+                if (player != null && !string.IsNullOrWhiteSpace(player.PlayerId)
+                    && !nextIds.Contains(player.PlayerId)
+                    && !string.Equals(player.PlayerId, localId, StringComparison.Ordinal))
+                {
+                    UnityEngine.Debug.Log($"[Lobby] Player left: {player.DisplayName} ({player.PlayerId})");
+                }
+            }
         }
 
         /// <summary>

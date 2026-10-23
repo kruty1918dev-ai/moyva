@@ -46,6 +46,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         private readonly List<LobbyUserInfo> _lobbyUsers = new();
         private readonly List<KickPlayerInfo> _kickPlayers = new();
         private readonly BotDifficultyRegistry _botDifficulties;
+        private static readonly int[] TurnTimerSecondsValues = { 0, 30, 60, 90, 120, 180 };
 
         private readonly Button _createRoomNextButton;
         private readonly Button _worldCreateButton;
@@ -87,6 +88,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             Difficulty = Difficulty.Normal;
             SelectedBotDifficultyId = _botDifficulties.Select(null).id;
             SelectedMode = NetworkProviderType.Relay;
+            TurnMode = 1;
+            TurnTimerIndex = 3;
             SetDefaultGraphics();
         }
 
@@ -199,6 +202,12 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public string BotDifficultyOptions => string.Join("|", _botDifficulties.difficulties.Select(d => d.displayName));
         /// <summary>створення світу кнопки — Button.</summary>
         public Button CreateWorldButton => _worldCreateButton;
+        /// <summary>режим ходів матчу (TurnFlowMode ordinal); multiplayer-only контрол, інакше -1 у DTO.</summary>
+        public int TurnMode { get; private set; }
+        /// <summary>індекс опції таймера раунду.</summary>
+        public int TurnTimerIndex { get; private set; }
+        /// <summary>таймер раунду в секундах; 0 = вимкнено.</summary>
+        public int TurnTimerSeconds => TurnTimerSecondsValues[Mathf.Clamp(TurnTimerIndex, 0, TurnTimerSecondsValues.Length - 1)];
 
         /// <summary>гравця назву — string.</summary>
         public string PlayerName { get; set; }
@@ -950,6 +959,22 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public void SetDifficulty(Difficulty difficulty)
         {
             Difficulty = difficulty;
+            OnSettingsChanged?.Invoke();
+            _state.MarkDirty();
+        }
+
+        /// <summary>Встановлює режим ходів матчу за індексом опції.</summary>
+        public void SetTurnModeIndex(int index)
+        {
+            TurnMode = Mathf.Clamp(index, 0, 1);
+            OnSettingsChanged?.Invoke();
+            _state.MarkDirty();
+        }
+
+        /// <summary>Встановлює таймер раунду за індексом опції.</summary>
+        public void SetTurnTimerIndex(int index)
+        {
+            TurnTimerIndex = Mathf.Clamp(index, 0, TurnTimerSecondsValues.Length - 1);
             OnSettingsChanged?.Invoke();
             _state.MarkDirty();
         }

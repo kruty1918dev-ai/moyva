@@ -34,6 +34,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 .FromResolveGetter<IConstructionPlacementRulesProvider>(p => p.TownHallBuildRadius).AsCached();
             container.BindInterfacesAndSelfTo<ConstructionService>().AsSingle();
             container.BindInterfacesTo<ConstructionTurnParticipant>().AsSingle();
+            container.BindInterfacesAndSelfTo<InitialCastleTurnBlocker>().AsSingle();
             container.BindInterfacesAndSelfTo<ConstructionLifecycleService>().AsSingle();
             container.BindInterfacesAndSelfTo<WallTopologyService>().AsSingle();
             container.Bind<IWallGateReplacementValidator>().To<WallGateReplacementValidator>().AsSingle();
@@ -135,6 +136,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 .NonLazy();
 
             Container.BindInterfacesTo<ConstructionTurnParticipant>()
+                .AsSingle();
+
+            Container.BindInterfacesAndSelfTo<InitialCastleTurnBlocker>()
                 .AsSingle();
 
             Container.BindInterfacesAndSelfTo<ConstructionLifecycleService>()

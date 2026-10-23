@@ -84,6 +84,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 Debug.Log($"{StartingPositionInitializer.DebugTag} Applying start reveal. " +
                           $"map={baseMapSize.x}x{baseMapSize.y}, center={revealCenter}, teleportCamera={teleportCamera}.");
                 _revealPresentationService.ApplyReveal(baseMapSize.x, baseMapSize.y, revealCenter);
+                _ownerRevealService?.RevealOwnerStartAreas(baseMapSize.x, baseMapSize.y);
                 _workflowState.StartRevealApplied = true;
                 _workflowState.AppliedStartRevealWidth = baseMapSize.x;
                 _workflowState.AppliedStartRevealHeight = baseMapSize.y;

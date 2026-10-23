@@ -34,6 +34,10 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             };
 
             _currentPasswordHash = LobbyPasswordHasher.Hash(options.Password);
+            _localDisplayName = options.DisplayName;
+            _isDirectJoinStub = false;
+            _lastHostSnapshotUtc = DateTime.UtcNow;
+            _presenceLastSeenUtc.Clear();
             _current = new LobbyRoom(roomId, lobbyCode, options.Name, options.MaxPlayers, options.IsPrivate,
                 hostPlayerId: hostPlayerId, relayJoinCode: joinCode, players: players,
                 passwordHash: _currentPasswordHash, state: LobbyState.Open,
@@ -61,7 +65,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                 var cachedRoom = FindDiscoveredRoom(value);
                 if (cachedRoom != null)
                 {
-                    _current = AddLocalPlayer(cachedRoom, displayName);
+                    AdoptJoinedRoom(AddLocalPlayer(cachedRoom, displayName), displayName, isStub: false);
                     StartBroadcastLoop();
                     RaiseLobbyUpdated(_current);
                     PublishState(_current.State);
@@ -72,7 +76,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                 {
                     if (MatchesJoinInput(r, value))
                     {
-                        _current = AddLocalPlayer(r, displayName);
+                        AdoptJoinedRoom(AddLocalPlayer(r, displayName), displayName, isStub: false);
                         StartBroadcastLoop();
                         RaiseLobbyUpdated(_current);
                         PublishState(_current.State);
@@ -81,7 +85,20 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                 }
                 if (IsLanJoinCode(value))
                 {
-                    _current = CreateDirectJoinRoom(value, displayName);
+                    // Resolve the host's real lobby id over a directed query so
+                    // the stub room (LobbyId == join code) does not desync rosters.
+                    var directRoom = await QueryDirectRoomAsync(value, ct).ConfigureAwait(false);
+                    if (directRoom != null)
+                    {
+                        AdoptJoinedRoom(AddLocalPlayer(directRoom, displayName), displayName, isStub: false);
+                        StartBroadcastLoop();
+                        RaiseLobbyUpdated(_current);
+                        PublishState(_current.State);
+                        return _current;
+                    }
+
+                    AdoptJoinedRoom(CreateDirectJoinRoom(value, displayName), displayName, isStub: true);
+                    StartBroadcastLoop();
                     RaiseLobbyUpdated(_current);
                     PublishState(_current.State);
                     return _current;
@@ -122,7 +139,8 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                 {
                     // Host did not answer a discovery query — no password info is
                     // available; keep the legacy direct-join behaviour.
-                    _current = CreateDirectJoinRoom(value, displayName);
+                    AdoptJoinedRoom(CreateDirectJoinRoom(value, displayName), displayName, isStub: true);
+                    StartBroadcastLoop();
                     RaiseLobbyUpdated(_current);
                     return _current;
                 }
@@ -138,11 +156,20 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                 throw new WrongPasswordException();
             }
 
-            _current = AddLocalPlayer(matched, displayName);
+            AdoptJoinedRoom(AddLocalPlayer(matched, displayName), displayName, isStub: false);
             StartBroadcastLoop();
             RaiseLobbyUpdated(_current);
             PublishState(_current.State);
             return _current;
+        }
+
+        private void AdoptJoinedRoom(LobbyRoom room, string displayName, bool isStub)
+        {
+            _localDisplayName = string.IsNullOrWhiteSpace(displayName) ? "Player" : displayName.Trim();
+            _isDirectJoinStub = isStub;
+            _lastHostSnapshotUtc = DateTime.UtcNow;
+            _presenceLastSeenUtc.Clear();
+            _current = room;
         }
 
         // Sends a discovery query straight at a lan:ip:port target so a direct
@@ -258,21 +285,47 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
         public async Task LeaveAsync(CancellationToken ct = default)
         {
             ct.ThrowIfCancellationRequested();
+            var localId = BuildLocalHostId();
+            byte[] leaveBytes = null;
+            IPEndPoint leaveTarget = null;
             bool needsFinalAdvertise = false;
             lock (_stateLock)
             {
-                if (_current != null && IsCurrentLocalHost() && TryChooseSuccessorHost(_current, BuildLocalHostId(), out var successorHostId))
+                if (_current != null && IsCurrentLocalHost() && TryChooseSuccessorHost(_current, localId, out var successorHostId))
                 {
-                    _current = RehostRoom(_current, successorHostId, string.Empty, removePlayerId: BuildLocalHostId());
+                    _current = RehostRoom(_current, successorHostId, string.Empty, removePlayerId: localId);
                     needsFinalAdvertise = true;
                 }
+                else if (_current != null && TryResolveHostDiscoveryEndPoint(_current, out var hostEndPoint))
+                {
+                    // Explicit leave notice: roster merges can never remove a
+                    // member, so the departure must be announced to the host.
+                    leaveBytes = Encoding.UTF8.GetBytes(BuildLeavePayload(_current.LobbyId, localId));
+                    leaveTarget = hostEndPoint;
+                }
+            }
+
+            if (leaveBytes != null && leaveTarget != null)
+            {
+                try
+                {
+                    await _udp.SendAsync(leaveBytes, leaveBytes.Length, leaveTarget).ConfigureAwait(false);
+                    await _udp.SendAsync(leaveBytes, leaveBytes.Length, leaveTarget).ConfigureAwait(false);
+                }
+                catch (Exception ex) { LogDiscoveryFailure("leave", ex); }
             }
 
             if (needsFinalAdvertise)
                 await SendHostDiscoveryPayloadAsync(Encoding.UTF8.GetBytes(BuildPayload())).ConfigureAwait(false);
 
             StopBroadcastLoop();
-            _current = null;
+            lock (_stateLock)
+            {
+                _current = null;
+                _isDirectJoinStub = false;
+                _lastHostSnapshotUtc = DateTime.MinValue;
+                _presenceLastSeenUtc.Clear();
+            }
             PublishState(LobbyState.Closed);
         }
 

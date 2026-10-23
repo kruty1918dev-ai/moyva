@@ -7,7 +7,11 @@ using UnityEditor.TestTools.TestRunner.Api;
 [InitializeOnLoad]
 public static class WaterfallTaskProbe
 {
-    static WaterfallTaskProbe() { EditorApplication.update += Tick; }
+    static WaterfallTaskProbe()
+    {
+        Directory.CreateDirectory("Temp/ai");
+        EditorApplication.update += Tick;
+    }
     static void Tick()
     {
         const string path = "Temp/ai/waterfall-probe.request";

@@ -197,35 +197,35 @@ namespace Kruty1918.Moyva.Tests.Construction
             _rules.EnableFogRules = false;
             var rules = Rules(fog);
 
-            Assert.IsFalse(rules.IsBlockedByFog(Pos));
+            Assert.IsFalse(rules.IsBlockedByFog("player_0", Pos));
         }
 
         [Test]
         public void FogServiceNull_NeverBlocks()
         {
             var rules = Rules(null);
-            Assert.IsFalse(rules.IsBlockedByFog(Pos));
+            Assert.IsFalse(rules.IsBlockedByFog("player_0", Pos));
         }
 
         [Test]
         public void VisibleTile_NotBlockedByFog()
         {
             var fog = new FakeFogService { DefaultState = FogStateType.Visible };
-            Assert.IsFalse(Rules(fog).IsBlockedByFog(Pos));
+            Assert.IsFalse(Rules(fog).IsBlockedByFog("player_0", Pos));
         }
 
         [Test]
         public void UnexploredTile_BlockedByFog()
         {
             var fog = new FakeFogService { DefaultState = FogStateType.Unexplored };
-            Assert.IsTrue(Rules(fog).IsBlockedByFog(Pos));
+            Assert.IsTrue(Rules(fog).IsBlockedByFog("player_0", Pos));
         }
 
         [Test]
         public void ExploredTile_BlockedByFog()
         {
             var fog = new FakeFogService { DefaultState = FogStateType.Explored };
-            Assert.IsTrue(Rules(fog).IsBlockedByFog(Pos));
+            Assert.IsTrue(Rules(fog).IsBlockedByFog("player_0", Pos));
         }
 
         [Test]
@@ -233,7 +233,7 @@ namespace Kruty1918.Moyva.Tests.Construction
         {
             var fog = new FakeFogService { DefaultState = FogStateType.Unexplored };
             _rules.RequireVisibleFogTile = false;
-            Assert.IsFalse(Rules(fog).IsBlockedByFog(Pos));
+            Assert.IsFalse(Rules(fog).IsBlockedByFog("player_0", Pos));
         }
 
         private ConstructionPlacementEnvironmentRules Rules(IFogOfWarService fog)
